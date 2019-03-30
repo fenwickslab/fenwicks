@@ -103,7 +103,7 @@ def data_dir_tfrecord(data_dir:str, output_file:str, overwrite=False,
   labels = sub_dirs(data_dir, exclude_dirs)
   paths, y = find_files(data_dir, labels, file_ext)
   files_tfrecord(paths, y, output_file, overwrite, extractor)
-  return paths, y
+  return paths, y, labels
 
 def data_dir_tfrecord_shards(data_dir:str, output_file:str, overwrite=False,
   extractor=None, file_ext:str='jpg', exclude_dirs:List[str]=[],
@@ -125,7 +125,7 @@ def data_dir_tfrecord_shards(data_dir:str, output_file:str, overwrite=False,
     threads.append(t)
 
   tf.train.Coordinator().join(threads)
-  return paths, y
+  return paths, y, labels
 
 def tfexample_xy(example, h:int, w:int, c:int=3):
   d = h * w * c

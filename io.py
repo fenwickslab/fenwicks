@@ -9,7 +9,7 @@ def enum_files(data_dir:str, file_ext:str='jpg')->List[str]:
   file_pattern = os.path.join(data_dir, f'*.{file_ext}')
   matching_files = tf.gfile.Glob(file_pattern)
   return matching_files
-  
+
 def find_files(data_dir:str, labels:List[str],
                file_ext:str='jpg')->Tuple[List[str], List[int]]:
   filepaths = []
@@ -60,67 +60,73 @@ def raw_image_tfexample(raw_image, y):
 def xy_tfrecord(X, y, output_file:str):
   n = X.shape[0]
   X_reshape = X.reshape(n, -1)
-  
+
   with tf.io.TFRecordWriter(output_file) as record_writer:
     for i in tqdm(range(n)):
       example = xy_tfexample(X_reshape[i], y[i])
       record_writer.write(example.SerializeToString())
-      
+
 def xy_tfrecord_shards(X, y, output_file:str, num_shards:int=2):
   spacing = np.linspace(0, len(X), num_shards + 1).astype(np.int)
   ranges = [[spacing[i], spacing[i + 1]] for i in range(num_shards)]
 
   threads = []
   for i in range(num_shards):
-    start, end = ranges[i][0], ranges[i][1] 
-    args = (X[start:end], y[start:end], 
+    start, end = ranges[i][0], ranges[i][1]
+    args = (X[start:end], y[start:end],
             f'{output_file}-{i:05d}-of-{num_shards:05d}')
     t = threading.Thread(target=xy_tfrecord, args=args)
     t.start()
     threads.append(t)
 
   tf.train.Coordinator().join(threads)
-  
-def files_tfrecord(paths:List[str], y:List[int],
-                   output_file:str, extractor=None):
-  with tf.io.TFRecordWriter(output_file) as record_writer:
-    for i, path in enumerate(tqdm(paths)):
-      if extractor is None:
-        with tf.gfile.GFile(path, 'rb') as f:
-          img = f.read()
-          example = raw_image_tfexample(img, y[i])
-      else:
-        img = extractor(path)
-        img = img.reshape(-1)
-        example = xy_tfexample(img, y[i])
-      record_writer.write(example.SerializeToString())
-      
-def data_dir_tfrecord(data_dir:str, output_file:str, extractor=None,
-                      file_ext:str='jpg', exclude_dirs:List[str]=[]):
+
+def files_tfrecord(paths:List[str], y:List[int], output_file:str,
+                   overwrite=False, extractor=None):
+
+  if not overwrite and not tf.gfile.Exists(output_file):
+    with tf.io.TFRecordWriter(output_file) as record_writer:
+      for i, path in enumerate(tqdm(paths)):
+        if extractor is None:
+          with tf.gfile.GFile(path, 'rb') as f:
+            img = f.read()
+            example = raw_image_tfexample(img, y[i])
+        else:
+          img = extractor(path)
+          img = img.reshape(-1)
+          example = xy_tfexample(img, y[i])
+        record_writer.write(example.SerializeToString())
+
+def data_dir_tfrecord(data_dir:str, output_file:str, overwrite=False,
+  extractor=None, file_ext:str='jpg', exclude_dirs:List[str]=[]):
+
   labels = sub_dirs(data_dir, exclude_dirs)
   paths, y = find_files(data_dir, labels, file_ext)
-  file_tfrecord(paths, y, output_file, extractor)
-  
-def data_dir_tfrecord_shards(data_dir:str, output_file:str, extractor=None,
-                             file_ext:str='jpg', exclude_dirs:List[str]=[],
-                             num_shards:int=2):
+  files_tfrecord(paths, y, output_file, overwrite, extractor)
+  return paths, y
+
+def data_dir_tfrecord_shards(data_dir:str, output_file:str, overwrite=False,
+  extractor=None, file_ext:str='jpg', exclude_dirs:List[str]=[],
+  num_shards:int=2):
+
   labels = sub_dirs(data_dir, exclude_dirs)
   paths, y = find_files(data_dir, labels, file_ext)
-  
+
   spacing = np.linspace(0, len(y), num_shards + 1).astype(np.int)
   ranges = [[spacing[i], spacing[i + 1]] for i in range(num_shards)]
   threads = []
 
   for i in range(num_shards):
-    start, end = ranges[i][0], ranges[i][1] 
+    start, end = ranges[i][0], ranges[i][1]
     args = (paths[start:end], y[start:end],
-            f'{output_file}-{i:05d}-of-{num_shards:05d}', extractor)
+            f'{output_file}-{i:05d}-of-{num_shards:05d}', overwrite, extractor)
     t = threading.Thread(target=files_tfrecord, args=args)
     t.start()
     threads.append(t)
 
   tf.train.Coordinator().join(threads)
-  
+  return paths, y
+
 def tfexample_xy(example, h:int, w:int, c:int=3):
   d = h * w * c
   feat_dict = {'image': tf.FixedLenFeature([d], tf.float32),
@@ -140,7 +146,7 @@ def tfexample_raw_image(example, c:int=3):
 
 def tfrecord_ds(file_pattern:str, parser, batch_size:int, num_cores:int=2):
   dataset = tf.data.Dataset.list_files(file_pattern)
-      
+
   def fetch_dataset(filename):
     buffer_size = 8 * 1024 * 1024  # 8 MiB per file
     dataset = tf.data.TFRecordDataset(filename, buffer_size=buffer_size)
@@ -149,7 +155,7 @@ def tfrecord_ds(file_pattern:str, parser, batch_size:int, num_cores:int=2):
   dataset = dataset.apply(
     tf.data.experimental.parallel_interleave(fetch_dataset,
       cycle_length=num_cores, sloppy=True))
-  
+
   dataset = dataset.apply(
     tf.data.experimental.map_and_batch(parser, batch_size=batch_size,
       num_parallel_batches=num_cores, drop_remainder=True))

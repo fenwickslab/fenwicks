@@ -137,8 +137,8 @@ def tfexample_xy(example, h:int, w:int, c:int=3):
   return x, y
 
 def tfexample_raw_image(example, c:int=3):
-  features={"image": tf.FixedLenFeature([], tf.string),
-            "label": tf.FixedLenFeature([], tf.int64)}
+  feat_dict={'image': tf.FixedLenFeature([], tf.string),
+             'label': tf.FixedLenFeature([], tf.int64)}
   feat = tf.parse_single_example(example, features=feat_dict)
   x, y = feat['image'], feat['label']
   x = tf.image.decode_image(x, channels=channels, dtype=tf.float32)

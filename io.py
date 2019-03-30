@@ -141,7 +141,7 @@ def tfexample_raw_image(example, c:int=3):
              'label': tf.FixedLenFeature([], tf.int64)}
   feat = tf.parse_single_example(example, features=feat_dict)
   x, y = feat['image'], feat['label']
-  x = tf.image.decode_image(x, channels=channels, dtype=tf.float32)
+  x = tf.image.decode_image(x, channels=c, dtype=tf.float32)
   return x, y
 
 def tfrecord_ds(file_pattern:str, parser, batch_size:int, num_cores:int=2):

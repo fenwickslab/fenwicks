@@ -148,7 +148,7 @@ def tfexample_image_parser(example, h:int, w:int, c:int=3,
   x = tf.expand_dims(x, 0)
   x = tf.image.resize_bilinear(x, [h, w], align_corners=False)
   x = tf.squeeze(x, [0])
-
+  x.set_shape([h, w, c])
   x = (x - 0.5) * 2.0
   return x, y
 

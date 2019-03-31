@@ -23,6 +23,15 @@ def InceptionResNetV2_ckpt(model_dir:str,
     tf.keras.applications.inception_resnet_v2.InceptionResNetV2,
     model_dir=model_dir, include_top=include_top)
 
+def get_InceptionResNetV2(pooling:str='avg'):
+  ir2 = tf.keras.applications.inception_resnet_v2.InceptionResNetV2(
+    include_top=False, weights=None, pooling=pooling)
+
+  for l in ir2.layers:
+    l.trainable = False
+
+  return ir2
+
 def get_ws_vars(ws_ckpt_fn:str)->List[str]:
   reader = tf.train.NewCheckpointReader(ws_ckpt_fn)
   var_to_shape_map = reader.get_variable_to_shape_map()

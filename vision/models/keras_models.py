@@ -1,5 +1,6 @@
 import tensorflow as tf
 import os
+from fenwicks.io import *
 
 def keras_model_ckpt(model_class, model_dir:str, include_top:bool=False):
   create_clean_dir(model_dir)

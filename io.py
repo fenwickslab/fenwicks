@@ -136,27 +136,24 @@ def tfexample_xy(example, h:int, w:int, c:int=3):
   x = tf.reshape(x, [h, w, c])
   return x, y
 
-def tfexample_raw_image(example, c:int=3):
-  feat_dict={'image': tf.FixedLenFeature([], tf.string),
-             'label': tf.FixedLenFeature([], tf.int64)}
-  feat = tf.parse_single_example(example, features=feat_dict)
-  x, y = feat['image'], feat['label']
-  x = tf.image.decode_image(x, channels=c, dtype=tf.float32)
-  return x, y
-
-def tfexample_image_label(example, h:int, w:int, c:int=3, center_frac:float=1.0):
+def tfexample_image_parser(example, h:int, w:int, c:int=3,
+                          center_frac:float=1.0):
   feat_dict={'image': tf.FixedLenFeature([], tf.string),
              'label': tf.FixedLenFeature([], tf.int64)}
   feat = tf.parse_single_example(example, features=feat_dict)
   x, y = feat['image'], feat['label']
   x = tf.image.decode_image(x, channels=c, dtype=tf.float32)
   x = tf.image.central_crop(x, central_fraction=center_frac)
+
   x = tf.expand_dims(x, 0)
   x = tf.image.resize_bilinear(x, [h, w], align_corners=False)
   x = tf.squeeze(x, [0])
+
   x = (x - 0.5) * 2.0
-  x.set_shape([h, w, c])
   return x, y
+
+def get_tfexample_image_parser(h:int, w:int, c:int=3, center_frac:float=1.0):
+  return lambda example: tfexample_image_parser(example, h, w, c, center_frac)
 
 def tfrecord_ds(file_pattern:str, parser, batch_size:int, num_cores:int=2):
   dataset = tf.data.Dataset.list_files(file_pattern)

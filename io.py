@@ -155,7 +155,9 @@ def tfexample_image_parser(example, h:int, w:int, c:int=3,
 def get_tfexample_image_parser(h:int, w:int, c:int=3, center_frac:float=1.0):
   return lambda example: tfexample_image_parser(example, h, w, c, center_frac)
 
-def tfrecord_ds(file_pattern:str, parser, batch_size:int, num_cores:int=2):
+def tfrecord_ds(file_pattern:str, parser, batch_size:int, training=True,
+  num_cores:int=2):
+
   dataset = tf.data.Dataset.list_files(file_pattern)
 
   def fetch_dataset(filename):
@@ -166,6 +168,10 @@ def tfrecord_ds(file_pattern:str, parser, batch_size:int, num_cores:int=2):
   dataset = dataset.apply(
     tf.data.experimental.parallel_interleave(fetch_dataset,
       cycle_length=num_cores, sloppy=True))
+
+  if training:
+    dataset = dataset.shuffle(50000, reshuffle_each_iteration=True)
+    dataset = dataset.repeat()
 
   dataset = dataset.apply(
     tf.data.experimental.map_and_batch(parser, batch_size=batch_size,

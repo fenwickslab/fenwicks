@@ -1,3 +1,6 @@
+import tensorflow as tf
+import os
+
 def keras_model_ckpt(model_class, model_dir:str, include_top:bool=False):
   create_clean_dir(model_dir)
   model = model_class(include_top=include_top)

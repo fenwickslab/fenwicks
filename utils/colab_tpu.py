@@ -36,7 +36,7 @@ def get_tpu_estimator(n_trn, n_val, model_fn, model_dir,
     train_batch_size=trn_bs, eval_batch_size=val_bs,
     config=trn_cfg, warm_start_from=ws)
 
-def get_clf_model_fn(model_arch, opt):
+def get_clf_model_fn(model_arch, optimizer):
   def model_fn(features, labels, mode, params):
     phase = 1 if mode == tf.estimator.ModeKeys.TRAIN else 0
     tf.keras.backend.set_learning_phase(phase)
@@ -47,7 +47,7 @@ def get_clf_model_fn(model_arch, opt):
     loss = tf.losses.sparse_softmax_cross_entropy(labels, logits)
     step = tf.train.get_or_create_global_step()
 
-    opt = tf.contrib.tpu.CrossShardOptimizer(opt)
+    opt = tf.contrib.tpu.CrossShardOptimizer(optimizer)
     with tf.control_dependencies(model.get_updates_for(features)):
       train_op = opt.minimize(loss, global_step=step)
 
@@ -59,4 +59,4 @@ def get_clf_model_fn(model_arch, opt):
     return tf.contrib.tpu.TPUEstimatorSpec(mode, loss=loss, train_op=train_op,
                                              eval_metrics = tpu_metrics)
 
-  return model_fn    
+  return model_fn

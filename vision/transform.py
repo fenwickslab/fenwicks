@@ -20,11 +20,12 @@ def distort_color(x, cb_distortion_range=0.1, cr_distortion_range=0.1):
 
 def distorted_bounding_box_crop(image, min_object_covered=0.1, aspect_ratio_range=(3. / 4., 4. / 3.),
                                 area_range=(0.05, 1.0), max_attempts=100):
-    bbox_begin, bbox_sz, _ = tf.image.sample_distorted_bounding_box(tf.shape(image), bounding_boxes=None,
-                                                                    min_object_covered=min_object_covered,
-                                                                    aspect_ratio_range=aspect_ratio_range,
-                                                                    area_range=area_range,
-                                                                    max_attempts=max_attempts,
-                                                                    use_image_if_no_bounding_boxes=True)
+    bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])
+    bbox_begin, bbox_sz, _ = tf.image.sample_distorted_bounding_box_v2(tf.shape(image), bounding_boxes=bbox,
+                                                                       min_object_covered=min_object_covered,
+                                                                       aspect_ratio_range=aspect_ratio_range,
+                                                                       area_range=area_range,
+                                                                       max_attempts=max_attempts,
+                                                                       use_image_if_no_bounding_boxes=True)
     x = tf.slice(image, bbox_begin, bbox_sz)
     return x

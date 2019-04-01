@@ -1,13 +1,14 @@
-from io import *
+from ...io import *
 from typing import List, Tuple
 
 
 def keras_model_ckpt(model_class, model_dir: str, include_top: bool = False) -> Tuple[str, str]:
-    create_clean_dir(model_dir)
-    model = model_class(include_top=include_top)
-    # Here we use the simplest SGD optimizer to avoid creating new variables
-    model.compile(tf.train.GradientDescentOptimizer(0.1), 'categorical_crossentropy')
-    tf.keras.estimator.model_to_estimator(keras_model=model, model_dir=model_dir)
+    if not tf.gfile.Exists(model_dir):
+        tf.gfile.MkDir(model_dir)
+        model = model_class(include_top=include_top)
+        # Here we use the simplest SGD optimizer to avoid creating new variables
+        model.compile(tf.train.GradientDescentOptimizer(0.1), 'categorical_crossentropy')
+        tf.keras.estimator.model_to_estimator(keras_model=model, model_dir=model_dir)
 
     ws_dir = os.path.join(model_dir, 'keras')
     ws_ckpt_fn = os.path.join(ws_dir, 'keras_model.ckpt')

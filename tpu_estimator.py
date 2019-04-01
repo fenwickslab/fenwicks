@@ -1,4 +1,4 @@
-from utils.colab_tpu import *
+from .utils.colab_tpu import *
 
 
 def get_tpu_estimator(n_trn, n_val, model_fn, model_dir, ws_dir, ws_vars, trn_bs=128, val_bs=None):

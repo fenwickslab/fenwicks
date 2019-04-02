@@ -25,7 +25,16 @@ def get_tpu_estimator(n_trn, n_val, model_fn, model_dir, ws_dir, ws_vars, trn_bs
         config=trn_cfg, warm_start_from=ws)
 
 
-def get_clf_model_fn(model_arch, optimizer):
+def adam_sgdr_one_cycle(lr: float, total_steps: int):
+    def get_opt():
+        step = tf.train.get_or_create_global_step()
+        lr_func = tf.train.cosine_decay_restarts(lr, step, total_steps)
+        return tf.train.AdamOptimizer(learning_rate=lr_func)
+
+    return get_opt
+
+
+def get_clf_model_fn(model_arch, get_opt):
     def model_fn(features, labels, mode, params):
         phase = 1 if mode == tf.estimator.ModeKeys.TRAIN else 0
         tf.keras.backend.set_learning_phase(phase)
@@ -36,13 +45,14 @@ def get_clf_model_fn(model_arch, optimizer):
         loss = tf.losses.sparse_softmax_cross_entropy(labels, logits)
         step = tf.train.get_or_create_global_step()
 
-        opt = tf.contrib.tpu.CrossShardOptimizer(optimizer)
+        opt = get_opt()
+        opt = tf.contrib.tpu.CrossShardOptimizer(opt)
         with tf.control_dependencies(model.get_updates_for(features)):
             train_op = opt.minimize(loss, global_step=step)
 
-        classes = tf.math.argmax(logits, axis=-1)
+        preds = tf.math.argmax(logits, axis=-1)
         metric_fn = lambda classes, labels: {'accuracy': tf.metrics.accuracy(classes, labels)}
-        tpu_metrics = (metric_fn, [classes, labels])
+        tpu_metrics = (metric_fn, [preds, labels])
         return tf.contrib.tpu.TPUEstimatorSpec(mode, loss=loss, train_op=train_op, eval_metrics=tpu_metrics)
 
     return model_fn

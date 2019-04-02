@@ -203,3 +203,10 @@ def tfrecord_xy(file_pattern: str, n: int, h: int, w: int, c: int = 3):
     parser = lambda x: tfexample_xy(x, h, w, c)
     ds = tfrecord_ds(file_pattern, parser, n)
     return ds.make_one_shot_iterator().next()
+
+
+def get_project_dirs(bucket: str, project: str) -> Tuple[str, str, str]:
+    data_dir = os.path.join(os.path.join(bucket, 'data'), project)
+    work_dir = os.path.join(os.path.join(bucket, 'work'), project)
+    model_dir = os.path.join(os.path.join(bucket, 'model'), project)
+    return data_dir, work_dir, model_dir

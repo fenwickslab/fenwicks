@@ -24,7 +24,7 @@ class DenseBlk(tf.keras.models.Model):
 
 
 class ConvBN(tf.keras.models.Model):
-    def __init__(self, c: int, kernel_size: List[int, int]):
+    def __init__(self, c: int, kernel_size: List[int]):
         super().__init__()
         self.conv = tf.keras.layers.Conv2D(filters=c, kernel_size=kernel_size, padding='same', use_bias=False)
         self.bn = tf.keras.layers.BatchNormalization()

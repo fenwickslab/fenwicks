@@ -26,15 +26,15 @@ def get_tpu_estimator(n_trn, n_val, model_fn, model_dir, ws_dir, ws_vars, trn_bs
 
 
 def adam_sgdr_one_cycle(lr: float, total_steps: int):
-    def get_opt():
+    def opt_func():
         step = tf.train.get_or_create_global_step()
         lr_func = tf.train.cosine_decay_restarts(lr, step, total_steps)
         return tf.train.AdamOptimizer(learning_rate=lr_func)
 
-    return get_opt
+    return opt_func
 
 
-def get_clf_model_fn(model_arch, get_opt):
+def get_clf_model_func(model_arch, opt_func):
     def model_fn(features, labels, mode, params):
         phase = 1 if mode == tf.estimator.ModeKeys.TRAIN else 0
         tf.keras.backend.set_learning_phase(phase)
@@ -45,7 +45,7 @@ def get_clf_model_fn(model_arch, get_opt):
         loss = tf.losses.sparse_softmax_cross_entropy(labels, logits)
         step = tf.train.get_or_create_global_step()
 
-        opt = get_opt()
+        opt = opt_func()
         opt = tf.contrib.tpu.CrossShardOptimizer(opt)
         with tf.control_dependencies(model.get_updates_for(features)):
             train_op = opt.minimize(loss, global_step=step)

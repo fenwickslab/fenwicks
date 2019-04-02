@@ -55,7 +55,7 @@ def bytes_tffeature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
 
-def xy_tfexample(X, y):
+def numpy_tfexample(X, y):
     feat_dict = {'image': float_tffeature(X.tolist()),
                  'label': int_tffeature(y)}
     return tf.train.Example(features=tf.train.Features(feature=feat_dict))
@@ -67,17 +67,17 @@ def raw_image_tfexample(raw_image, y):
     return tf.train.Example(features=tf.train.Features(feature=feat_dict))
 
 
-def xy_tfrecord(X, y, output_file: str):
+def numpy_tfrecord(X, y, output_file: str):
     n = X.shape[0]
     X_reshape = X.reshape(n, -1)
 
     with tf.io.TFRecordWriter(output_file) as record_writer:
         for i in tqdm(range(n)):
-            example = xy_tfexample(X_reshape[i], y[i])
+            example = numpy_tfexample(X_reshape[i], y[i])
             record_writer.write(example.SerializeToString())
 
 
-def xy_tfrecord_shards(X, y, output_file: str, num_shards: int = 2):
+def numpy_tfrecord_shards(X, y, output_file: str, num_shards: int = 2):
     spacing = np.linspace(0, len(X), num_shards + 1).astype(np.int)
     ranges = [[spacing[i], spacing[i + 1]] for i in range(num_shards)]
 
@@ -86,7 +86,7 @@ def xy_tfrecord_shards(X, y, output_file: str, num_shards: int = 2):
         start, end = ranges[i][0], ranges[i][1]
         args = (X[start:end], y[start:end],
                 f'{output_file}-{i:05d}-of-{num_shards:05d}')
-        t = threading.Thread(target=xy_tfrecord, args=args)
+        t = threading.Thread(target=numpy_tfrecord, args=args)
         t.start()
         threads.append(t)
 
@@ -104,7 +104,7 @@ def files_tfrecord(paths: List[str], y: List[int], output_file: str, overwrite=F
                 else:
                     img = extractor(path)
                     img = img.reshape(-1)
-                    example = xy_tfexample(img, y[i])
+                    example = numpy_tfexample(img, y[i])
                 record_writer.write(example.SerializeToString())
 
 
@@ -138,7 +138,7 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, overwrite=False,
     return paths, y, labels
 
 
-def tfexample_xy(example, h: int, w: int, c: int = 3):
+def tfexample_numpy(example, h: int, w: int, c: int = 3):
     d = h * w * c
     feat_dict = {'image': tf.FixedLenFeature([d], tf.float32),
                  'label': tf.FixedLenFeature([], tf.int64)}
@@ -199,13 +199,13 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training=True,
     return dataset
 
 
-def tfrecord_xy(file_pattern: str, n: int, h: int, w: int, c: int = 3):
-    parser = lambda x: tfexample_xy(x, h, w, c)
+def tfrecord_numpy(file_pattern: str, n: int, h: int, w: int, c: int = 3):
+    parser = lambda x: tfexample_numpy(x, h, w, c)
     ds = tfrecord_ds(file_pattern, parser, n)
     return ds.make_one_shot_iterator().next()
 
 
-def get_project_dirs(bucket: str, project: str) -> Tuple[str, str, str]:
+def get_gcs_dirs(bucket: str, project: str) -> Tuple[str, str, str]:
     data_dir = os.path.join(os.path.join(bucket, 'data'), project)
     work_dir = os.path.join(os.path.join(bucket, 'work'), project)
     model_dir = os.path.join(os.path.join(bucket, 'model'), project)

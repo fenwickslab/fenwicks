@@ -1,5 +1,6 @@
 from .vision.transform import *
 import numpy as np
+import random
 import threading
 import os
 
@@ -13,8 +14,7 @@ def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
     return matching_files
 
 
-def find_files(data_dir: str, labels: List[str],
-               file_ext: str = 'jpg') -> Tuple[List[str], List[int]]:
+def find_files(data_dir: str, labels: List[str], shuffle=False, file_ext: str = 'jpg') -> Tuple[List[str], List[int]]:
     filepaths = []
     filelabels = []
 
@@ -22,6 +22,12 @@ def find_files(data_dir: str, labels: List[str],
         matching_files = enum_files(os.path.join(data_dir, label), file_ext)
         filepaths.extend(matching_files)
         filelabels.extend([i] * len(matching_files))
+
+    if shuffle:
+        c = list(zip(filepaths, filelabels))
+        random.shuffle(c)
+        filepaths, filelabels = zip(*c)
+        filepaths, filelabels = list(filepaths), list(filelabels)
 
     return filepaths, filelabels
 
@@ -108,19 +114,19 @@ def files_tfrecord(paths: List[str], y: List[int], output_file: str, overwrite=F
                 record_writer.write(example.SerializeToString())
 
 
-def data_dir_tfrecord(data_dir: str, output_file: str, overwrite=False, extractor=None, file_ext: str = 'jpg',
-                      exclude_dirs: List[str] = []):
+def data_dir_tfrecord(data_dir: str, output_file: str, shuffle: bool = False, overwrite: bool = False, extractor=None,
+                      file_ext: str = 'jpg', exclude_dirs: List[str] = []):
     labels = sub_dirs(data_dir, exclude_dirs)
-    paths, y = find_files(data_dir, labels, file_ext)
+    paths, y = find_files(data_dir, labels, shuffle=shuffle, file_ext=file_ext)
     files_tfrecord(paths, y, output_file, overwrite, extractor)
+
     return paths, y, labels
 
 
-def data_dir_tfrecord_shards(data_dir: str, output_file: str, overwrite=False,
-                             extractor=None, file_ext: str = 'jpg', exclude_dirs: List[str] = [],
-                             num_shards: int = 2):
+def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = False, overwrite: bool = False,
+                             extractor=None, file_ext: str = 'jpg', exclude_dirs: List[str] = [], num_shards: int = 2):
     labels = sub_dirs(data_dir, exclude_dirs)
-    paths, y = find_files(data_dir, labels, file_ext)
+    paths, y = find_files(data_dir, labels, shuffle=shuffle, file_ext=file_ext)
 
     spacing = np.linspace(0, len(y), num_shards + 1).astype(np.int)
     ranges = [[spacing[i], spacing[i + 1]] for i in range(num_shards)]

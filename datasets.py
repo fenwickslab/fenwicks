@@ -10,9 +10,10 @@ class URLs():
     DVC = f'{FASTAI}dogscats.zip'
     CIFAR10 = f'{FASTAI}cifar10.tgz'
 
-    TF = 'http://download.tensorflow.org/data/'
-    SPEECH_CMD_001 = f'{TF}speech_commands_v0.01.tar.gz'
-    SPEECH_CMD_002 = f'{TF}speech_commands_v0.02.tar.gz'
+    TF = 'http://download.tensorflow.org/'
+    SPEECH_CMD_001 = f'{TF}data/speech_commands_v0.01.tar.gz'
+    SPEECH_CMD_002 = f'{TF}data/speech_commands_v0.02.tar.gz'
+    FLOWER_PHOTOS = f'{TF}example_images/flower_photos.tgz'
 
 
 def untar_data(url: str, dest: str = '.') -> str:

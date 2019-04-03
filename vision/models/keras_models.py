@@ -1,5 +1,6 @@
 from ...io import *
 from typing import List, Tuple
+from keras_applications import vgg16, resnet50, inception_resnet_v2, inception_v3, xception, mobilenet_v2, nasnet
 
 
 def get_ws_vars(ws_ckpt_fn: str) -> List[str]:
@@ -29,52 +30,87 @@ def keras_model_weights(model_class, model_dir: str, include_top: bool = False) 
 
 
 def VGG16_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
-    return keras_model_weights(tf.keras.applications.VGG16, model_dir=model_dir, include_top=include_top)
+    return keras_model_weights(vgg16.VGG16, model_dir=model_dir, include_top=include_top)
 
 
-def ResNet50_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
-    return keras_model_weights(tf.keras.applications.ResNet50, model_dir=model_dir, include_top=include_top)
-
-
-def InceptionV3_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
-    return keras_model_weights(tf.keras.applications.InceptionV3, model_dir=model_dir, include_top=include_top)
-
-
-def InceptionResNetV2_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
-    return keras_model_weights(tf.keras.applications.InceptionResNetV2, model_dir=model_dir, include_top=include_top)
-
-
-def MobileNetV2_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
-    return keras_model_weights(tf.keras.applications.MobileNetV2, model_dir=model_dir, include_top=include_top)
-
-
-def Xception_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
-    return keras_model_weights(tf.keras.applications.Xception, model_dir=model_dir,
-                               include_top=include_top)
+def VGG16_size() -> int:
+    return 224
 
 
 def get_VGG16(pooling: str = None):
-    return tf.keras.applications.VGG16(include_top=False, weights=None, pooling=pooling)
+    return vgg16.VGG16(include_top=False, weights=None, pooling=pooling)
+
+
+def ResNet50_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
+    return keras_model_weights(resnet50.ResNet50, model_dir=model_dir, include_top=include_top)
+
+
+def ResNet50_size() -> int:
+    return 224
 
 
 def get_ResNet50(pooling: str = None):
-    return tf.keras.applications.ResNet50(include_top=False, weights=None, pooling=pooling)
+    return resnet50.ResNet50(include_top=False, weights=None, pooling=pooling)
+
+
+def InceptionV3_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
+    return keras_model_weights(inception_v3.InceptionV3, model_dir=model_dir, include_top=include_top)
+
+
+def InceptionV3_size() -> int:
+    return 299
 
 
 def get_InceptionV3(pooling: str = None):
-    return tf.keras.applications.InceptionV3(include_top=False, weights=None, pooling=pooling)
+    return inception_v3.InceptionV3(include_top=False, weights=None, pooling=pooling)
+
+
+def InceptionResNetV2_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
+    return keras_model_weights(inception_resnet_v2.InceptionResNetV2, model_dir=model_dir, include_top=include_top)
+
+
+def InceptionResNetV2_size() -> int:
+    return 299
 
 
 def get_InceptionResNetV2(pooling: str = 'avg'):
-    return tf.keras.applications.InceptionResNetV2(include_top=False, weights=None, pooling=pooling)
+    return inception_resnet_v2.InceptionResNetV2(include_top=False, weights=None, pooling=pooling)
+
+
+def MobileNetV2_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
+    return keras_model_weights(mobilenet_v2.MobileNetV2, model_dir=model_dir, include_top=include_top)
+
+
+def MobileNetV2_size() -> int:
+    return 224
 
 
 def get_MobileNetV2(pooling: str = None):
-    return tf.keras.applications.MobileNetV2(include_top=False, weights=None, pooling=pooling)
+    return mobilenet_v2.MobileNetV2(include_top=False, weights=None, pooling=pooling)
+
+
+def Xception_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
+    return keras_model_weights(xception.Xception, model_dir=model_dir, include_top=include_top)
+
+
+def Xception_size() -> int:
+    return 299
 
 
 def get_Xception(pooling: str = None):
-    return tf.keras.applications.Xception(include_top=False, weights=None, pooling=pooling)
+    return xception.Xception(include_top=False, weights=None, pooling=pooling)
+
+
+def NASNetLarge_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
+    return keras_model_weights(nasnet.NASNetLarge, model_dir=model_dir, include_top=include_top)
+
+
+def NASNetLarge_size() -> int:
+    return 331
+
+
+def get_NASNetLarge(pooling: str = None):
+    return nasnet.NASNetLarge(include_top=False, weights=None, pooling=pooling)
 
 
 def freeze(model):

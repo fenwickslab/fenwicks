@@ -1,7 +1,7 @@
 from .utils.colab_tpu import *
 
 
-def get_tpu_estimator(n_trn, n_val, model_fn, model_dir, ws_dir, ws_vars, trn_bs=128, val_bs=None):
+def get_tpu_estimator(n_trn, n_val, model_func, model_dir, ws_dir=None, ws_vars=None, trn_bs=128, val_bs=None):
     steps_per_epoch = n_trn // trn_bs
     if val_bs is None:
         val_bs = n_val
@@ -20,7 +20,7 @@ def get_tpu_estimator(n_trn, n_val, model_fn, model_dir, ws_dir, ws_vars, trn_bs
         vars_to_warm_start=ws_vars)
 
     return tf.contrib.tpu.TPUEstimator(
-        model_fn=model_fn, model_dir=model_dir,
+        model_fn=model_func, model_dir=model_dir,
         train_batch_size=trn_bs, eval_batch_size=val_bs,
         config=trn_cfg, warm_start_from=ws)
 

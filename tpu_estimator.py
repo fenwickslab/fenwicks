@@ -25,7 +25,7 @@ def get_tpu_estimator(n_trn, n_val, model_fn, model_dir, ws_dir, ws_vars, trn_bs
         config=trn_cfg, warm_start_from=ws)
 
 
-def adam_sgdr_one_cycle(lr: float, total_steps: int):
+def adam_sgdr_one_cycle(total_steps: int, lr: float = 0.001):
     def opt_func():
         step = tf.train.get_or_create_global_step()
         lr_func = tf.train.cosine_decay_restarts(lr, step, total_steps)
@@ -35,7 +35,7 @@ def adam_sgdr_one_cycle(lr: float, total_steps: int):
 
 
 def get_clf_model_func(model_arch, opt_func):
-    def model_fn(features, labels, mode, params):
+    def model_func(features, labels, mode, params):
         phase = 1 if mode == tf.estimator.ModeKeys.TRAIN else 0
         tf.keras.backend.set_learning_phase(phase)
 
@@ -51,8 +51,8 @@ def get_clf_model_func(model_arch, opt_func):
             train_op = opt.minimize(loss, global_step=step)
 
         preds = tf.math.argmax(logits, axis=-1)
-        metric_fn = lambda classes, labels: {'accuracy': tf.metrics.accuracy(classes, labels)}
-        tpu_metrics = (metric_fn, [preds, labels])
+        metric_func = lambda classes, labels: {'accuracy': tf.metrics.accuracy(classes, labels)}
+        tpu_metrics = (metric_func, [preds, labels])
         return tf.contrib.tpu.TPUEstimatorSpec(mode, loss=loss, train_op=train_op, eval_metrics=tpu_metrics)
 
-    return model_fn
+    return model_func

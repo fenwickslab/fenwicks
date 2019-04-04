@@ -87,7 +87,7 @@ def InceptionResNetV2_size() -> int:
     return 299
 
 
-def get_InceptionResNetV2(pooling: str = 'avg'):
+def get_InceptionResNetV2(pooling: str = None):
     return inception_resnet_v2.InceptionResNetV2(include_top=False, weights=None, pooling=pooling)
 
 

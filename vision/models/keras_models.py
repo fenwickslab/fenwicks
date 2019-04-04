@@ -1,6 +1,7 @@
 from ...io import *
 from typing import List, Tuple
-from keras_applications import vgg16, resnet50, inception_resnet_v2, inception_v3, xception, mobilenet_v2, nasnet
+from keras_applications import vgg16, resnet50, inception_resnet_v2, inception_v3, xception, mobilenet_v2, nasnet, \
+    resnext
 
 
 def get_ws_vars(ws_ckpt_fn: str) -> List[str]:
@@ -51,6 +52,18 @@ def ResNet50_size() -> int:
 
 def get_ResNet50(pooling: str = None):
     return resnet50.ResNet50(include_top=False, weights=None, pooling=pooling)
+
+
+def ResNeXt50_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
+    return keras_model_weights(resnext.ResNeXt50, model_dir=model_dir, include_top=include_top)
+
+
+def ResNeXt50_size() -> int:
+    return 224
+
+
+def get_ResNeXt50(pooling: str = None):
+    return resnext.ResNeXt50(include_top=False, weights=None, pooling=pooling)
 
 
 def InceptionV3_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:

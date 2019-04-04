@@ -16,9 +16,10 @@ def get_ws_vars(ws_ckpt_fn: str) -> List[str]:
     return ws_vars
 
 
-def keras_model_weights(model_class, model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
-    if not tf.gfile.Exists(model_dir):
-        tf.gfile.MkDir(model_dir)
+def keras_model_weights(model_class, model_dir: str, include_top: bool = False, overwrite: bool = False) -> Tuple[
+    str, List[str]]:
+    if overwrite or (not tf.gfile.Exists(model_dir)):
+        create_clean_dir(model_dir)
         model = model_class(include_top=include_top)
         # Here we use the simplest SGD optimizer to avoid creating new variables
         model.compile(tf.train.GradientDescentOptimizer(0.1), 'categorical_crossentropy')
@@ -30,7 +31,7 @@ def keras_model_weights(model_class, model_dir: str, include_top: bool = False) 
     return ws_dir, ws_vars
 
 
-def VGG16_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
+def VGG16_weights(model_dir: str, include_top: bool = False, overwrite: bool = False) -> Tuple[str, List[str]]:
     return keras_model_weights(vgg16.VGG16, model_dir=model_dir, include_top=include_top)
 
 

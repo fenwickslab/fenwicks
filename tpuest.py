@@ -25,15 +25,6 @@ def get_tpu_estimator(n_trn, n_val, model_func, model_dir, ws_dir=None, ws_vars=
         config=trn_cfg, warm_start_from=ws)
 
 
-def adam_sgdr_one_cycle(total_steps: int, lr: float = 0.001):
-    def opt_func():
-        step = tf.train.get_or_create_global_step()
-        lr_func = tf.train.cosine_decay_restarts(lr, step, total_steps)
-        return tf.train.AdamOptimizer(learning_rate=lr_func)
-
-    return opt_func
-
-
 def get_clf_model_func(model_arch, opt_func):
     def model_func(features, labels, mode, params):
         phase = 1 if mode == tf.estimator.ModeKeys.TRAIN else 0

@@ -1,4 +1,5 @@
-from .utils.colab_tpu import *
+import tensorflow as tf
+from .utils.colab_tpu import TPU_ADDRESS
 
 
 def get_tpu_estimator(n_trn, n_val, model_func, model_dir, ws_dir=None, ws_vars=None, trn_bs=128, val_bs=None):

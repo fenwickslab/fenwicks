@@ -184,7 +184,9 @@ def tfexample_image_parser(example, h: int, w: int, c: int = 3, center_frac: flo
     if normalizer is None:
         x = (x - 0.5) * 2.0
     else:
+        x = tf.expand_dims(x, axis=0)
         x = normalizer(x * 255.0)
+        x = tf.squeeze(x, [0])
     return x, y
 
 

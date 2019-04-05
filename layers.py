@@ -35,6 +35,18 @@ class ConvBN(tf.keras.Model):
         return tf.nn.relu(self.bn(self.conv(x)))
 
 
+class ConvBlk(tf.keras.Model):
+    def __init__(self, c, pool=None, convs=1, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99,
+                 bn_eps=0.001):
+        super().__init__()
+        self.conv_bn = ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
+                              bn_eps=bn_eps)
+        self.pool = tf.keras.layers.MaxPooling2D() if pool is None else pool
+
+    def call(self, x):
+        return self.pool(self.conv_bn(x))
+
+
 def init_pytorch(shape, dtype=tf.float32, partition_info=None):
     fan = np.prod(shape[:-1])
     bound = 1 / math.sqrt(fan)

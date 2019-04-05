@@ -154,13 +154,18 @@ def tfexample_numpy(example, h: int, w: int, c: int = 3):
     return x, y
 
 
-def tfexample_image_parser(example, h: int, w: int, c: int = 3, center_frac: float = 1.0, augment: bool = False):
+def tfexample_image_decoder(example, c: int = 3):
     feat_dict = {'image': tf.FixedLenFeature([], tf.string),
                  'label': tf.FixedLenFeature([], tf.int64)}
     feat = tf.parse_single_example(example, features=feat_dict)
     x, y = feat['image'], feat['label']
 
     x = tf.image.decode_image(x, channels=c, dtype=tf.float32)
+    return x, y
+
+
+def tfexample_image_parser(example, h: int, w: int, c: int = 3, center_frac: float = 1.0, augment: bool = False):
+    x, y = tfexample_image_decoder(example, c)
 
     if augment:
         x = distorted_bounding_box_crop(x)
@@ -169,6 +174,7 @@ def tfexample_image_parser(example, h: int, w: int, c: int = 3, center_frac: flo
 
     x.set_shape([None, None, c])
     x = tf.image.resize_images(x, [h, w])
+
     if augment:
         x = tf.image.random_flip_left_right(x)
         if c == 3:
@@ -181,7 +187,7 @@ def get_tfexample_image_parser(h: int, w: int, c: int = 3, center_frac: float = 
     return lambda example: tfexample_image_parser(example, h, w, c, center_frac, augment)
 
 
-def tfrecord_ds(file_pattern: str, parser, batch_size: int, training=True,
+def tfrecord_ds(file_pattern: str, parser, batch_size: int, training=True, shuffle_buf_sz: int = 50000,
                 num_cores: int = 2):
     dataset = tf.data.Dataset.list_files(file_pattern)
 
@@ -194,7 +200,7 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training=True,
         tf.data.experimental.parallel_interleave(fetch_dataset, cycle_length=num_cores, sloppy=True))
 
     if training:
-        dataset = dataset.shuffle(50000, reshuffle_each_iteration=True)
+        dataset = dataset.shuffle(shuffle_buf_sz)
         dataset = dataset.repeat()
 
     dataset = dataset.apply(

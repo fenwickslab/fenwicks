@@ -168,7 +168,7 @@ def tfexample_image_parser(example, h: int, w: int, c: int = 3, center_frac: flo
     x, y = tfexample_image_decoder(example, c)
 
     if augment:
-        x = distorted_bounding_box_crop(x)
+        x = distorted_bbox_crop(x)
     else:
         x = tf.image.central_crop(x, central_fraction=center_frac)
 
@@ -187,26 +187,34 @@ def get_tfexample_image_parser(h: int, w: int, c: int = 3, center_frac: float = 
     return lambda example: tfexample_image_parser(example, h, w, c, center_frac, augment)
 
 
+def tfrecord_fetch_dataset(fn: str):
+    buffer_size = 8 * 1024 * 1024  # 8 MiB per file
+    dataset = tf.data.TFRecordDataset(fn, buffer_size=buffer_size)
+    return dataset
+
+
 def tfrecord_ds(file_pattern: str, parser, batch_size: int, training=True, shuffle_buf_sz: int = 50000,
-                num_cores: int = 2):
+                n_cores: int = 2, n_folds: int = 1):
     dataset = tf.data.Dataset.list_files(file_pattern)
-
-    def fetch_dataset(filename):
-        buffer_size = 8 * 1024 * 1024  # 8 MiB per file
-        dataset = tf.data.TFRecordDataset(filename, buffer_size=buffer_size)
-        return dataset
-
     dataset = dataset.apply(
-        tf.data.experimental.parallel_interleave(fetch_dataset, cycle_length=num_cores, sloppy=True))
+        tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True))
+
+    if n_folds > 1:
+        if training:
+            trn = dataset.shard(n_folds, 0)
+            for i in range(1, n_folds):
+                trn = trn.concatenate(dataset.shard(n_folds, i))
+            dataset = trn
+        else:
+            dataset = dataset.shard(n_folds, n_folds - 1)
 
     if training:
         dataset = dataset.shuffle(shuffle_buf_sz)
         dataset = dataset.repeat()
 
     dataset = dataset.apply(
-        tf.data.experimental.map_and_batch(parser, batch_size=batch_size, num_parallel_batches=num_cores,
+        tf.data.experimental.map_and_batch(parser, batch_size=batch_size, num_parallel_batches=n_cores,
                                            drop_remainder=True))
-
     dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
     return dataset
 

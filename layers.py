@@ -51,3 +51,6 @@ def init_pytorch(shape, dtype=tf.float32, partition_info=None):
     fan = np.prod(shape[:-1])
     bound = 1 / math.sqrt(fan)
     return tf.random.uniform(shape, minval=-bound, maxval=bound, dtype=dtype)
+
+
+PYTORCH_CONV_PARAMS = {'kernel_initializer': init_pytorch, 'bn_mom': 0.9, 'bn_eps': 1e-5}

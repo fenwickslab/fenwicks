@@ -194,19 +194,20 @@ def tfrecord_fetch_dataset(fn: str):
 
 
 def tfrecord_ds(file_pattern: str, parser, batch_size: int, training=True, shuffle_buf_sz: int = 50000,
-                n_cores: int = 2, n_folds: int = 1):
+                n_cores: int = 2, n_folds: int = 1, val_fold_idx: int = 0):
     dataset = tf.data.Dataset.list_files(file_pattern)
     dataset = dataset.apply(
         tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True))
 
     if n_folds > 1:
         if training:
-            trn = dataset.shard(n_folds, 0)
-            for i in range(1, n_folds):
-                trn = trn.concatenate(dataset.shard(n_folds, i))
+            trn = None
+            for i in range(0, n_folds):
+                if i != val_fold_idx:
+                    trn = dataset.shard(n_folds, i) if trn is None else trn.concatenate(dataset.shard(n_folds, i))
             dataset = trn
         else:
-            dataset = dataset.shard(n_folds, n_folds - 1)
+            dataset = dataset.shard(n_folds, val_fold_idx)
 
     if training:
         dataset = dataset.shuffle(shuffle_buf_sz)

@@ -164,7 +164,8 @@ def tfexample_image_decoder(example, c: int = 3):
     return x, y
 
 
-def tfexample_image_parser(example, h: int, w: int, c: int = 3, center_frac: float = 1.0, augment: bool = False):
+def tfexample_image_parser(example, h: int, w: int, c: int = 3, center_frac: float = 1.0, augment: bool = False,
+                           normalizer=None):
     x, y = tfexample_image_decoder(example, c)
 
     if augment:
@@ -179,7 +180,11 @@ def tfexample_image_parser(example, h: int, w: int, c: int = 3, center_frac: flo
         x = tf.image.random_flip_left_right(x)
         if c == 3:
             x = distort_color(x)
-    x = (x - 0.5) * 2.0
+
+    if normalizer is None:
+        x = (x - 0.5) * 2.0
+    else:
+        x = normalizer(x * 255.0)
     return x, y
 
 

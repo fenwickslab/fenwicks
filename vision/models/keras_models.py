@@ -148,3 +148,4 @@ def freeze(model):
 def unfreeze(model):
     for l in model.layers:
         l.trainable = True
+

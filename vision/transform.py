@@ -29,3 +29,15 @@ def distorted_bbox_crop(x, min_object_covered=0.1, aspect_ratio_range=(3. / 4., 
                                                                     use_image_if_no_bounding_boxes=True)
     x = tf.slice(x, bbox_begin, bbox_sz)
     return x
+
+
+def imagenet_normalize_tf(x):
+    return (x - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
+
+
+def imagenet_normalize_pytorch(x):
+    return (x - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
+
+
+def imagenet_normalize_caffe(x):
+    return x[..., ::-1] - [103.939, 116.779, 123.68]

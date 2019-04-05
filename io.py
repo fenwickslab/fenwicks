@@ -190,8 +190,9 @@ def tfexample_image_parser(example, h: int, w: int, c: int = 3, center_frac: flo
     return x, y
 
 
-def get_tfexample_image_parser(h: int, w: int, c: int = 3, center_frac: float = 1.0, augment: bool = False):
-    return lambda example: tfexample_image_parser(example, h, w, c, center_frac, augment)
+def get_tfexample_image_parser(h: int, w: int, c: int = 3, center_frac: float = 1.0, augment: bool = False,
+                               normalizer=None):
+    return lambda example: tfexample_image_parser(example, h, w, c, center_frac, augment, normalizer)
 
 
 def tfrecord_fetch_dataset(fn: str):

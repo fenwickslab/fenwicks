@@ -41,7 +41,7 @@ def imagenet_normalize_pytorch(x):
 
 
 def imagenet_normalize_caffe(x):
-    return x[..., ::-1] - [103.939, 116.779, 123.68]
+    return x[..., ::-1] * 255 - [103.939, 116.779, 123.68]
 
 
 def get_train_transforms(h: int, w: int, normalizer=imagenet_normalize_tf) -> List:

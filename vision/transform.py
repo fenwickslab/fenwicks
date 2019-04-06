@@ -1,4 +1,5 @@
 import tensorflow as tf
+from typing import List
 
 
 def distort_color(x, cb_distortion_range=0.1, cr_distortion_range=0.1):
@@ -32,7 +33,7 @@ def distorted_bbox_crop(x, min_object_covered=0.1, aspect_ratio_range=(3. / 4., 
 
 
 def imagenet_normalize_tf(x):
-    return (x - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
+    return (x - 0.5) * 2.0
 
 
 def imagenet_normalize_pytorch(x):
@@ -41,3 +42,27 @@ def imagenet_normalize_pytorch(x):
 
 def imagenet_normalize_caffe(x):
     return x[..., ::-1] - [103.939, 116.779, 123.68]
+
+
+def get_train_transforms(h: int, w: int, normalizer=imagenet_normalize_tf) -> List:
+    tfms = [distorted_bbox_crop]
+    tfms.extend(lambda x: x.set_shape([None, None, 3]))
+    tfms.extend(lambda x: tf.image.resize_images(x, [h, w]))
+    tfms.extend(tf.image.random_flip_left_right)
+    tfms.extend(distort_color)
+    tfms.extend(normalizer)
+    return tfms
+
+
+def get_eval_transforms(h: int, w: int, center_frac: float = 1.0, normalizer=imagenet_normalize_tf) -> List:
+    tfms = [lambda x: tf.image.central_crop(x, central_fraction=center_frac)]
+    tfms.extend(lambda x: x.set_shape([None, None, 3]))
+    tfms.extend(lambda x: tf.image.resize_images(x, [h, w]))
+    tfms.extend(normalizer)
+    return tfms
+
+
+def apply_transforms(x, tfms: List):
+    for tfm in tfms:
+        x = tfm(x)
+    return x

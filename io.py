@@ -188,9 +188,9 @@ def tfexample_image_parser(example, h: int, w: int, c: int = 3, center_frac: flo
     return x, y
 
 
-def get_tfexample_image_parser(h: int, w: int, c: int = 3, center_frac: float = 1.0, augment: bool = False,
-                               normalizer=None):
-    return lambda example: tfexample_image_parser(example, h, w, c, center_frac, augment, normalizer)
+def get_tfexample_image_parser(h: int, w: int, training: bool = True, normalizer=imagenet_normalize_tf):
+    tfms = get_train_transforms(h, w, normalizer) if training else get_eval_transforms(h, w, normalizer=normalizer)
+    return lambda example: tfexample_image_parser(example, tfms)
 
 
 def tfrecord_fetch_dataset(fn: str):
@@ -202,8 +202,10 @@ def tfrecord_fetch_dataset(fn: str):
 def tfrecord_ds(file_pattern: str, parser, batch_size: int, training=True, shuffle_buf_sz: int = 50000,
                 n_cores: int = 2, n_folds: int = 1, val_fold_idx: int = 0):
     dataset = tf.data.Dataset.list_files(file_pattern)
-    dataset = dataset.apply(
-        tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True))
+    fetcher = tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True)
+    mapper_batcher = tf.data.experimental.map_and_batch(parser, batch_size=batch_size, num_parallel_batches=n_cores,
+                                                        drop_remainder=True)
+    dataset = dataset.apply(fetcher)
 
     if n_folds > 1:
         if training:
@@ -219,9 +221,7 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training=True, shuff
         dataset = dataset.shuffle(shuffle_buf_sz)
         dataset = dataset.repeat()
 
-    dataset = dataset.apply(
-        tf.data.experimental.map_and_batch(parser, batch_size=batch_size, num_parallel_batches=n_cores,
-                                           drop_remainder=True))
+    dataset = dataset.apply(mapper_batcher)
     dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
     return dataset
 

@@ -46,7 +46,7 @@ def imagenet_normalize_caffe(x):
 
 def get_train_transforms(h: int, w: int, normalizer=imagenet_normalize_tf) -> List:
     tfms = [distorted_bbox_crop]
-    tfms.append(lambda x: x.set_shape([None, None, 3] or x))
+    tfms.append(lambda x: x.set_shape([None, None, 3]) or x)
     tfms.append(lambda x: tf.image.resize_images(x, [h, w]))
     tfms.append(tf.image.random_flip_left_right)
     tfms.append(distort_color)
@@ -56,7 +56,7 @@ def get_train_transforms(h: int, w: int, normalizer=imagenet_normalize_tf) -> Li
 
 def get_eval_transforms(h: int, w: int, center_frac: float = 1.0, normalizer=imagenet_normalize_tf) -> List:
     tfms = [lambda x: tf.image.central_crop(x, central_fraction=center_frac)]
-    tfms.append(lambda x: x.set_shape([None, None, 3] or x))
+    tfms.append(lambda x: x.set_shape([None, None, 3]) or x)
     tfms.append(lambda x: tf.image.resize_images(x, [h, w]))
     tfms.append(normalizer)
     return tfms

@@ -34,88 +34,84 @@ def keras_model_weights(model_class, model_dir: str, include_top: bool = False, 
 
 def get_vgg16(model_dir: str, include_top: bool = False, pooling: str = None, overwrite: bool = False) -> Tuple:
     img_size = 224
-    model = vgg16.VGG16(include_top=include_top, weights=None, pooling=pooling)
+    model_func = lambda: vgg16.VGG16(include_top=include_top, weights=None, pooling=pooling)
     weight_dir, weight_vars = keras_model_weights(vgg16.VGG16, model_dir=model_dir, include_top=include_top,
                                                   overwrite=overwrite)
     normalizer = imagenet_normalize_caffe
-    return model, weight_dir, weight_vars, img_size, normalizer
+    return model_func, weight_dir, weight_vars, img_size, normalizer
 
 
 def get_resnet50(model_dir: str, include_top: bool = False, pooling: str = None, overwrite: bool = False) -> Tuple:
     img_size = 224
-    model = resnet50.ResNet50(include_top=include_top, weights=None, pooling=pooling)
+    model_func = lambda: resnet50.ResNet50(include_top=include_top, weights=None, pooling=pooling)
     weight_dir, weight_vars = keras_model_weights(resnet50.ResNet50, model_dir=model_dir, include_top=include_top,
                                                   overwrite=overwrite)
     normalizer = imagenet_normalize_caffe
-    return model, weight_dir, weight_vars, img_size, normalizer
+    return model_func, weight_dir, weight_vars, img_size, normalizer
 
 
 def get_resnet50_v2(model_dir: str, include_top: bool = False, pooling: str = None, overwrite: bool = False) -> Tuple:
     img_size = 224
-    model = resnet_v2.ResNet50V2(include_top=include_top, weights=None, pooling=pooling)
+    model_func = lambda: resnet_v2.ResNet50V2(include_top=include_top, weights=None, pooling=pooling)
     weight_dir, weight_vars = keras_model_weights(resnet_v2.ResNet50V2, model_dir=model_dir, include_top=include_top,
                                                   overwrite=overwrite)
     normalizer = imagenet_normalize_tf
-    return model, weight_dir, weight_vars, img_size, normalizer
+    return model_func, weight_dir, weight_vars, img_size, normalizer
 
 
 def get_resnext50(model_dir: str, include_top: bool = False, pooling: str = None, overwrite: bool = False) -> Tuple:
     img_size = 224
-    model = resnext.ResNeXt50(include_top=include_top, weights=None, pooling=pooling)
+    model_func = lambda: resnext.ResNeXt50(include_top=include_top, weights=None, pooling=pooling)
     weight_dir, weight_vars = keras_model_weights(resnext.ResNeXt50, model_dir=model_dir, include_top=include_top,
                                                   overwrite=overwrite)
     normalizer = imagenet_normalize_pytorch
-    return model, weight_dir, weight_vars, img_size, normalizer
+    return model_func, weight_dir, weight_vars, img_size, normalizer
 
 
 def get_inception_v3(model_dir: str, include_top: bool = False, pooling: str = None, overwrite: bool = False) -> Tuple:
     img_size = 299
-    model = inception_v3.InceptionV3(include_top=include_top, weights=None, pooling=pooling)
+    model_func = lambda: inception_v3.InceptionV3(include_top=include_top, weights=None, pooling=pooling)
     weight_dir, weight_vars = keras_model_weights(inception_v3.InceptionV3, model_dir=model_dir,
                                                   include_top=include_top, overwrite=overwrite)
     normalizer = imagenet_normalize_tf
-    return model, weight_dir, weight_vars, img_size, normalizer
-
-
-def InceptionResNetV2_weights(model_dir: str, include_top: bool = False) -> Tuple[str, List[str]]:
-    return keras_model_weights(inception_resnet_v2.InceptionResNetV2, model_dir=model_dir, include_top=include_top)
+    return model_func, weight_dir, weight_vars, img_size, normalizer
 
 
 def get_inception_resnet_v2(model_dir: str, include_top: bool = False, pooling: str = None,
                             overwrite: bool = False) -> Tuple:
     img_size = 299
-    model = inception_resnet_v2.InceptionResNetV2(include_top=include_top, weights=None, pooling=pooling)
+    model_func = lambda:  inception_resnet_v2.InceptionResNetV2(include_top=include_top, weights=None, pooling=pooling)
     weight_dir, weight_vars = keras_model_weights(inception_resnet_v2.InceptionResNetV2, model_dir=model_dir,
                                                   include_top=include_top, overwrite=overwrite)
     normalizer = imagenet_normalize_tf
-    return model, weight_dir, weight_vars, img_size, normalizer
+    return model_func, weight_dir, weight_vars, img_size, normalizer
 
 
 def get_mobilenet_v2(model_dir: str, include_top: bool = False, pooling: str = None, overwrite: bool = False) -> Tuple:
     img_size = 224
-    model = mobilenet_v2.MobileNetV2(include_top=include_top, weights=None, pooling=pooling)
+    model_func = lambda:  mobilenet_v2.MobileNetV2(include_top=include_top, weights=None, pooling=pooling)
     weight_dir, weight_vars = keras_model_weights(mobilenet_v2.MobileNetV2, model_dir=model_dir,
                                                   include_top=include_top, overwrite=overwrite)
     normalizer = imagenet_normalize_tf
-    return model, weight_dir, weight_vars, img_size, normalizer
+    return model_func, weight_dir, weight_vars, img_size, normalizer
 
 
 def get_xception(model_dir: str, include_top: bool = False, pooling: str = None, overwrite: bool = False) -> Tuple:
     img_size = 299
-    model = xception.Xception(include_top=include_top, weights=None, pooling=pooling)
+    model_func = lambda:  xception.Xception(include_top=include_top, weights=None, pooling=pooling)
     weight_dir, weight_vars = keras_model_weights(xception.Xception, model_dir=model_dir, include_top=include_top,
                                                   overwrite=overwrite)
     normalizer = imagenet_normalize_tf
-    return model, weight_dir, weight_vars, img_size, normalizer
+    return model_func, weight_dir, weight_vars, img_size, normalizer
 
 
 def get_nasnet_large(model_dir: str, include_top: bool = False, pooling: str = None, overwrite: bool = False) -> Tuple:
     img_size = 331
-    model = nasnet.NASNetLarge(include_top=include_top, weights=None, pooling=pooling)
+    model_func = lambda:  nasnet.NASNetLarge(include_top=include_top, weights=None, pooling=pooling)
     weight_dir, weight_vars = keras_model_weights(nasnet.NASNetLarge, model_dir=model_dir, include_top=include_top,
                                                   overwrite=overwrite)
     normalizer = imagenet_normalize_tf
-    return model, weight_dir, weight_vars, img_size, normalizer
+    return model_func, weight_dir, weight_vars, img_size, normalizer
 
 
 def freeze(model):

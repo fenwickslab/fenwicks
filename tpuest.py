@@ -16,9 +16,8 @@ def get_tpu_estimator(n_trn, n_val, model_func, model_dir, ws_dir=None, ws_vars=
     trn_cfg = tf.contrib.tpu.RunConfig(
         cluster=cluster, model_dir=model_dir, tpu_config=tpu_cfg)
 
-    ws = tf.estimator.WarmStartSettings(
-        ckpt_to_initialize_from=ws_dir,
-        vars_to_warm_start=ws_vars)
+    ws = None if ws_dir is None else tf.estimator.WarmStartSettings(ckpt_to_initialize_from=ws_dir,
+                                                                    vars_to_warm_start=ws_vars)
 
     return tf.contrib.tpu.TPUEstimator(
         model_fn=model_func, model_dir=model_dir,

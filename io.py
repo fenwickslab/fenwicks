@@ -154,37 +154,14 @@ def tfexample_numpy(example, h: int, w: int, c: int = 3):
     return x, y
 
 
-def tfexample_image_decoder(example, c: int = 3):
+def tfexample_image_parser(example, tfms):
     feat_dict = {'image': tf.FixedLenFeature([], tf.string),
                  'label': tf.FixedLenFeature([], tf.int64)}
     feat = tf.parse_single_example(example, features=feat_dict)
     x, y = feat['image'], feat['label']
 
-    x = tf.image.decode_image(x, channels=c, dtype=tf.float32)
-    return x, y
-
-
-def tfexample_image_parser(example, h: int, w: int, c: int = 3, center_frac: float = 1.0, augment: bool = False,
-                           normalizer=None):
-    x, y = tfexample_image_decoder(example, c)
-
-    if augment:
-        x = distorted_bbox_crop(x)
-    else:
-        x = tf.image.central_crop(x, central_fraction=center_frac)
-
-    x.set_shape([None, None, c])
-    x = tf.image.resize_images(x, [h, w])
-
-    if augment:
-        x = tf.image.random_flip_left_right(x)
-        if c == 3:
-            x = distort_color(x)
-
-    if normalizer is None:
-        x = (x - 0.5) * 2.0
-    else:
-        x = normalizer(x)
+    x = tf.image.decode_image(x, channels=3, dtype=tf.float32)
+    x = apply_transforms(x, tfms)
     return x, y
 
 

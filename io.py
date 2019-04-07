@@ -3,6 +3,8 @@ import numpy as np
 import random
 import threading
 import os
+import itertools
+import functools
 
 from typing import List, Tuple
 from tqdm import tqdm_notebook as tqdm
@@ -144,16 +146,6 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = Fa
     return paths, y, labels
 
 
-def tfexample_numpy(example, h: int, w: int, c: int = 3):
-    d = h * w * c
-    feat_dict = {'image': tf.FixedLenFeature([d], tf.float32),
-                 'label': tf.FixedLenFeature([], tf.int64)}
-    feat = tf.parse_single_example(example, features=feat_dict)
-    x, y = feat['image'], feat['label']
-    x = tf.reshape(x, [h, w, c])
-    return x, y
-
-
 def tfexample_image_parser(example, tfms):
     feat_dict = {'image': tf.FixedLenFeature([], tf.string),
                  'label': tf.FixedLenFeature([], tf.int64)}
@@ -176,7 +168,7 @@ def tfrecord_fetch_dataset(fn: str):
     return dataset
 
 
-def tfrecord_ds(file_pattern: str, parser, batch_size: int, training=True, shuffle_buf_sz: int = 50000,
+def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = True, shuffle_buf_sz: int = 50000,
                 n_cores: int = 2, n_folds: int = 1, val_fold_idx: int = 0):
     dataset = tf.data.Dataset.list_files(file_pattern)
     fetcher = tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True)
@@ -186,11 +178,9 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training=True, shuff
 
     if n_folds > 1:
         if training:
-            trn = None
-            for i in range(0, n_folds):
-                if i != val_fold_idx:
-                    trn = dataset.shard(n_folds, i) if trn is None else trn.concatenate(dataset.shard(n_folds, i))
-            dataset = trn
+            trn_shards = itertools.chain(range(val_fold_idx), range(val_fold_idx + 1, n_folds))
+            update_func = lambda ds, i: ds.concatenate(dataset.shard(n_folds, i))
+            dataset = functools.reduce(update_func, trn_shards, dataset.shard(n_folds, next(trn_shards)))
         else:
             dataset = dataset.shard(n_folds, val_fold_idx)
 
@@ -201,12 +191,6 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training=True, shuff
     dataset = dataset.apply(mapper_batcher)
     dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
     return dataset
-
-
-def tfrecord_numpy(file_pattern: str, n: int, h: int, w: int, c: int = 3):
-    parser = lambda x: tfexample_numpy(x, h, w, c)
-    ds = tfrecord_ds(file_pattern, parser, n)
-    return ds.make_one_shot_iterator().next()
 
 
 def get_gcs_dirs(bucket: str, project: str, model: str = 'custom') -> Tuple[str, str, str]:

@@ -1,6 +1,7 @@
 import tensorflow as tf
 from typing import List
 
+
 def distort_color(x, cb_distortion_range=0.1, cr_distortion_range=0.1):
     br_delta = tf.random.uniform([], -32. / 255., 32. / 255.)
     cb_factor = tf.random.uniform([], -cb_distortion_range, cb_distortion_range)
@@ -32,7 +33,7 @@ def distorted_bbox_crop(x, min_object_covered=0.1, aspect_ratio_range=(3. / 4., 
 
 
 def imagenet_normalize_tf(x):
-    return (x - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
+    return (x - 0.5) * 2.0
 
 
 def imagenet_normalize_pytorch(x):

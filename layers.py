@@ -47,12 +47,11 @@ class ConvBlk(tf.keras.Model):
         return self.pool(self.conv_bn(x))
 
 
-class ConvResBlk(tf.keras.Model):
+class ConvResBlk(ConvBlk):
     def __init__(self, c, pool=None, convs=1, res_convs=2, kernel_size=3, kernel_initializer='glorot_uniform',
                  bn_mom=0.99, bn_eps=0.001):
-        super().__init__()
-        self.blk = ConvBlk(c, pool=pool, convs=convs, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
-                           bn_mom=bn_mom, bn_eps=bn_eps)
+        super().__init__(c, pool=pool, convs=convs, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
+                         bn_mom=bn_mom, bn_eps=bn_eps)
         self.res = []
         for i in range(res_convs):
             conv_bn = ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
@@ -60,7 +59,7 @@ class ConvResBlk(tf.keras.Model):
             self.res.append(conv_bn)
 
     def call(self, inputs):
-        h = self.blk(inputs)
+        h = super().call(inputs)
         hh = h
         for conv_bn in self.res:
             hh = conv_bn(hh)

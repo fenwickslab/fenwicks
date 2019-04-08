@@ -1,6 +1,7 @@
 import tensorflow as tf
 import math
 import numpy as np
+import functools
 
 
 class GlobalPools(tf.keras.Model):
@@ -60,9 +61,8 @@ class ConvResBlk(ConvBlk):
 
     def call(self, inputs):
         h = super().call(inputs)
-        hh = h
-        for conv_bn in self.res:
-            hh = conv_bn(hh)
+        update_func = lambda x, y: y(x)
+        hh = functools.reduce(update_func, self.res, h)
         return h + hh
 
 

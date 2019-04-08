@@ -11,9 +11,11 @@ def adam_sgdr_one_cycle(total_steps: int, lr: float = 0.001):
 
 
 def triangle_lr_one_cycle(lr: float, step, total_steps: int, warmup_steps: int):
-    warmup_sched = lambda: tf.cast(step, tf.float32) * lr / warmup_steps
+    step = tf.cast(step, tf.float32)
+    warmup_sched = lambda: step * lr / warmup_steps
     decay_sched = lambda: (total_steps - step) * lr / (total_steps - warmup_steps)
-    return tf.cond(tf.less_equal(step, warmup_steps), warmup_sched, decay_sched)
+    lr_sched = tf.cond(tf.less_equal(step, warmup_steps), warmup_sched, decay_sched)
+    return lr_sched
 
 
 def sgd_triangle_one_cycle(total_steps: int, lr: float = 0.4, warmup_steps: int = 490, mom: float = 0.9):

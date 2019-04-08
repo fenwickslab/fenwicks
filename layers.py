@@ -47,6 +47,26 @@ class ConvBlk(tf.keras.Model):
         return self.pool(self.conv_bn(x))
 
 
+class ConvResBlk(tf.keras.Model):
+    def __init__(self, c, pool=None, convs=1, res_convs=2, kernel_size=3, kernel_initializer='glorot_uniform',
+                 bn_mom=0.99, bn_eps=0.001):
+        super().__init__()
+        self.blk = ConvBlk(c, pool=pool, convs=convs, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
+                           bn_mom=bn_mom, bn_eps=bn_eps)
+        self.res = []
+        for i in range(res_convs):
+            conv_bn = ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
+                             bn_eps=bn_eps)
+            self.res.append(conv_bn)
+
+    def call(self, inputs):
+        h = self.blk(inputs)
+        hh = h
+        for conv_bn in self.res:
+            hh = conv_bn(hh)
+        return h + hh
+
+
 def init_pytorch(shape, dtype=tf.float32, partition_info=None):
     fan = np.prod(shape[:-1])
     bound = 1 / math.sqrt(fan)

@@ -18,10 +18,10 @@ def triangle_lr_one_cycle(lr: float, step, total_steps: int, warmup_steps: int):
     return lr_sched
 
 
-def sgd_triangle_one_cycle(total_steps: int, lr: float = 0.4, warmup_steps: int = 490, mom: float = 0.9):
+def sgd_triangle_one_cycle(total_steps: int, lr: float, warmup_steps: int = 490, mom: float = 0.9):
     def opt_func():
         step = tf.train.get_or_create_global_step()
-        lr_func = triangle_lr_one_cycle(lr, step, total_steps, warmup_steps)
+        lr_func = lambda: triangle_lr_one_cycle(lr, step, total_steps, warmup_steps)
         return tf.train.MomentumOptimizer(lr_func, momentum=mom, use_nesterov=True)
 
     return opt_func

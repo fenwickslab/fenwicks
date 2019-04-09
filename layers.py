@@ -4,11 +4,6 @@ import numpy as np
 from .core import *
 
 
-class Sequential(tf.keras.Sequential):
-    def call(self, x):
-        return apply_transforms(x, self.layers)
-
-
 class GlobalPools(tf.keras.Model):
     def __init__(self):
         super().__init__()
@@ -41,16 +36,16 @@ class ConvBN(tf.keras.Model):
         return tf.nn.relu(self.bn(self.conv(x)))
 
 
-class ConvBlk(Sequential):
+class ConvBlk(tf.keras.Model):
     def __init__(self, c, pool=None, convs=1, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99,
                  bn_eps=0.001):
         super().__init__()
-        self.add(ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
-                        bn_eps=bn_eps))
-        self.add(tf.keras.layers.MaxPooling2D() if pool is None else pool)
+        self.conv_bn = ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
+                              bn_eps=bn_eps)
+        self.pool = tf.keras.layers.MaxPooling2D() if pool is None else pool
 
-    # def call(self, x):
-    #     return self.pool(self.conv_bn(x))
+    def call(self, x):
+        return self.pool(self.conv_bn(x))
 
 
 class ConvResBlk(ConvBlk):
@@ -64,10 +59,15 @@ class ConvResBlk(ConvBlk):
                              bn_eps=bn_eps)
             self.res.append(conv_bn)
 
-    def call(self, x):
-        h = super().call(x)
+    def call(self, inputs):
+        h = super().call(inputs)
         hh = apply_transforms(h, self.res)
         return h + hh
+
+
+class Sequential(tf.keras.Sequential):
+    def call(self, x):
+        return apply_transforms(x, self.layers)
 
 
 def init_pytorch(shape, dtype=tf.float32, partition_info=None):

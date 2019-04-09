@@ -4,6 +4,11 @@ import numpy as np
 from .core import *
 
 
+class Sequential(tf.keras.Sequential):
+    def call(self, x):
+        return apply_transforms(x, self.layers)
+
+
 class GlobalPools(tf.keras.Model):
     def __init__(self):
         super().__init__()
@@ -36,7 +41,7 @@ class ConvBN(tf.keras.Model):
         return tf.nn.relu(self.bn(self.conv(x)))
 
 
-class ConvBlk(tf.keras.Sequential):
+class ConvBlk(Sequential):
     def __init__(self, c, pool=None, convs=1, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99,
                  bn_eps=0.001):
         super().__init__()
@@ -44,8 +49,8 @@ class ConvBlk(tf.keras.Sequential):
                         bn_eps=bn_eps))
         self.add(tf.keras.layers.MaxPooling2D() if pool is None else pool)
 
-    def call(self, x):
-        return self.layers[1](self.layers[0](x))
+    # def call(self, x):
+    #     return self.pool(self.conv_bn(x))
 
 
 class ConvResBlk(ConvBlk):

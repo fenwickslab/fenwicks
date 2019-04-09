@@ -65,9 +65,10 @@ def random_color(x: tf.Tensor) -> tf.Tensor:
     return x
 
 
-def random_flip(x: tf.Tensor) -> tf.Tensor:
+def random_flip(x: tf.Tensor, vertical_flip: bool = False) -> tf.Tensor:
     x = tf.image.random_flip_left_right(x)
-    x = tf.image.random_flip_up_down(x)
+    if vertical_flip:
+        x = tf.image.random_flip_up_down(x)
     return x
 
 

@@ -25,24 +25,27 @@ class DenseBlk(tf.keras.Model):
         return self.dropout(tf.nn.relu(self.bn(self.dense(x))))
 
 
-class ConvBN(tf.keras.Sequential):
+class ConvBN(tf.keras.Model):
     def __init__(self, c: int, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99, bn_eps=0.001):
         super().__init__()
-        self.add(tf.keras.layers.Conv2D(filters=c, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
-                                        padding='same', use_bias=False))
-        self.add(tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps))
+        self.conv = tf.keras.layers.Conv2D(filters=c, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
+                                           padding='same', use_bias=False)
+        self.bn = tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps)
 
     def call(self, x):
-        return tf.nn.relu(super.call(x))
+        return tf.nn.relu(self.bn(self.conv(x)))
 
 
-class ConvBlk(tf.keras.Sequential):
+class ConvBlk(tf.keras.Model):
     def __init__(self, c, pool=None, convs=1, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99,
                  bn_eps=0.001):
         super().__init__()
-        self.add(
-            ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom, bn_eps=bn_eps))
-        self.add(tf.keras.layers.MaxPooling2D() if pool is None else pool)
+        self.conv_bn = ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
+                              bn_eps=bn_eps)
+        self.pool = tf.keras.layers.MaxPooling2D() if pool is None else pool
+
+    def call(self, x):
+        return self.pool(self.conv_bn(x))
 
 
 class ConvResBlk(ConvBlk):
@@ -60,6 +63,11 @@ class ConvResBlk(ConvBlk):
         h = super().call(inputs)
         hh = apply_transforms(h, self.res)
         return h + hh
+
+
+class Sequential(tf.keras.Sequential):
+    def call(self, x):
+        return apply_transforms(x, self.layers)
 
 
 def init_pytorch(shape, dtype=tf.float32, partition_info=None):

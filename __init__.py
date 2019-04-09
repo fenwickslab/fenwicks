@@ -1,3 +1,4 @@
+from .core import *
 from . import datasets
 from . import io
 from .utils import colab_tpu

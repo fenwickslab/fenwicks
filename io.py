@@ -1,4 +1,7 @@
 from .vision.transform import *
+from .core import apply_transforms
+
+import tensorflow as tf
 import numpy as np
 import random
 import threading
@@ -146,12 +149,15 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = Fa
     return paths, y, labels
 
 
-def tfexample_image_parser(example, tfms):
+def tfexample_raw_parser(example):
     feat_dict = {'image': tf.FixedLenFeature([], tf.string),
                  'label': tf.FixedLenFeature([], tf.int64)}
     feat = tf.parse_single_example(example, features=feat_dict)
-    x, y = feat['image'], feat['label']
+    return feat['image'], feat['label']
 
+
+def tfexample_image_parser(example, tfms):
+    x, y = tfexample_raw_parser(example)
     x = tf.image.decode_image(x, channels=3, dtype=tf.float32)
     x = apply_transforms(x, tfms)
     return x, y
@@ -193,8 +199,12 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = Tru
     return dataset
 
 
+def get_model_dir(bucket: str, model: str):
+    return os.path.join(os.path.join(bucket, 'model'), model)
+
+
 def get_gcs_dirs(bucket: str, project: str, model: str = 'custom') -> Tuple[str, str, str]:
     data_dir = os.path.join(os.path.join(bucket, 'data'), project)
     work_dir = os.path.join(os.path.join(bucket, 'work'), project)
-    model_dir = os.path.join(os.path.join(bucket, 'model'), model)
+    model_dir = get_model_dir(bucket, model)
     return data_dir, work_dir, model_dir

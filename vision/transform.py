@@ -125,9 +125,3 @@ def get_cifar10_train_transforms() -> List:
             lambda x: tf.random_crop(x, [32, 32, 3]),
             tf.image.random_flip_left_right,
             ]
-
-
-def apply_transforms(x, tfms: List):
-    for tfm in tfms:
-        x = tfm(x)
-    return x

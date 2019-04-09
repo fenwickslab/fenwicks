@@ -65,6 +65,11 @@ class ConvResBlk(ConvBlk):
         return h + hh
 
 
+class Sequential(tf.keras.Sequential):
+    def call(self, x):
+        return apply_transforms(x, self.layers)
+
+
 def init_pytorch(shape, dtype=tf.float32, partition_info=None):
     fan = np.prod(shape[:-1])
     bound = 1 / math.sqrt(fan)

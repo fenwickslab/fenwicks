@@ -1,6 +1,7 @@
 import tensorflow as tf
 import math
 import numpy as np
+import functools
 
 
 class GlobalPools(tf.keras.Model):
@@ -45,6 +46,24 @@ class ConvBlk(tf.keras.Model):
 
     def call(self, x):
         return self.pool(self.conv_bn(x))
+
+
+class ConvResBlk(ConvBlk):
+    def __init__(self, c, pool=None, convs=1, res_convs=2, kernel_size=3, kernel_initializer='glorot_uniform',
+                 bn_mom=0.99, bn_eps=0.001):
+        super().__init__(c, pool=pool, convs=convs, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
+                         bn_mom=bn_mom, bn_eps=bn_eps)
+        self.res = []
+        for i in range(res_convs):
+            conv_bn = ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
+                             bn_eps=bn_eps)
+            self.res.append(conv_bn)
+
+    def call(self, inputs):
+        h = super().call(inputs)
+        update_func = lambda x, y: y(x)
+        hh = functools.reduce(update_func, self.res, h)
+        return h + hh
 
 
 def init_pytorch(shape, dtype=tf.float32, partition_info=None):

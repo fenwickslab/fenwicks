@@ -85,6 +85,13 @@ def random_translate(x: tf.Tensor, max_translation: int = 10) -> tf.Tensor:
     return tf.contrib.image.translate(x, translation=[tl[0], tl[1]])
 
 
+def ramdom_pad_crop(x: tf.Tensor, pad_size: int) -> tf.Tensor:
+    shape = tf.shape(x)
+    x = tf.pad(x, [[pad_size, pad_size], [pad_size, pad_size], [0, 0]], mode='reflect')
+    x = tf.random_crop(x, [shape[0], shape[1], 3])
+    return x
+
+
 def imagenet_normalize_tf(x: tf.Tensor) -> tf.Tensor:
     return (x - 0.5) * 2.0
 

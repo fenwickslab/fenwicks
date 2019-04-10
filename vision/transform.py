@@ -121,11 +121,3 @@ def get_eval_transforms(h: int, w: int, center_frac: float = 1.0, normalizer=ima
             lambda x: tf.image.resize_images(x, [h, w]),
             normalizer,
             ]
-
-
-# def get_cifar10_train_transforms() -> List:
-#     return [cifar10_normalize_pytorch,
-#             lambda x: tf.pad(x, [[4, 4], [4, 4], [0, 0]], mode='reflect'),
-#             lambda x: tf.random_crop(x, [32, 32, 3]),
-#             tf.image.random_flip_left_right,
-#             ]

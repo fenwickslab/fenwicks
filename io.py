@@ -158,6 +158,15 @@ def tfexample_raw_parser(example):
     return feat['image'], feat['label']
 
 
+def tfexample_numpy_image_parser(example, h: int, w: int, c: int = 3, dtype=tf.float32):
+    feat_dict = {'image': tf.FixedLenFeature([h * w * c], dtype),
+                 'label': tf.FixedLenFeature([], tf.int64)}
+    feat = tf.parse_single_example(example, features=feat_dict)
+    x, y = feat['image'], feat['label']
+    x = tf.reshape(x, [h, w, c])
+    return x, y
+
+
 def tfexample_image_parser(example, tfms):
     x, y = tfexample_raw_parser(example)
     x = tf.image.decode_image(x, channels=3, dtype=tf.float32)

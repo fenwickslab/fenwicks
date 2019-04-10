@@ -7,3 +7,5 @@ from . import layers
 from . import train
 from .vision.models import keras_models
 from .vision import transform
+
+from .layers import Sequential

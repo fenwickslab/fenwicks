@@ -82,7 +82,7 @@ def numpy_tfrecord(X, y, output_file: str, overwrite: bool = False):
     n = X.shape[0]
     X_reshape = X.reshape(n, -1)
 
-    if not overwrite and not tf.gfile.Exists(output_file):
+    if overwrite or not tf.gfile.Exists(output_file):
         with tf.io.TFRecordWriter(output_file) as record_writer:
             for i in tqdm(range(n)):
                 example = numpy_tfexample(X_reshape[i], y[i])
@@ -106,7 +106,7 @@ def numpy_tfrecord_shards(X, y, output_file: str, num_shards: int = 2):
 
 
 def files_tfrecord(paths: List[str], y: List[int], output_file: str, overwrite: bool = False, extractor=None):
-    if not overwrite and not tf.gfile.Exists(output_file):
+    if overwrite or not tf.gfile.Exists(output_file):
         with tf.io.TFRecordWriter(output_file) as record_writer:
             for i, path in enumerate(tqdm(paths)):
                 if extractor is None:

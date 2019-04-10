@@ -40,6 +40,7 @@ class ConvBN(Sequential):
         self.add(tf.keras.layers.Conv2D(filters=c, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
                                         padding='same', use_bias=False))
         self.add(tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps))
+        self.add(tf.keras.layers.Activation('relu'))
 
 
 class ConvBlk(Sequential):

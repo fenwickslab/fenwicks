@@ -1,10 +1,30 @@
-import tensorflow as tf
 import math
 import numpy as np
-import functools
+from .core import *
 
 
-class GlobalPools(tf.keras.Model):
+class Sequential(tf.keras.Model):
+    def __init__(self):
+        super().__init__()
+        self.fw_layers = []
+
+    def add(self, layer):
+        self.fw_layers.append(layer)
+
+    def call(self, x):
+        return apply_transforms(x, self.fw_layers)
+
+
+class Scaling(tf.keras.layers.Layer):
+    def __init__(self, weight):
+        super().__init__()
+        self.weight = weight
+
+    def call(self, x):
+        return x * self.weight
+
+
+class GlobalPools(tf.keras.layers.Layer):
     def __init__(self):
         super().__init__()
         self.gmp = tf.keras.layers.GlobalMaxPooling2D()
@@ -14,38 +34,33 @@ class GlobalPools(tf.keras.Model):
         return tf.keras.layers.concatenate([self.gmp(x), self.gap(x)])
 
 
-class DenseBlk(tf.keras.Model):
-    def __init__(self, c: int, drop_rate: float):
+class DenseBlk(Sequential):
+    def __init__(self, c: int, drop_rate: float = 0.0):
         super().__init__()
-        self.dense = tf.keras.layers.Dense(c, use_bias=False)
-        self.bn = tf.keras.layers.BatchNormalization()
-        self.dropout = tf.keras.layers.Dropout(drop_rate)
+        self.add(tf.keras.layers.Dense(c, use_bias=False))
+        self.add(tf.keras.layers.BatchNormalization())
+        self.add(tf.keras.layers.Activation('relu'))
+        if drop_rate > 0.0:
+            self.add(tf.keras.layers.Dropout(drop_rate))
 
-    def call(self, x):
-        return self.dropout(tf.nn.relu(self.bn(self.dense(x))))
 
-
-class ConvBN(tf.keras.Model):
-    def __init__(self, c: int, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99, bn_eps=0.001):
+class ConvBN(Sequential):
+    def __init__(self, c: int, kernel_size=3, strides=(1, 1), kernel_initializer='glorot_uniform', bn_mom=0.99,
+                 bn_eps=0.001):
         super().__init__()
-        self.conv = tf.keras.layers.Conv2D(filters=c, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
-                                           padding='same', use_bias=False)
-        self.bn = tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps)
-
-    def call(self, x):
-        return tf.nn.relu(self.bn(self.conv(x)))
+        self.add(tf.keras.layers.Conv2D(filters=c, kernel_size=kernel_size, strides=strides,
+                                        kernel_initializer=kernel_initializer, padding='same', use_bias=False))
+        self.add(tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps))
+        self.add(tf.keras.layers.Activation('relu'))
 
 
-class ConvBlk(tf.keras.Model):
+class ConvBlk(Sequential):
     def __init__(self, c, pool=None, convs=1, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99,
                  bn_eps=0.001):
         super().__init__()
-        self.conv_bn = ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
-                              bn_eps=bn_eps)
-        self.pool = tf.keras.layers.MaxPooling2D() if pool is None else pool
-
-    def call(self, x):
-        return self.pool(self.conv_bn(x))
+        self.add(ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
+                        bn_eps=bn_eps))
+        self.add(tf.keras.layers.MaxPooling2D() if pool is None else pool)
 
 
 class ConvResBlk(ConvBlk):
@@ -61,8 +76,7 @@ class ConvResBlk(ConvBlk):
 
     def call(self, inputs):
         h = super().call(inputs)
-        update_func = lambda x, y: y(x)
-        hh = functools.reduce(update_func, self.res, h)
+        hh = apply_transforms(h, self.res)
         return h + hh
 
 

@@ -1,7 +1,14 @@
-import tensorflow as tf
-from typing import List
+from ..core import *
 import numpy as np
 import math
+
+
+def cutout(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
+    shape = tf.shape(x)
+    x0 = tf.random.uniform([], 0, shape[0] + 1 - h, dtype=tf.int32)
+    y0 = tf.random.uniform([], 0, shape[1] + 1 - w, dtype=tf.int32)
+    x = replace_slice(x, tf.zeros([h, w, c]), [x0, y0, 0])
+    return x
 
 
 def distort_color(x: tf.Tensor, cb_distortion_range: float = 0.1, cr_distortion_range: float = 0.1) -> tf.Tensor:
@@ -65,9 +72,10 @@ def random_color(x: tf.Tensor) -> tf.Tensor:
     return x
 
 
-def random_flip(x: tf.Tensor) -> tf.Tensor:
+def random_flip(x: tf.Tensor, vertical_flip: bool = False) -> tf.Tensor:
     x = tf.image.random_flip_left_right(x)
-    x = tf.image.random_flip_up_down(x)
+    if vertical_flip:
+        x = tf.image.random_flip_up_down(x)
     return x
 
 
@@ -85,6 +93,13 @@ def random_translate(x: tf.Tensor, max_translation: int = 10) -> tf.Tensor:
     return tf.contrib.image.translate(x, translation=[tl[0], tl[1]])
 
 
+def ramdom_pad_crop(x: tf.Tensor, pad_size: int) -> tf.Tensor:
+    shape = tf.shape(x)
+    x = tf.pad(x, [[pad_size, pad_size], [pad_size, pad_size], [0, 0]], mode='reflect')
+    x = tf.random_crop(x, [shape[0], shape[1], 3])
+    return x
+
+
 def imagenet_normalize_tf(x: tf.Tensor) -> tf.Tensor:
     return (x - 0.5) * 2.0
 
@@ -95,10 +110,6 @@ def imagenet_normalize_pytorch(x: tf.Tensor) -> tf.Tensor:
 
 def imagenet_normalize_caffe(x: tf.Tensor) -> tf.Tensor:
     return x[..., ::-1] * 255 - [103.939, 116.779, 123.68]
-
-
-def cifar10_normalize_pytorch(x: tf.Tensor) -> tf.Tensor:
-    return (x - [125.30691805, 122.95039414, 113.86538318]) / [62.99321928, 62.08870764, 66.70489964]
 
 
 def get_train_transforms(h: int, w: int, normalizer=imagenet_normalize_tf) -> List:
@@ -117,17 +128,3 @@ def get_eval_transforms(h: int, w: int, center_frac: float = 1.0, normalizer=ima
             lambda x: tf.image.resize_images(x, [h, w]),
             normalizer,
             ]
-
-
-def get_cifar10_train_transforms() -> List:
-    return [cifar10_normalize_pytorch,
-            lambda x: tf.pad(x, [[4, 4], [4, 4], [0, 0]], mode='reflect'),
-            lambda x: tf.random_crop(x, [32, 32, 3]),
-            tf.image.random_flip_left_right,
-            ]
-
-
-def apply_transforms(x, tfms: List):
-    for tfm in tfms:
-        x = tfm(x)
-    return x

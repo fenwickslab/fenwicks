@@ -1,3 +1,4 @@
+from .core import *
 from . import datasets
 from . import io
 from .utils import colab_tpu
@@ -6,3 +7,5 @@ from . import layers
 from . import train
 from .vision.models import keras_models
 from .vision import transform
+
+from .layers import Sequential

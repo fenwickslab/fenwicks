@@ -1,4 +1,7 @@
 from .vision.transform import *
+from .core import apply_transforms
+
+import tensorflow as tf
 import numpy as np
 import random
 import threading
@@ -63,36 +66,37 @@ def bytes_tffeature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
 
-def numpy_tfexample(X, y):
-    feat_dict = {'image': float_tffeature(X.tolist()),
-                 'label': int_tffeature(y)}
-    return tf.train.Example(features=tf.train.Features(feature=feat_dict))
-
-
 def raw_image_tfexample(raw_image, y):
     feat_dict = {'image': bytes_tffeature(raw_image),
                  'label': int_tffeature(y)}
     return tf.train.Example(features=tf.train.Features(feature=feat_dict))
 
 
-def numpy_tfrecord(X, y, output_file: str):
+def numpy_tfexample(x, y):
+    feat_dict = {'image': float_tffeature(x.tolist()),
+                 'label': int_tffeature(y)}
+    return tf.train.Example(features=tf.train.Features(feature=feat_dict))
+
+
+def numpy_tfrecord(X, y, output_file: str, overwrite: bool = False):
     n = X.shape[0]
     X_reshape = X.reshape(n, -1)
 
-    with tf.io.TFRecordWriter(output_file) as record_writer:
-        for i in tqdm(range(n)):
-            example = numpy_tfexample(X_reshape[i], y[i])
-            record_writer.write(example.SerializeToString())
+    if overwrite or not tf.gfile.Exists(output_file):
+        with tf.io.TFRecordWriter(output_file) as record_writer:
+            for i in tqdm(range(n)):
+                example = numpy_tfexample(X_reshape[i], y[i])
+                record_writer.write(example.SerializeToString())
 
 
-def numpy_tfrecord_shards(X, y, output_file: str, num_shards: int = 2):
-    spacing = np.linspace(0, len(X), num_shards + 1).astype(np.int)
+def numpy_tfrecord_shards(x, y, output_file: str, num_shards: int = 2):
+    spacing = np.linspace(0, len(x), num_shards + 1).astype(np.int)
     ranges = [[spacing[i], spacing[i + 1]] for i in range(num_shards)]
 
     threads = []
     for i in range(num_shards):
         start, end = ranges[i][0], ranges[i][1]
-        args = (X[start:end], y[start:end],
+        args = (x[start:end], y[start:end],
                 f'{output_file}-{i:05d}-of-{num_shards:05d}')
         t = threading.Thread(target=numpy_tfrecord, args=args)
         t.start()
@@ -101,8 +105,8 @@ def numpy_tfrecord_shards(X, y, output_file: str, num_shards: int = 2):
     tf.train.Coordinator().join(threads)
 
 
-def files_tfrecord(paths: List[str], y: List[int], output_file: str, overwrite=False, extractor=None):
-    if not overwrite and not tf.gfile.Exists(output_file):
+def files_tfrecord(paths: List[str], y: List[int], output_file: str, overwrite: bool = False, extractor=None):
+    if overwrite or not tf.gfile.Exists(output_file):
         with tf.io.TFRecordWriter(output_file) as record_writer:
             for i, path in enumerate(tqdm(paths)):
                 if extractor is None:
@@ -139,6 +143,7 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = Fa
         args = (paths[start:end], y[start:end],
                 f'{output_file}-{i:05d}-of-{num_shards:05d}', overwrite, extractor)
         t = threading.Thread(target=files_tfrecord, args=args)
+        t = threading.Thread(target=files_tfrecord, args=args)
         t.start()
         threads.append(t)
 
@@ -146,12 +151,24 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = Fa
     return paths, y, labels
 
 
-def tfexample_image_parser(example, tfms):
+def tfexample_raw_parser(example):
     feat_dict = {'image': tf.FixedLenFeature([], tf.string),
                  'label': tf.FixedLenFeature([], tf.int64)}
     feat = tf.parse_single_example(example, features=feat_dict)
-    x, y = feat['image'], feat['label']
+    return feat['image'], feat['label']
 
+
+def tfexample_numpy_image_parser(example, h: int, w: int, c: int = 3, dtype=tf.float32):
+    feat_dict = {'image': tf.FixedLenFeature([h * w * c], dtype),
+                 'label': tf.FixedLenFeature([], tf.int64)}
+    feat = tf.parse_single_example(example, features=feat_dict)
+    x, y = feat['image'], feat['label']
+    x = tf.reshape(x, [h, w, c])
+    return x, y
+
+
+def tfexample_image_parser(example, tfms):
+    x, y = tfexample_raw_parser(example)
     x = tf.image.decode_image(x, channels=3, dtype=tf.float32)
     x = apply_transforms(x, tfms)
     return x, y
@@ -168,6 +185,16 @@ def tfrecord_fetch_dataset(fn: str):
     return dataset
 
 
+def crossval_ds(dataset, n_folds: int, val_fold_idx: int, training: bool = True):
+    if training:
+        trn_shards = itertools.chain(range(val_fold_idx), range(val_fold_idx + 1, n_folds))
+        update_func = lambda ds, i: ds.concatenate(dataset.shard(n_folds, i))
+        dataset = functools.reduce(update_func, trn_shards, dataset.shard(n_folds, next(trn_shards)))
+    else:
+        dataset = dataset.shard(n_folds, val_fold_idx)
+    return dataset
+
+
 def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = True, shuffle_buf_sz: int = 50000,
                 n_cores: int = 2, n_folds: int = 1, val_fold_idx: int = 0):
     dataset = tf.data.Dataset.list_files(file_pattern)
@@ -177,12 +204,7 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = Tru
     dataset = dataset.apply(fetcher)
 
     if n_folds > 1:
-        if training:
-            trn_shards = itertools.chain(range(val_fold_idx), range(val_fold_idx + 1, n_folds))
-            update_func = lambda ds, i: ds.concatenate(dataset.shard(n_folds, i))
-            dataset = functools.reduce(update_func, trn_shards, dataset.shard(n_folds, next(trn_shards)))
-        else:
-            dataset = dataset.shard(n_folds, val_fold_idx)
+        dataset = crossval_ds(dataset, n_folds, val_fold_idx, training)
 
     if training:
         dataset = dataset.shuffle(shuffle_buf_sz)
@@ -193,8 +215,27 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = Tru
     return dataset
 
 
-def get_gcs_dirs(bucket: str, project: str, model: str = 'custom') -> Tuple[str, str, str]:
+def numpy_ds(x, y, batch_size: int, training: bool = True, shuffle_buf_sz: int = 50000, n_folds: int = 1,
+             val_fold_idx: int = 0):
+    dataset = tf.data.Dataset.from_tensor_slices((x, y))
+
+    if n_folds > 1:
+        dataset = crossval_ds(dataset, n_folds, val_fold_idx, training)
+
+    if training:
+        dataset = dataset.shuffle(shuffle_buf_sz)
+        dataset = dataset.repeat()
+
+    dataset = dataset.batch(batch_size, drop_remainder=True)
+    dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
+    return dataset
+
+
+def get_model_dir(bucket: str, model: str):
+    return os.path.join(os.path.join(bucket, 'model'), model)
+
+
+def get_gcs_dirs(bucket: str, project: str) -> Tuple[str, str]:
     data_dir = os.path.join(os.path.join(bucket, 'data'), project)
     work_dir = os.path.join(os.path.join(bucket, 'work'), project)
-    model_dir = os.path.join(os.path.join(bucket, 'model'), model)
-    return data_dir, work_dir, model_dir
+    return data_dir, work_dir

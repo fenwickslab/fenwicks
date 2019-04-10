@@ -16,6 +16,15 @@ class Sequential(tf.keras.Model):
         return apply_transforms(x, self.fw_layers)
 
 
+class Scaling(tf.keras.layers.Layer):
+    def __init__(self, weight):
+        super().__init__()
+        self.weight = weight
+
+    def call(self, x):
+        return x * self.weight
+
+
 class GlobalPools(tf.keras.Model):
     def __init__(self):
         super().__init__()

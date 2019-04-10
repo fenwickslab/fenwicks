@@ -105,10 +105,6 @@ def imagenet_normalize_caffe(x: tf.Tensor) -> tf.Tensor:
     return x[..., ::-1] * 255 - [103.939, 116.779, 123.68]
 
 
-def cifar10_normalize_pytorch(x: tf.Tensor) -> tf.Tensor:
-    return (x - [125.30691805, 122.95039414, 113.86538318]) / [62.99321928, 62.08870764, 66.70489964]
-
-
 def get_train_transforms(h: int, w: int, normalizer=imagenet_normalize_tf) -> List:
     return [distorted_bbox_crop,
             lambda x: x.set_shape([None, None, 3]) or x,
@@ -127,9 +123,9 @@ def get_eval_transforms(h: int, w: int, center_frac: float = 1.0, normalizer=ima
             ]
 
 
-def get_cifar10_train_transforms() -> List:
-    return [cifar10_normalize_pytorch,
-            lambda x: tf.pad(x, [[4, 4], [4, 4], [0, 0]], mode='reflect'),
-            lambda x: tf.random_crop(x, [32, 32, 3]),
-            tf.image.random_flip_left_right,
-            ]
+# def get_cifar10_train_transforms() -> List:
+#     return [cifar10_normalize_pytorch,
+#             lambda x: tf.pad(x, [[4, 4], [4, 4], [0, 0]], mode='reflect'),
+#             lambda x: tf.random_crop(x, [32, 32, 3]),
+#             tf.image.random_flip_left_right,
+#             ]

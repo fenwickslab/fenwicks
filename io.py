@@ -66,26 +66,27 @@ def bytes_tffeature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
 
-def numpy_tfexample(X, y):
-    feat_dict = {'image': float_tffeature(X.tolist()),
-                 'label': int_tffeature(y)}
-    return tf.train.Example(features=tf.train.Features(feature=feat_dict))
-
-
 def raw_image_tfexample(raw_image, y):
     feat_dict = {'image': bytes_tffeature(raw_image),
                  'label': int_tffeature(y)}
     return tf.train.Example(features=tf.train.Features(feature=feat_dict))
 
 
-def numpy_tfrecord(X, y, output_file: str):
+def numpy_tfexample(X, y):
+    feat_dict = {'image': float_tffeature(X.tolist()),
+                 'label': int_tffeature(y)}
+    return tf.train.Example(features=tf.train.Features(feature=feat_dict))
+
+
+def numpy_tfrecord(X, y, output_file: str, overwrite: bool = False):
     n = X.shape[0]
     X_reshape = X.reshape(n, -1)
 
-    with tf.io.TFRecordWriter(output_file) as record_writer:
-        for i in tqdm(range(n)):
-            example = numpy_tfexample(X_reshape[i], y[i])
-            record_writer.write(example.SerializeToString())
+    if not overwrite and not tf.gfile.Exists(output_file):
+        with tf.io.TFRecordWriter(output_file) as record_writer:
+            for i in tqdm(range(n)):
+                example = numpy_tfexample(X_reshape[i], y[i])
+                record_writer.write(example.SerializeToString())
 
 
 def numpy_tfrecord_shards(X, y, output_file: str, num_shards: int = 2):
@@ -104,7 +105,7 @@ def numpy_tfrecord_shards(X, y, output_file: str, num_shards: int = 2):
     tf.train.Coordinator().join(threads)
 
 
-def files_tfrecord(paths: List[str], y: List[int], output_file: str, overwrite=False, extractor=None):
+def files_tfrecord(paths: List[str], y: List[int], output_file: str, overwrite: bool = False, extractor=None):
     if not overwrite and not tf.gfile.Exists(output_file):
         with tf.io.TFRecordWriter(output_file) as record_writer:
             for i, path in enumerate(tqdm(paths)):
@@ -141,6 +142,7 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = Fa
         start, end = ranges[i][0], ranges[i][1]
         args = (paths[start:end], y[start:end],
                 f'{output_file}-{i:05d}-of-{num_shards:05d}', overwrite, extractor)
+        t = threading.Thread(target=files_tfrecord, args=args)
         t = threading.Thread(target=files_tfrecord, args=args)
         t.start()
         threads.append(t)

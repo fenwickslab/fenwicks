@@ -3,7 +3,7 @@ import numpy as np
 from .core import *
 
 
-class Sequential(tf.keras.Model):
+class Sequential(tf.keras.layers.Layer):
     def __init__(self):
         super().__init__()
         self.fw_layers = []
@@ -24,7 +24,7 @@ class Scaling(tf.keras.layers.Layer):
         return x * self.weight
 
 
-class GlobalPools(tf.keras.Model):
+class GlobalPools(tf.keras.layers.Layer):
     def __init__(self):
         super().__init__()
         self.gmp = tf.keras.layers.GlobalMaxPooling2D()
@@ -39,6 +39,7 @@ class DenseBlk(Sequential):
         super().__init__()
         self.add(tf.keras.layers.Dense(c, use_bias=False))
         self.add(tf.keras.layers.BatchNormalization())
+        self.add(tf.keras.layers.Activation('relu'))
         self.add(tf.keras.layers.Dropout(drop_rate))
 
 

@@ -1,7 +1,14 @@
-import tensorflow as tf
-from typing import List
+from ..core import *
 import numpy as np
 import math
+
+
+def cutout(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
+    shape = tf.shape(x)
+    x0 = tf.random.uniform([], 0, shape[0] + 1 - h, dtype=tf.int32)
+    y0 = tf.random.uniform([], 0, shape[1] + 1 - w, dtype=tf.int32)
+    x = replace_slice(x, tf.zeros([h, w, c]), [x0, y0, 0])
+    return x
 
 
 def distort_color(x: tf.Tensor, cb_distortion_range: float = 0.1, cr_distortion_range: float = 0.1) -> tf.Tensor:

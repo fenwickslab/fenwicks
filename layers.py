@@ -35,7 +35,7 @@ class GlobalPools(tf.keras.layers.Layer):
 
 
 class DenseBlk(Sequential):
-    def __init__(self, c: int, drop_rate: float):
+    def __init__(self, c: int, drop_rate: float = 0.0):
         super().__init__()
         self.add(tf.keras.layers.Dense(c, use_bias=False))
         self.add(tf.keras.layers.BatchNormalization())

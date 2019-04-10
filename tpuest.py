@@ -1,6 +1,7 @@
 import tensorflow as tf
 from .utils.colab_tpu import TPU_ADDRESS
 import datetime
+import os
 
 
 def get_tpu_estimator(n_trn, n_val, model_func, work_dir, ws_dir=None, ws_vars=None, trn_bs=128, val_bs=None):
@@ -15,7 +16,8 @@ def get_tpu_estimator(n_trn, n_val, model_func, work_dir, ws_dir=None, ws_vars=N
         per_host_input_for_training=tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2)
 
     now = datetime.datetime.now()
-    work_dir = work_dir + f'-{now.year}-{now.month:02d}-{now.day:02d}-{now.hour:02d}:{now.minute:02d}:{now.second:02d}'
+    work_dir = os.path.join(work_dir,
+                            f'{now.year}-{now.month:02d}-{now.day:02d}-{now.hour:02d}:{now.minute:02d}:{now.second:02d}')
 
     trn_cfg = tf.contrib.tpu.RunConfig(cluster=cluster, model_dir=work_dir, tpu_config=tpu_cfg)
 

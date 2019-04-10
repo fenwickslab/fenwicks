@@ -46,7 +46,7 @@ class ConvBlk(tf.keras.Model):
         self._layers.append(tf.keras.layers.MaxPooling2D() if pool is None else pool)
 
     def call(self, x):
-        return apply_transforms(x, self._layers)
+        return apply_transforms(x, self.layers)
 
 
 class ConvResBlk(ConvBlk):

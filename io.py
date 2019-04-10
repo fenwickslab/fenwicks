@@ -72,8 +72,8 @@ def raw_image_tfexample(raw_image, y):
     return tf.train.Example(features=tf.train.Features(feature=feat_dict))
 
 
-def numpy_tfexample(X, y):
-    feat_dict = {'image': float_tffeature(X.tolist()),
+def numpy_tfexample(x, y):
+    feat_dict = {'image': float_tffeature(x.tolist()),
                  'label': int_tffeature(y)}
     return tf.train.Example(features=tf.train.Features(feature=feat_dict))
 
@@ -89,14 +89,14 @@ def numpy_tfrecord(X, y, output_file: str, overwrite: bool = False):
                 record_writer.write(example.SerializeToString())
 
 
-def numpy_tfrecord_shards(X, y, output_file: str, num_shards: int = 2):
-    spacing = np.linspace(0, len(X), num_shards + 1).astype(np.int)
+def numpy_tfrecord_shards(x, y, output_file: str, num_shards: int = 2):
+    spacing = np.linspace(0, len(x), num_shards + 1).astype(np.int)
     ranges = [[spacing[i], spacing[i + 1]] for i in range(num_shards)]
 
     threads = []
     for i in range(num_shards):
         start, end = ranges[i][0], ranges[i][1]
-        args = (X[start:end], y[start:end],
+        args = (x[start:end], y[start:end],
                 f'{output_file}-{i:05d}-of-{num_shards:05d}')
         t = threading.Thread(target=numpy_tfrecord, args=args)
         t.start()
@@ -185,6 +185,16 @@ def tfrecord_fetch_dataset(fn: str):
     return dataset
 
 
+def crossval_ds(dataset, n_folds: int, val_fold_idx: int, training: bool = True):
+    if training:
+        trn_shards = itertools.chain(range(val_fold_idx), range(val_fold_idx + 1, n_folds))
+        update_func = lambda ds, i: ds.concatenate(dataset.shard(n_folds, i))
+        dataset = functools.reduce(update_func, trn_shards, dataset.shard(n_folds, next(trn_shards)))
+    else:
+        dataset = dataset.shard(n_folds, val_fold_idx)
+    return dataset
+
+
 def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = True, shuffle_buf_sz: int = 50000,
                 n_cores: int = 2, n_folds: int = 1, val_fold_idx: int = 0):
     dataset = tf.data.Dataset.list_files(file_pattern)
@@ -194,18 +204,29 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = Tru
     dataset = dataset.apply(fetcher)
 
     if n_folds > 1:
-        if training:
-            trn_shards = itertools.chain(range(val_fold_idx), range(val_fold_idx + 1, n_folds))
-            update_func = lambda ds, i: ds.concatenate(dataset.shard(n_folds, i))
-            dataset = functools.reduce(update_func, trn_shards, dataset.shard(n_folds, next(trn_shards)))
-        else:
-            dataset = dataset.shard(n_folds, val_fold_idx)
+        dataset = crossval_ds(dataset, n_folds, val_fold_idx, training)
 
     if training:
         dataset = dataset.shuffle(shuffle_buf_sz)
         dataset = dataset.repeat()
 
     dataset = dataset.apply(mapper_batcher)
+    dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
+    return dataset
+
+
+def numpy_ds(x, y, batch_size: int, training: bool = True, shuffle_buf_sz: int = 50000, n_folds: int = 1,
+             val_fold_idx: int = 0):
+    dataset = tf.data.Dataset.from_tensor_slices((x, y))
+
+    if n_folds > 1:
+        dataset = crossval_ds(dataset, n_folds, val_fold_idx, training)
+
+    if training:
+        dataset = dataset.shuffle(shuffle_buf_sz)
+        dataset = dataset.repeat()
+
+    dataset = dataset.batch(batch_size, drop_remainder=True)
     dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
     return dataset
 

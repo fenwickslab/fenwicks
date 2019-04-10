@@ -45,10 +45,11 @@ class DenseBlk(Sequential):
 
 
 class ConvBN(Sequential):
-    def __init__(self, c: int, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99, bn_eps=0.001):
+    def __init__(self, c: int, kernel_size=3, strides=(1, 1), kernel_initializer='glorot_uniform', bn_mom=0.99,
+                 bn_eps=0.001):
         super().__init__()
-        self.add(tf.keras.layers.Conv2D(filters=c, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
-                                        padding='same', use_bias=False))
+        self.add(tf.keras.layers.Conv2D(filters=c, kernel_size=kernel_size, strides=strides,
+                                        kernel_initializer=kernel_initializer, padding='same', use_bias=False))
         self.add(tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps))
         self.add(tf.keras.layers.Activation('relu'))
 

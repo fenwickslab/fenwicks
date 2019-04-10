@@ -40,7 +40,8 @@ class DenseBlk(Sequential):
         self.add(tf.keras.layers.Dense(c, use_bias=False))
         self.add(tf.keras.layers.BatchNormalization())
         self.add(tf.keras.layers.Activation('relu'))
-        self.add(tf.keras.layers.Dropout(drop_rate))
+        if drop_rate > 0.0:
+            self.add(tf.keras.layers.Dropout(drop_rate))
 
 
 class ConvBN(Sequential):

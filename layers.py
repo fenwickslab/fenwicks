@@ -36,7 +36,7 @@ class ConvBN(tf.keras.Model):
         return tf.nn.relu(self.bn(self.conv(x)))
 
 
-class ConvBlk(tf.keras.Model):
+class ConvBlk(tf.keras.Sequential):
     def __init__(self, c, pool=None, convs=1, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99,
                  bn_eps=0.001):
         super().__init__()

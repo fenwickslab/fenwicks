@@ -3,7 +3,7 @@ import numpy as np
 from .core import *
 
 
-class Sequential(tf.keras.layers.Layer):
+class Sequential(tf.keras.Model):
     def __init__(self):
         super().__init__()
         self.fw_layers = []

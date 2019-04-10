@@ -214,7 +214,7 @@ def get_model_dir(bucket: str, model: str):
     return os.path.join(os.path.join(bucket, 'model'), model)
 
 
-def get_gcs_dirs(bucket: str, project: str) -> Tuple[str, str, str]:
+def get_gcs_dirs(bucket: str, project: str) -> Tuple[str, str]:
     data_dir = os.path.join(os.path.join(bucket, 'data'), project)
     work_dir = os.path.join(os.path.join(bucket, 'work'), project)
     return data_dir, work_dir

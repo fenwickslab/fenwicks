@@ -11,6 +11,7 @@ import functools
 
 from typing import List, Tuple
 from tqdm import tqdm_notebook as tqdm
+from tensorflow.contrib.tpu.python.tpu import datasets as tpu_datasets
 
 
 def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
@@ -198,8 +199,8 @@ def crossval_ds(dataset, n_folds: int, val_fold_idx: int, training: bool = True)
 def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = True, shuffle_buf_sz: int = 50000,
                 n_cores: int = 2, n_folds: int = 1, val_fold_idx: int = 0):
     if not file_pattern.startswith('gs://'):
-        dataset = tf.contrib.tpu.StreamingFilesDataset(file_pattern, filetype='tfrecord',
-                                                       batch_transfer_size=batch_size)
+        dataset = tpu_datasets.StreamingFilesDataset(file_pattern, filetype='tfrecord',
+                                                     batch_transfer_size=batch_size)
     else:
         dataset = tf.data.Dataset.list_files(file_pattern)
         fetcher = tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True)

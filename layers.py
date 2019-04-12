@@ -58,8 +58,9 @@ class ConvBlk(Sequential):
     def __init__(self, c, pool=None, convs=1, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99,
                  bn_eps=0.001):
         super().__init__()
-        self.add(ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom,
-                        bn_eps=bn_eps))
+        for i in range(convs):
+            self.add(
+                ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom, bn_eps=bn_eps))
         self.add(tf.keras.layers.MaxPooling2D() if pool is None else pool)
 
 

@@ -40,7 +40,7 @@ def find_files(data_dir: str, labels: List[str], shuffle=False, file_ext: str = 
 def create_clean_dir(path: str):
     if tf.gfile.Exists(path):
         tf.gfile.DeleteRecursively(path)
-    tf.gfile.MkDir(path)
+    tf.io.gfile.makedirs(path)
 
 
 def sub_dirs(data_dir: str, exclude_dirs: List[str] = []) -> List[str]:

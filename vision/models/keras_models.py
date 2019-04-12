@@ -130,15 +130,3 @@ def get_model(model_name: str, bucket: str, model_dir: str = None, include_top: 
     if model_dir is None:
         model_dir = get_model_dir(bucket, model_name)
     return models[model_name](model_dir, include_top, pooling, overwrite)
-
-
-def freeze(model):
-    model.trainable = False
-    for l in model.layers:
-        l.trainable = False
-
-
-def unfreeze(model):
-    model.trainable = True
-    for l in model.layers:
-        l.trainable = True

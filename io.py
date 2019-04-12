@@ -204,10 +204,10 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = Tru
     else:
         dataset = tf.data.Dataset.list_files(file_pattern)
         fetcher = tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True)
+        dataset = dataset.apply(fetcher)
 
     mapper_batcher = tf.data.experimental.map_and_batch(parser, batch_size=batch_size, num_parallel_batches=n_cores,
                                                         drop_remainder=True)
-    dataset = dataset.apply(fetcher)
 
     if n_folds > 1:
         dataset = crossval_ds(dataset, n_folds, val_fold_idx, training)

@@ -11,6 +11,7 @@ import functools
 
 from typing import List, Tuple
 from tqdm import tqdm_notebook as tqdm
+from tensorflow.contrib.tpu.python.tpu import datasets as tpu_datasets
 
 
 def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
@@ -40,7 +41,7 @@ def find_files(data_dir: str, labels: List[str], shuffle=False, file_ext: str = 
 def create_clean_dir(path: str):
     if tf.gfile.Exists(path):
         tf.gfile.DeleteRecursively(path)
-    tf.gfile.MkDir(path)
+    tf.io.gfile.makedirs(path)
 
 
 def sub_dirs(data_dir: str, exclude_dirs: List[str] = []) -> List[str]:
@@ -197,11 +198,16 @@ def crossval_ds(dataset, n_folds: int, val_fold_idx: int, training: bool = True)
 
 def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = True, shuffle_buf_sz: int = 50000,
                 n_cores: int = 2, n_folds: int = 1, val_fold_idx: int = 0):
-    dataset = tf.data.Dataset.list_files(file_pattern)
-    fetcher = tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True)
+    if not file_pattern.startswith('gs://'):
+        dataset = tpu_datasets.StreamingFilesDataset(file_pattern, filetype='tfrecord',
+                                                     batch_transfer_size=batch_size)
+    else:
+        dataset = tf.data.Dataset.list_files(file_pattern)
+        fetcher = tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True)
+        dataset = dataset.apply(fetcher)
+
     mapper_batcher = tf.data.experimental.map_and_batch(parser, batch_size=batch_size, num_parallel_batches=n_cores,
                                                         drop_remainder=True)
-    dataset = dataset.apply(fetcher)
 
     if n_folds > 1:
         dataset = crossval_ds(dataset, n_folds, val_fold_idx, training)

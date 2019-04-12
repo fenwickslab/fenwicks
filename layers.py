@@ -82,6 +82,15 @@ class ConvResBlk(ConvBlk):
 
 
 def init_pytorch(shape, dtype=tf.float32, partition_info=None):
+    """
+    Initialize a given layer, such as Conv2D or Dense, in the same way as PyTorch.
+
+    Args:
+    :param shape: Shape of the weights in the layer to be initialized.
+    :param dtype: Data type of the initial weights.
+    :param partition_info: Required by Keras. Not used.
+    :return: Random weights for a the given layer.
+    """
     fan = np.prod(shape[:-1])
     bound = 1 / math.sqrt(fan)
     return tf.random.uniform(shape, minval=-bound, maxval=bound, dtype=dtype)

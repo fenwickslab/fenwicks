@@ -41,6 +41,7 @@ def distorted_bbox_crop(x: tf.Tensor, min_object_covered: float = 0.1, aspect_ra
     return x
 
 
+# under construction
 def random_crop(x: tf.Tensor, boxes, scales) -> tf.Tensor:
     # Create different crops for an image
     crops = tf.image.crop_and_resize([x], boxes=boxes, box_ind=np.zeros(len(scales)), crop_size=(32, 32))
@@ -48,6 +49,7 @@ def random_crop(x: tf.Tensor, boxes, scales) -> tf.Tensor:
     return crops[tf.random_uniform(shape=[], minval=0, maxval=len(scales), dtype=tf.int32)]
 
 
+# under construction
 def random_zoom(x: tf.Tensor) -> tf.Tensor:
     # Generate 20 crop settings, ranging from a 1% to 20% crop.
     scales = list(np.arange(0.8, 1.0, 0.01))
@@ -64,6 +66,7 @@ def random_zoom(x: tf.Tensor) -> tf.Tensor:
     return tf.cond(choice < 0.5, lambda: x, lambda: random_crop(x, boxes, scales))
 
 
+# under construction
 def random_color(x: tf.Tensor) -> tf.Tensor:
     x = tf.image.random_hue(x, 0.08)
     x = tf.image.random_saturation(x, 0.6, 1.6)

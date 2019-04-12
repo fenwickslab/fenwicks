@@ -197,8 +197,13 @@ def crossval_ds(dataset, n_folds: int, val_fold_idx: int, training: bool = True)
 
 def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = True, shuffle_buf_sz: int = 50000,
                 n_cores: int = 2, n_folds: int = 1, val_fold_idx: int = 0):
-    dataset = tf.data.Dataset.list_files(file_pattern)
-    fetcher = tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True)
+    if not file_pattern.startswith('gs://'):
+        dataset = tf.contrib.tpu.StreamingFilesDataset(file_pattern, filetype='tfrecord',
+                                                       batch_transfer_size=batch_size)
+    else:
+        dataset = tf.data.Dataset.list_files(file_pattern)
+        fetcher = tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True)
+
     mapper_batcher = tf.data.experimental.map_and_batch(parser, batch_size=batch_size, num_parallel_batches=n_cores,
                                                         drop_remainder=True)
     dataset = dataset.apply(fetcher)

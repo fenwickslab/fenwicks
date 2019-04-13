@@ -3,6 +3,7 @@ import tensorflow as tf
 import plotly.plotly
 import plotly.graph_objs as go
 import numpy as np
+from IPython.display import display
 
 
 def configure_plotly_browser_state():

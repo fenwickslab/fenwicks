@@ -19,7 +19,7 @@ def configure_plotly_browser_state():
     '''))
 
 
-def init_plotly():
+def setup():
     tf.enable_eager_execution()
     plotly.offline.init_notebook_mode(connected=True)
     IPython.get_ipython().events.register('pre_run_cell', configure_plotly_browser_state)

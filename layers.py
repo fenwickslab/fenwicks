@@ -3,7 +3,13 @@ import numpy as np
 from .core import *
 
 
+# todo: SequentialLayer
 class Sequential(tf.keras.Model):
+    """
+    A sequential model (or composite layer), which executes its internal layers sequentially in the same order they are
+    added. Sequential can be initialized as an empty model / layer. More layers can be added later on.
+    """
+
     def __init__(self):
         super().__init__()
         self.fw_layers = []
@@ -16,7 +22,12 @@ class Sequential(tf.keras.Model):
 
 
 class Scaling(tf.keras.layers.Layer):
-    def __init__(self, weight):
+    """
+    Scaling layer, commonly used right before a Softmax activation, since Softmax is sensitive to scaling. It simply
+    multiplies its input by a constant weight (not trainable), which is a hyper-parameter.
+    """
+
+    def __init__(self, weight: float):
         super().__init__()
         self.weight = weight
 
@@ -25,6 +36,10 @@ class Scaling(tf.keras.layers.Layer):
 
 
 class GlobalPools(tf.keras.layers.Layer):
+    """
+    A concatenation of GlobalMaxPooling2D and GlobalAveragiePooling2D.
+    """
+
     def __init__(self):
         super().__init__()
         self.gmp = tf.keras.layers.GlobalMaxPooling2D()
@@ -34,8 +49,18 @@ class GlobalPools(tf.keras.layers.Layer):
         return tf.keras.layers.concatenate([self.gmp(x), self.gap(x)])
 
 
+# todo: change name to DenseBN
+# todo: add kernel initializer option
 class DenseBlk(Sequential):
+    """
+    A Dense layer followed by BatchNormalization, ReLU activation, and optionally Dropout.
+    """
+
     def __init__(self, c: int, drop_rate: float = 0.0):
+        """
+        :param c: number of neurons in the Dense layer.
+        :param drop_rate: Dropout rate, i.e., 1-keep_probability. Default: no dropout.
+        """
         super().__init__()
         self.add(tf.keras.layers.Dense(c, use_bias=False))
         self.add(tf.keras.layers.BatchNormalization())
@@ -45,6 +70,10 @@ class DenseBlk(Sequential):
 
 
 class ConvBN(Sequential):
+    """
+    A Conv2D followed by BatchNormalization and ReLU activation.
+    """
+
     def __init__(self, c: int, kernel_size=3, strides=(1, 1), kernel_initializer='glorot_uniform', bn_mom=0.99,
                  bn_eps=0.001):
         super().__init__()
@@ -55,6 +84,10 @@ class ConvBN(Sequential):
 
 
 class ConvBlk(Sequential):
+    """
+    A block of `ConvBN` layers, followed by a pooling layer.
+    """
+
     def __init__(self, c, pool=None, convs=1, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99,
                  bn_eps=0.001):
         super().__init__()
@@ -65,6 +98,10 @@ class ConvBlk(Sequential):
 
 
 class ConvResBlk(ConvBlk):
+    """
+    A `ConvBlk` with additional residual `ConvBN` layers.
+    """
+
     def __init__(self, c, pool=None, convs=1, res_convs=2, kernel_size=3, kernel_initializer='glorot_uniform',
                  bn_mom=0.99, bn_eps=0.001):
         super().__init__(c, pool=pool, convs=convs, kernel_size=kernel_size, kernel_initializer=kernel_initializer,

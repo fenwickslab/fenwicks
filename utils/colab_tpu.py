@@ -3,7 +3,7 @@ import tensorflow as tf
 import os
 import json
 
-TPU_ADDRESS = f'grpc://{os.environ["COLAB_TPU_ADDR"]}'
+TPU_ADDRESS = f'grpc://{os.environ["COLAB_TPU_ADDR"]}' if "COLAB_TPU_ADDR" in os.environ else None
 
 
 def setup_gcs():

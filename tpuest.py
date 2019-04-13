@@ -1,10 +1,27 @@
 import tensorflow as tf
+
+# todo: non-colab environment
 from .utils.colab_tpu import TPU_ADDRESS
 import datetime
 import os
 
 
-def get_tpu_estimator(n_trn, n_val, model_func, work_dir, ws_dir=None, ws_vars=None, trn_bs=128, val_bs=None):
+# todo: make validation set optional.
+def get_tpu_estimator(n_trn, n_val, model_func, work_dir, ws_dir=None, ws_vars=None, trn_bs=128,
+                      val_bs=None) -> tf.contrib.tpu.TPUEstimator:
+    """
+    Create a TPUEstimator object ready for training and evaluation.
+
+    :param n_trn: Total number of training records.
+    :param n_val: Total number of validation records.
+    :param model_func: Model function for TPUEstimator. Can be built with `get_clf_model_func'.
+    :param work_dir: Directory for storing intermediate files (such as checkpoints) generated during training.
+    :param ws_dir: Directory containing warm start files, usually a pre-trained model checkpoint.
+    :param ws_vars: List of warm start variables, usually from a pre-trained model.
+    :param trn_bs: Batch size for training.
+    :param val_bs: Batch size for validation. Default: all validation records in a single batch.
+    :return: A TPUEstimator object, ready for training and evaluation.
+    """
     steps_per_epoch = n_trn // trn_bs
     if val_bs is None:
         val_bs = n_val
@@ -29,6 +46,19 @@ def get_tpu_estimator(n_trn, n_val, model_func, work_dir, ws_dir=None, ws_vars=N
 
 
 def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN):
+    """
+    Build a model function for a classification task to be used in a TPUEstimator, based on a given model architecture
+    and optimizer. Both the model architecture and optimizer must be callables, not model or optimizer objects. The
+    reason for this design is to ensure that all variables are created in the same Tensorflow graph, which is created
+    by the TPUEstimator.
+
+    :param model_arch: Model architecture: a callable that builds a neural net model.
+    :param opt_func: Optimization function: a callable that returns an optimizer.
+    :param reduction: Whether to average (`tf.losses.Reduction.MEAN`) or sum (`tf.losses.Reduction.SUM`) losses
+                      for different training records. Default: average.
+    :return: Model function ready for TPUEstimator.
+    """
+
     def model_func(features, labels, mode, params):
         phase = 1 if mode == tf.estimator.ModeKeys.TRAIN else 0
         tf.keras.backend.set_learning_phase(phase)

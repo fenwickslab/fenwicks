@@ -36,6 +36,7 @@ def adam_sgdr_one_cycle(total_steps: int, lr: float = 0.001):
     """
     def opt_func():
         step = tf.train.get_or_create_global_step()
+        # todo: use tf.train.cosine_decay for one cycle
         lr_func = tf.train.cosine_decay_restarts(lr, step, total_steps)
         return tf.train.AdamOptimizer(learning_rate=lr_func)
 

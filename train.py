@@ -16,7 +16,7 @@ def adam_optimizer(lr_func):
         lr = lr_func()
         return tf.train.AdamOptimizer(lr)
 
-    return opt_func()
+    return opt_func
 
 
 def adam_exp_decay(base_lr: float, init_lr: float, decay_steps: int, decay_rate: float = 1 / math.e):

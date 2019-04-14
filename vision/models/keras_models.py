@@ -61,6 +61,7 @@ def get_resnet50_v2(model_dir: str, include_top: bool = False, pooling: str = No
     return model_func, weight_dir, weight_vars, img_size, normalizer
 
 
+# under construction
 def get_resnext50(model_dir: str, include_top: bool = False, pooling: str = None, overwrite: bool = False) -> Tuple:
     img_size = 224
     model_func = lambda: resnext.ResNeXt50(include_top=include_top, weights=None, pooling=pooling)
@@ -107,6 +108,7 @@ def get_xception(model_dir: str, include_top: bool = False, pooling: str = None,
     return model_func, weight_dir, weight_vars, img_size, normalizer
 
 
+# under construction
 def get_nasnet_large(model_dir: str, include_top: bool = False, pooling: str = None, overwrite: bool = False) -> Tuple:
     img_size = 331
     model_func = lambda: nasnet.NASNetLarge(include_top=include_top, weights=None, pooling=pooling)

@@ -31,38 +31,19 @@ def simulate_lr_func(lr_func, step, total_steps):
     for i in range(total_steps):
         step.assign(i)
         lr = lr_func()
-        lr_values[i] = lr.numpy()
-        step.assign(i)
+        lr_values[i] = lr
 
-    return lr_values
+    with tf.Session() as sess:
+        x = sess.run(lr_values)
+
+    return x
 
 
 def plot_lr_func(lr_func, total_steps):
     step = tf.train.get_or_create_global_step()
-    trace = go.Scatter(
-        y=simulate_lr_func(lr_func, step, total_steps),
-    )
-
+    trace = go.Scatter(y=simulate_lr_func(lr_func, step, total_steps))
     data = [trace]
-
-    layout = go.Layout(
-        autosize=False,
-        width=350,
-        height=350,
-        yaxis=go.layout.YAxis(
-            title='Learning rate',
-        ),
-        xaxis=go.layout.XAxis(
-            title='Training step',
-        ),
-        margin=go.layout.Margin(
-            l=80,
-            r=20,
-            b=40,
-            t=20,
-        ),
-    )
-
+    layout = go.Layout(autosize=False, width=350, height=350, yaxis=go.layout.YAxis(title='Learning rate'),
+                       xaxis=go.layout.XAxis(title='Training step'), margin=go.layout.Margin(l=80, r=20, b=40, t=20))
     fig = go.Figure(data=data, layout=layout)
-
     plotly.offline.iplot(fig)

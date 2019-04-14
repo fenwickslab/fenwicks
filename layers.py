@@ -69,6 +69,13 @@ class DenseBlk(Sequential):
             self.add(tf.keras.layers.Dropout(drop_rate))
 
 
+class Classifier(Sequential):
+    def __init__(self, n_classes: int, kernel_initializer='glorot_uniform', weight=1.0):
+        super().__init__()
+        self.add(tf.keras.layers.Dense(n_classes, kernel_initializer=kernel_initializer, use_bias=False))
+        self.add(Scaling(weight))
+
+
 class ConvBN(Sequential):
     """
     A Conv2D followed by BatchNormalization and ReLU activation.

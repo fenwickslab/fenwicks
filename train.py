@@ -2,13 +2,21 @@ import tensorflow as tf
 import math
 
 
-def exp_decay_lr(base_lr: float, init_lr: float, decay_steps: int, decay_rate: float = 1 / math.e):
+def exp_decay_lr(init_lr: float, decay_steps: int, base_lr: float = 0, decay_rate: float = 1 / math.e):
     def lr_func(step: tf.Tensor = None) -> tf.Tensor:
         if step is None:
             step = tf.train.get_or_create_global_step()
         return base_lr + tf.train.exponential_decay(init_lr, step, decay_steps, decay_rate)
 
     return lr_func
+
+
+def adam_optimizer(lr_func):
+    def opt_func():
+        lr = lr_func()
+        return tf.train.AdamOptimizer(lr)
+
+    return opt_func()
 
 
 def adam_exp_decay(base_lr: float, init_lr: float, decay_steps: int, decay_rate: float = 1 / math.e):

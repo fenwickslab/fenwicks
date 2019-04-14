@@ -2,6 +2,11 @@ import tensorflow as tf
 import math
 
 
+def exp_decay_lr(base_lr: float, init_lr: float, decay_steps: int, decay_rate: float = 1 / math.e):
+    step = tf.train.get_or_create_global_step()
+    return lambda: base_lr + tf.train.exponential_decay(init_lr, step, decay_steps, decay_rate)
+
+
 def adam_exp_decay(base_lr: float, init_lr: float, decay_steps: int, decay_rate: float = 1 / math.e):
     """
     Get Adam optimizer function with exponential learning rate decay.
@@ -18,6 +23,7 @@ def adam_exp_decay(base_lr: float, init_lr: float, decay_steps: int, decay_rate:
     :param decay_rate: the decay rate.
     :return: optimizer function satisfying the above descriptions.
     """
+
     def opt_func():
         step = tf.train.get_or_create_global_step()
         lr_func = base_lr + tf.train.exponential_decay(init_lr, step, decay_steps, decay_rate)
@@ -34,6 +40,7 @@ def adam_sgdr_one_cycle(total_steps: int, lr: float = 0.001):
     :param lr: initial learning rate, also the highest value.
     :return: optimizer function satisfying the above descriptions.
     """
+
     def opt_func():
         step = tf.train.get_or_create_global_step()
         # todo: use tf.train.cosine_decay for one cycle
@@ -70,6 +77,7 @@ def sgd_triangle_one_cycle(total_steps: int, lr: float, warmup_steps: int, mom: 
     :param mom: momentum for SGD
     :return: optimizer function satisfying the above descriptions.
     """
+
     def opt_func():
         step = tf.train.get_or_create_global_step()
         lr_func = lambda: triangle_lr_one_cycle(lr, step, total_steps, warmup_steps)

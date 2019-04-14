@@ -21,7 +21,6 @@ def configure_plotly_browser_state():
 
 
 def setup():
-    tf.enable_eager_execution()
     plotly.offline.init_notebook_mode(connected=True)
     IPython.get_ipython().events.register('pre_run_cell', configure_plotly_browser_state)
 
@@ -54,7 +53,7 @@ def plot_lr_func(lr_func, total_steps):
             title='Learning rate',
         ),
         xaxis=go.layout.XAxis(
-            title='Global step',
+            title='Training step',
         ),
         margin=go.layout.Margin(
             l=80,

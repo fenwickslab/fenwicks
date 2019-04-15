@@ -7,5 +7,7 @@ from . import layers
 from . import train
 from .vision.models import keras_models
 from .vision import transform
+from .audio import io as audio_io
 
 from .layers import Sequential
+from .visualization import plotly as plt

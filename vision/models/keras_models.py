@@ -1,5 +1,6 @@
 import tensorflow as tf
 import os
+import functools
 
 from ...io import get_model_dir, create_clean_dir
 from ..transform import imagenet_normalize_tf, imagenet_normalize_caffe, imagenet_normalize_pytorch
@@ -41,7 +42,7 @@ KerasModel = namedtuple('KerasModel', ['model_func', 'weight_dir', 'weight_vars'
 
 def get_keras_model(keras_model, img_size, normalizer, model_dir: str, include_top: bool = False, pooling: str = None,
                     overwrite: bool = False) -> KerasModel:
-    model_func = lambda: keras_model(include_top=include_top, weights=None, pooling=pooling)
+    model_func = functools.partial(keras_model, include_top=include_top, weights=None, pooling=pooling)
     weight_dir, weight_vars = keras_model_weights(keras_model, model_dir=model_dir, include_top=include_top,
                                                   overwrite=overwrite)
     keras_model = KerasModel(model_func, weight_dir, weight_vars, img_size, normalizer)

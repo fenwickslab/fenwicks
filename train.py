@@ -71,23 +71,6 @@ def cosine_lr(init_lr: float, total_steps: int):
     return lr_func
 
 
-def triangle_lr_one_cycle(lr: float, step: tf.Tensor, total_steps: int, warmup_steps: int) -> tf.Tensor:
-    """
-    One cycle triangular learning rate schedule.
-
-    :param lr: peak learning rate.
-    :param step: global_step Tensor.
-    :param total_steps: total number of training steps.
-    :param warmup_steps: number of steps in the warmup phase, in which the learning rate increases linearly.
-    :return: learning rate Tensor.
-    """
-    step = tf.cast(step, tf.float32)
-    warmup_sched = lambda: step * lr / warmup_steps
-    decay_sched = lambda: (total_steps - step) * lr / (total_steps - warmup_steps)
-    lr_sched = tf.cond(tf.less_equal(step, warmup_steps), warmup_sched, decay_sched)
-    return lr_sched
-
-
 def adam_optimizer(lr_func):
     """
     Adam optimizer with a given learning rate schedule.

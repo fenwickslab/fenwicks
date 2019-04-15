@@ -6,8 +6,8 @@ from ...io import get_model_dir, create_clean_dir
 from ..transform import imagenet_normalize_tf, imagenet_normalize_caffe, imagenet_normalize_pytorch
 from typing import List, Tuple
 from collections import namedtuple
-from keras_applications import vgg16, vgg19, resnet, resnext, resnet_v2, inception_resnet_v2, inception_v3, xception, \
-    mobilenet, mobilenet_v2, nasnet, densenet
+from keras_applications import vgg16, vgg19, resnet, resnet50, resnext, resnet_v2, inception_resnet_v2, inception_v3, \
+    xception, mobilenet, mobilenet_v2, nasnet, densenet
 
 
 def get_ws_vars(ws_ckpt_fn: str) -> List[str]:
@@ -55,7 +55,7 @@ def get_model(model_name: str, bucket: str, model_dir: str = None, include_top: 
         'VGG16': dict(keras_model=vgg16.VGG16, img_size=224, normalizer=imagenet_normalize_caffe),
         'VGG19': dict(keras_model=vgg19.VGG19, img_size=224, normalizer=imagenet_normalize_caffe),
 
-        'ResNet50': dict(keras_model=resnet.ResNet50, img_size=224, normalizer=imagenet_normalize_caffe),
+        'ResNet50': dict(keras_model=resnet50.ResNet50, img_size=224, normalizer=imagenet_normalize_caffe),
         'ResNet101': dict(keras_model=resnet.ResNet101, img_size=224, normalizer=imagenet_normalize_caffe),
         'ResNet152': dict(keras_model=resnet.ResNet152, img_size=224, normalizer=imagenet_normalize_caffe),
 

@@ -39,6 +39,13 @@ def simulate_lr_func(lr_func, total_steps):
 
 
 def plot_lr_func(lr_func, total_steps):
+    """
+    Draw an interactive plot for learning rate vs. training step.
+
+    :param lr_func: Learning rate schedule function.
+    :param total_steps: Total number of training steps.
+    :return: None.
+    """
     trace = go.Scatter(y=simulate_lr_func(lr_func, total_steps))
     data = [trace]
     layout = go.Layout(autosize=False, width=350, height=350, yaxis=go.layout.YAxis(title='Learning rate'),

@@ -86,6 +86,20 @@ def adam_optimizer(lr_func):
     return opt_func
 
 
+class SGD(tf.train.MomentumOptimizer):
+    def __init__(self, lr: tf.Tensor, mom: float, wd: float):
+        super().__init__(lr, momentum=mom)
+        self.wd = wd
+
+    def compute_gradients(self, loss, var_list):
+        grads = super().compute_gradients(loss, var_list)
+        l = len(grads)
+        for i in range(l):
+            grads[i] += var_list[i] * self.wd
+
+        return grads
+
+
 def sgd_optimizer(lr_func, mom: float = 0.9):
     """
     SGD with momentum optimizer with a given learning rate schedule.

@@ -74,7 +74,9 @@ def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN)
 
         # train_op = tf.contrib.training.create_train_op(loss, optimizer)
         var = model.trainable_variables
-        grads = tf.gradients(loss, var)
+        grads = opt.compute_gradients(loss, var)
+        # grads = tf.gradients(loss, var)
+
         with tf.control_dependencies(model.get_updates_for(features)):
             train_op = opt.apply_gradients(zip(grads, var), global_step=step)
 

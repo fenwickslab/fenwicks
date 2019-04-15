@@ -86,17 +86,35 @@ def adam_optimizer(lr_func):
     return opt_func
 
 
-def sgd_optimizer(lr_func, mom: float = 0.9):
+class SGD(tf.train.MomentumOptimizer):
+    def __init__(self, lr: tf.Tensor, mom: float, wd: float):
+        super().__init__(lr, momentum=mom, use_nesterov=True)
+        self.wd = wd
+
+    def compute_gradients(self, loss, var_list=None):
+        grads_and_vars = super().compute_gradients(loss, var_list=var_list)
+
+        l = len(grads_and_vars)
+        for i in range(l):
+            g, v = grads_and_vars[i]
+            g += v * self.wd
+            grads_and_vars[i] = (g, v)
+
+        return grads_and_vars
+
+
+def sgd_optimizer(lr_func, mom: float = 0.9, wd: float = 0.0):
     """
-    SGD with momentum optimizer with a given learning rate schedule.
+    SGD with Nesterov momentum optimizer with a given learning rate schedule.
 
     :param lr_func: learning rate schedule function.
     :param mom: momentum for SGD. Default: 0.9
+    :param wd: weight decay factor. Default: no weight decay.
     :return: optimizer function satisfying the above descriptions.
     """
 
     def opt_func():
         lr = lr_func()
-        return tf.train.MomentumOptimizer(lr, momentum=mom, use_nesterov=True)
+        return SGD(lr, mom=mom, wd=wd)
 
     return opt_func

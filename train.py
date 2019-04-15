@@ -52,6 +52,25 @@ def triangular_lr(init_lr: float, total_steps: int, warmup_steps: int):
     return lr_func
 
 
+def cosine_lr(init_lr: float, total_steps: int):
+    """
+    Get Adam optimizer function with one-cycle SGD with Warm Restarts, a.k.a. cosine learning rate decay.
+
+    :param init_lr: initial learning rate, also the highest value.
+    :param total_steps: total number of training steps.
+    :return: learning rate schedule function satisfying the above descriptions. The function has one optional parameter:
+             the training step count `step`. `step` defaults to `None`, in which case the function gets or creates
+             Tensorflow's `global_step`.
+    """
+
+    def lr_func(step: tf.Tensor = None) -> tf.Tensor:
+        if step is None:
+            step = tf.train.get_or_create_global_step()
+        return tf.train.cosine_decay_restarts(init_lr, step, total_steps)
+
+    return lr_func
+
+
 def triangle_lr_one_cycle(lr: float, step: tf.Tensor, total_steps: int, warmup_steps: int) -> tf.Tensor:
     """
     One cycle triangular learning rate schedule.
@@ -96,23 +115,5 @@ def sgd_optimizer(lr_func, mom: float = 0.9):
     def opt_func():
         lr = lr_func()
         return tf.train.MomentumOptimizer(lr, momentum=mom, use_nesterov=True)
-
-    return opt_func
-
-
-def adam_sgdr_one_cycle(total_steps: int, lr: float = 0.001):
-    """
-    Get Adam optimizer function with one-cycle SGD with Warm Restarts, a.k.a. cosine learning rate decay.
-
-    :param total_steps: total number of training steps.
-    :param lr: initial learning rate, also the highest value.
-    :return: optimizer function satisfying the above descriptions.
-    """
-
-    def opt_func():
-        step = tf.train.get_or_create_global_step()
-        # todo: use tf.train.cosine_decay for one cycle
-        lr_func = tf.train.cosine_decay_restarts(lr, step, total_steps)
-        return tf.train.AdamOptimizer(learning_rate=lr_func)
 
     return opt_func

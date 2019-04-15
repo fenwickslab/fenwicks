@@ -73,12 +73,9 @@ def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN)
         opt = tf.contrib.tpu.CrossShardOptimizer(opt, reduction=reduction)
 
         # train_op = tf.contrib.training.create_train_op(loss, optimizer)
-        var = model.trainable_variables
-        grads = opt.compute_gradients(loss, var)
-        # grads = tf.gradients(loss, var)
-
+        grads_and_vars = opt.compute_gradients(loss)
         with tf.control_dependencies(model.get_updates_for(features)):
-            train_op = opt.apply_gradients(zip(grads, var), global_step=step)
+            train_op = opt.apply_gradients(grads_and_vars, global_step=step)
 
         classes = tf.math.argmax(logits, axis=-1)
         metric_func = lambda classes, labels: {'accuracy': tf.metrics.accuracy(classes, labels)}

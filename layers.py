@@ -49,21 +49,21 @@ class GlobalPools(tf.keras.layers.Layer):
         return tf.keras.layers.concatenate([self.gmp(x), self.gap(x)])
 
 
-# todo: change name to DenseBN
-# todo: add kernel initializer option
-class DenseBlk(Sequential):
+class DenseBN(Sequential):
     """
     A Dense layer followed by BatchNormalization, ReLU activation, and optionally Dropout.
     """
 
-    def __init__(self, c: int, drop_rate: float = 0.0):
+    def __init__(self, c: int, kernel_initializer='glorot_uniform', bn_mom=0.99,
+                 bn_eps=0.001, drop_rate: float = 0.0):
         """
         :param c: number of neurons in the Dense layer.
+        :param kernel_initializer: initialization method for the Dense layer.
         :param drop_rate: Dropout rate, i.e., 1-keep_probability. Default: no dropout.
         """
         super().__init__()
-        self.add(tf.keras.layers.Dense(c, use_bias=False))
-        self.add(tf.keras.layers.BatchNormalization())
+        self.add(tf.keras.layers.Dense(c, kernel_initializer=kernel_initializer, use_bias=False))
+        self.add(tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps))
         self.add(tf.keras.layers.Activation('relu'))
         if drop_rate > 0.0:
             self.add(tf.keras.layers.Dropout(drop_rate))

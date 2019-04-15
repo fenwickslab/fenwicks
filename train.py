@@ -91,8 +91,8 @@ class SGD(tf.train.MomentumOptimizer):
         super().__init__(lr, momentum=mom, use_nesterov=True)
         self.wd = wd
 
-    def compute_gradients(self, loss):
-        grads_and_vars = super().compute_gradients(loss)
+    def compute_gradients(self, loss, var_list=None):
+        grads_and_vars = super().compute_gradients(loss, var_list=var_list)
 
         l = len(grads_and_vars)
         for i in range(l):

@@ -1,7 +1,7 @@
 from .core import *
 from . import datasets
 from . import io
-from .utils import colab_tpu
+from .utils import colab as colab_utils
 from . import tpuest
 from . import layers
 from . import train

@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 # todo: non-colab environment
-from .utils.colab_tpu import TPU_ADDRESS
+from .utils.colab import TPU_ADDRESS
 import datetime
 import os
 

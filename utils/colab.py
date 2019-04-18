@@ -1,3 +1,5 @@
+from ..io import create_clean_dir
+
 from google import colab
 import tensorflow as tf
 import os
@@ -19,9 +21,7 @@ def upload_files():
     Upload one or more files from physical computer to Colab's virtual machine.
     :return: None.
     """
-    uploaded = colab.files.upload()
-    for fn in uploaded.keys():
-        tf.logging.info(f'User uploaded file "{fn}" with length {len(uploaded[fn])} bytes')
+    colab.files.upload()
 
 
 def download_file(fn: str):
@@ -36,3 +36,9 @@ def download_file(fn: str):
 
 def mount_google_drive():
     colab.drive.mount('/content/gdrive')
+
+
+def kaggle_setup_from_gdrive():
+    mount_google_drive()
+    create_clean_dir('/root/.kaggle/')
+    tf.gfile.Copy('./gdrive/My Drive/kaggle.json', '/root/.kaggle/kaggle.json')

@@ -58,15 +58,28 @@ def find_files(data_dir: str, labels: List[str], shuffle=False, file_ext: str = 
 
 
 def create_clean_dir(path: str):
+    """
+    Create a new directory specified by `path`. If this directory already exists, delete all its files and
+    subdirectories.
+
+    :param path: Path to the directory to be created or cleaned.
+    :return: None
+    """
     if tf.gfile.Exists(path):
         tf.gfile.DeleteRecursively(path)
     tf.io.gfile.makedirs(path)
 
 
-def unzip(fn: str, report_freq: int = 10000):
-    for i, entry in enumerate(libarchive.public.file_pour(fn)):
-        if i != 0 and i % report_freq == 0:
-            tf.logging.info(f'{i} files extracted.')
+def unzip(fn: str):
+    """
+    Extract a .zip or .7z file.
+
+    :param fn: Name of the file to be decompressed.
+    :param report_freq: Frequency of progress reporting.
+    :return: None.
+    """
+    for _ in tqdm(libarchive.public.file_pour(fn)):
+        pass
 
 
 def sub_dirs(data_dir: str, exclude_dirs: List[str] = []) -> List[str]:

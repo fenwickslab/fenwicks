@@ -13,6 +13,8 @@ from typing import List, Tuple
 from tqdm import tqdm_notebook as tqdm
 from tensorflow.contrib.tpu.python.tpu import datasets as tpu_datasets
 
+import libarchive.public
+
 
 def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
     """
@@ -59,6 +61,12 @@ def create_clean_dir(path: str):
     if tf.gfile.Exists(path):
         tf.gfile.DeleteRecursively(path)
     tf.io.gfile.makedirs(path)
+
+
+def unzip(fn: str, report_freq: int = 10000):
+    for i, entry in enumerate(libarchive.public.file_pour(fn)):
+        if i != 0 and i % report_freq == 0:
+            tf.logging.info(f'{i} files extracted.')
 
 
 def sub_dirs(data_dir: str, exclude_dirs: List[str] = []) -> List[str]:

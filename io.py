@@ -3,6 +3,7 @@ from .core import apply_transforms
 
 import tensorflow as tf
 import numpy as np
+import pandas as pd
 import random
 import threading
 import os
@@ -29,6 +30,13 @@ def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
     return matching_files
 
 
+def shuffle_paths_labels(paths: List[str], labels: List[int]) -> Tuple[List[str], List[int]]:
+    c = list(zip(paths, labels))
+    random.shuffle(c)
+    paths, labels = zip(*c)
+    return list(paths), list(labels)
+
+
 def find_files(data_dir: str, labels: List[str], shuffle=False, file_ext: str = 'jpg') -> Tuple[List[str], List[int]]:
     """
     Find all input files wth a given extension in specific subdirectories of a given data directory. Optionally shuffle
@@ -38,7 +46,7 @@ def find_files(data_dir: str, labels: List[str], shuffle=False, file_ext: str = 
     :param labels: Set of subdirectories (named after labels) in which to find files.
     :param shuffle: Whether to shuffle the outputs.
     :param file_ext: File extension. ONly find files with this extension.
-    :return: Two lists: one for file paths and the other for their corresponding labels.
+    :return: Two lists: one for file paths and the other for their corresponding labels represented as indexes.
     """
     filepaths = []
     filelabels = []
@@ -49,12 +57,28 @@ def find_files(data_dir: str, labels: List[str], shuffle=False, file_ext: str = 
         filelabels.extend([i] * len(matching_files))
 
     if shuffle:
-        c = list(zip(filepaths, filelabels))
-        random.shuffle(c)
-        filepaths, filelabels = zip(*c)
-        filepaths, filelabels = list(filepaths), list(filelabels)
+        filepaths, filelabels = shuffle_paths_labels(filepaths, filelabels)
 
     return filepaths, filelabels
+
+
+def find_files_csv_labels(data_dir: str, csv_fn: str, shuffle=False, file_ext: str = 'jpg') -> Tuple[
+    List[str], List[int], List[str]]:
+    train_labels = pd.read_csv(csv_fn)
+    labels = train_labels.label.unique()
+    key_id = dict([(ee[1], ee[0]) for ee in enumerate(labels)])
+
+    filepaths = []
+    filelabels = []
+
+    for _, row in train_labels.iterrows():
+        filepaths.append(os.path.join(data_dir, f'{row["id"]}.{file_ext}'))
+        filelabels.append(key_id[row['label']])
+
+    if shuffle:
+        filepaths, filelabels = shuffle_paths_labels(filepaths, filelabels)
+
+    return filepaths, filelabels, labels
 
 
 def create_clean_dir(path: str):
@@ -160,7 +184,7 @@ def files_tfrecord(paths: List[str], y: List[int], output_file: str, overwrite: 
 
 
 def data_dir_tfrecord(data_dir: str, output_file: str, shuffle: bool = False, overwrite: bool = False, extractor=None,
-                      file_ext: str = 'jpg', exclude_dirs: List[str] = []):
+                      file_ext: str = 'jpg', exclude_dirs: List[str] = []) -> Tuple[List[str], List[int], List[str]]:
     """
     Create a TFRecords data file from the contents of a data directory `data_dir`. Specifically, each
     sub-directory of `data_dir` corresponds to a label in the dataset (such as 'cat' and 'dog' ), and named by the
@@ -194,7 +218,7 @@ def data_dir_tfrecord(data_dir: str, output_file: str, shuffle: bool = False, ov
 # todo: add number of cores
 def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = False, overwrite: bool = False,
                              extractor=None, file_ext: str = 'jpg', exclude_dirs: List[str] = [],
-                             num_shards: int = 2) -> Tuple[List, List, List]:
+                             num_shards: int = 2) -> Tuple[List[str], List[int], List[str]]:
     """
     Create a number of TFRecords data files from the contents of a data directory `data_dir`. Specifically, each
     sub-directory of `data_dir` corresponds to a label in the dataset (such as 'cat' and 'dog' ), and named by the
@@ -239,6 +263,15 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = Fa
         threads.append(t)
 
     tf.train.Coordinator().join(threads)
+    return paths, y, labels
+
+
+def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_file: str, shuffle: bool = False,
+                                overwrite: bool = False, extractor=None, file_ext: str = 'jpg') -> Tuple[
+    List[str], List[int], List[str]]:
+    paths, y, labels = find_files_csv_labels(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext)
+    files_tfrecord(paths, y, output_file, overwrite, extractor)
+
     return paths, y, labels
 
 

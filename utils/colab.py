@@ -8,9 +8,18 @@ import json
 TPU_ADDRESS = f'grpc://{os.environ["COLAB_TPU_ADDR"]}' if "COLAB_TPU_ADDR" in os.environ else None
 
 
-def setup_gcs():
+def setup_gcs(tpu_address: str = None):
+    """
+    Set up Google Cloud Storage for TPU.
+    :param tpu_address: network address of the TPU, starting with 'grpc://'. Default: Colab's TPU address.
+    :return: None
+    """
     colab.auth.authenticate_user()
-    with tf.Session(TPU_ADDRESS) as sess:
+
+    if tpu_address is None:
+        tpu_address = TPU_ADDRESS
+
+    with tf.Session(tpu_address) as sess:
         with open('/content/adc.json', 'r') as f:
             auth_info = json.load(f)
         tf.contrib.cloud.configure_gcs(sess, credentials=auth_info)
@@ -34,11 +43,19 @@ def download_file(fn: str):
     colab.files.download(fn)
 
 
-def mount_google_drive():
-    colab.drive.mount('/content/gdrive')
+def mount_google_drive(gdrive_path: str = './gdrive'):
+    """
+    Mount Google Drive. Do nothing if Google Drive is already mounted.
+    :param gdrive_path: local path to mount Google Drive to.
+    :return: None.
+    """
+    colab.drive.mount(gdrive_path)
 
 
-def kaggle_setup_from_gdrive():
-    mount_google_drive()
-    create_clean_dir('/root/.kaggle/')
-    tf.gfile.Copy('./gdrive/My Drive/kaggle.json', '/root/.kaggle/kaggle.json')
+def kaggle_setup_from_gdrive(gdrive_path: str = './gdrive/My Drive/kaggle.json',
+                             local_path: str = '/root/.kaggle/kaggle.json'):
+    if not tf.gfile.Exists(local_path):
+        mount_google_drive()
+        create_clean_dir(os.path.dirname(local_path))
+        tf.gfile.Copy(gdrive_path, local_path)
+        os.chmod(local_path, 600)

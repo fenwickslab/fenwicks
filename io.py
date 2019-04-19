@@ -35,7 +35,8 @@ def shuffle_paths_labels(paths: List[str], labels: List[int]) -> Tuple[List[str]
     return list(paths), list(labels)
 
 
-def find_files(data_dir: str, labels: List[str], shuffle=False, file_ext: str = 'jpg') -> Tuple[List[str], List[int]]:
+def find_files(data_dir: str, labels: List[str], shuffle: bool = False, file_ext: str = 'jpg') -> Tuple[
+    List[str], List[int]]:
     """
     Find all input files wth a given extension in specific subdirectories of a given data directory. Optionally shuffle
     the found file names.
@@ -60,11 +61,11 @@ def find_files(data_dir: str, labels: List[str], shuffle=False, file_ext: str = 
     return filepaths, filelabels
 
 
-def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle=False, file_ext: str = 'jpg') -> Tuple[
+def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle: bool = False, file_ext: str = 'jpg') -> Tuple[
     List[str], List[int], List[str]]:
     train_labels = pd.read_csv(csv_fn)
     labels = train_labels.label.unique()
-    key_id = dict([(ee[1], ee[0]) for ee in enumerate(labels)])
+    key_id = dict([(label, idx) for idx, label in enumerate(labels)])
 
     filepaths = []
     filelabels = []
@@ -77,6 +78,13 @@ def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle=False, file_ex
         filepaths, filelabels = shuffle_paths_labels(filepaths, filelabels)
 
     return filepaths, filelabels, labels
+
+
+def find_files_no_label(data_dir: str, shuffle: bool = False, file_ext: str = 'jpg') -> List[str]:
+    filepaths = enum_files(data_dir, file_ext)
+    if shuffle:
+        random.shuffle(filepaths)
+    return filepaths
 
 
 def create_clean_dir(path: str):
@@ -107,7 +115,6 @@ def unzip(fn: str):
     Extract a .zip or .7z file.
 
     :param fn: Name of the file to be decompressed.
-    :param report_freq: Frequency of progress reporting.
     :return: None.
     """
 
@@ -120,7 +127,16 @@ def unzip(fn: str):
         pass
 
 
-def sub_dirs(data_dir: str, exclude_dirs: List[str] = []) -> List[str]:
+def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:
+    """
+    List sub directories of a directory, except those excluded. Works for Google Cloud Storage directories.
+
+    :param data_dir: Given directory.
+    :param exclude_dirs: names (not full paths) of subdirectories to exclude.
+    :return: List of subdirectories' names (not full paths).
+    """
+    if exclude_dirs is None:
+        exclude_dirs = []
     return [path for path in tf.gfile.ListDirectory(data_dir)
             if tf.gfile.IsDirectory(os.path.join(data_dir, path)) and path not in exclude_dirs]
 
@@ -143,30 +159,35 @@ def bytes_tffeature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
 
-def raw_image_tfexample(raw_image, y):
-    feat_dict = {'image': bytes_tffeature(raw_image),
-                 'label': int_tffeature(y)}
+def raw_image_tfexample(raw_image, y=None) -> tf.train.Example:
+    if y is None:
+        feat_dict = {'image': bytes_tffeature(raw_image)}
+    else:
+        feat_dict = {'image': bytes_tffeature(raw_image), 'label': int_tffeature(y)}
     return tf.train.Example(features=tf.train.Features(feature=feat_dict))
 
 
-def numpy_tfexample(x, y):
-    feat_dict = {'image': float_tffeature(x.tolist()),
-                 'label': int_tffeature(y)}
+def numpy_tfexample(x, y=None) -> tf.train.Example:
+    if y is None:
+        feat_dict = {'image': float_tffeature(x.tolist())}
+    else:
+        feat_dict = {'image': float_tffeature(x.tolist()), 'label': int_tffeature(y)}
     return tf.train.Example(features=tf.train.Features(feature=feat_dict))
 
 
-def numpy_tfrecord(X, y, output_file: str, overwrite: bool = False):
+def numpy_tfrecord(output_fn: str, X, y=None, overwrite: bool = False):
     n = X.shape[0]
     X_reshape = X.reshape(n, -1)
 
-    if overwrite or not tf.gfile.Exists(output_file):
-        with tf.io.TFRecordWriter(output_file) as record_writer:
+    if overwrite or not tf.gfile.Exists(output_fn):
+        with tf.io.TFRecordWriter(output_fn) as record_writer:
             for i in tqdm(range(n)):
-                example = numpy_tfexample(X_reshape[i], y[i])
+                example = numpy_tfexample(X_reshape[i]) if y is None else numpy_tfexample(X_reshape[i], y[i])
                 record_writer.write(example.SerializeToString())
 
 
-def numpy_tfrecord_shards(x, y, output_file: str, num_shards: int = 2):
+# todo: number of threads.
+def numpy_tfrecord_shards(output_fn: str, x, y=None, num_shards: int = 2):
     spacing = np.linspace(0, len(x), num_shards + 1).astype(np.int)
     ranges = [[spacing[i], spacing[i + 1]] for i in range(num_shards)]
 
@@ -174,7 +195,7 @@ def numpy_tfrecord_shards(x, y, output_file: str, num_shards: int = 2):
     for i in range(num_shards):
         start, end = ranges[i][0], ranges[i][1]
         args = (x[start:end], y[start:end],
-                f'{output_file}-{i:05d}-of-{num_shards:05d}')
+                f'{output_fn}-{i:05d}-of-{num_shards:05d}')
         t = threading.Thread(target=numpy_tfrecord, args=args)
         t.start()
         threads.append(t)
@@ -182,23 +203,36 @@ def numpy_tfrecord_shards(x, y, output_file: str, num_shards: int = 2):
     tf.train.Coordinator().join(threads)
 
 
-def files_tfrecord(paths: List[str], y: List[int], output_file: str, overwrite: bool = False, extractor=None):
-    if overwrite or not tf.gfile.Exists(output_file):
-        with tf.io.TFRecordWriter(output_file) as record_writer:
+def files_tfrecord(output_fn: str, paths: List[str], y: List[int] = None, overwrite: bool = False, extractor=None):
+    """
+    Create a TFRecord file that contains the contents of a given list of files, and optionally their corresponding
+    labels. The contents of the given files can be transformed through an extractor function.
+
+    :param output_fn: File name of the TFRecord file.
+    :param paths: List of input files.
+    :param y: (Option) Labels, one for each input file. Default: no label provided.
+    :param overwrite: Whether to overwrite the output TFRecord file when it already exists. Default: False.
+    :param extractor: A function that takes a file as input and outputs a numpy array containing the transformed file
+                      content. Default: no extractor, in which case the raw file contents are written to the output
+                      TFRecord file.
+    :return: None.
+    """
+    if overwrite or not tf.gfile.Exists(output_fn):
+        with tf.io.TFRecordWriter(output_fn) as record_writer:
             for i, path in enumerate(tqdm(paths)):
                 if extractor is None:
                     with tf.gfile.GFile(path, 'rb') as f:
                         img = f.read()
-                        example = raw_image_tfexample(img, y[i])
+                        example = raw_image_tfexample(img) if y is None else raw_image_tfexample(img, y[i])
                 else:
                     img = extractor(path)
                     img = img.reshape(-1)
-                    example = numpy_tfexample(img, y[i])
+                    example = numpy_tfexample(img) if y is None else numpy_tfexample(img, y[i])
                 record_writer.write(example.SerializeToString())
 
 
-def data_dir_tfrecord(data_dir: str, output_file: str, shuffle: bool = False, overwrite: bool = False, extractor=None,
-                      file_ext: str = 'jpg', exclude_dirs: List[str] = []) -> Tuple[List[str], List[int], List[str]]:
+def data_dir_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False, overwrite: bool = False, extractor=None,
+                      file_ext: str = 'jpg', exclude_dirs: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
     """
     Create a TFRecords data file from the contents of a data directory `data_dir`. Specifically, each
     sub-directory of `data_dir` corresponds to a label in the dataset (such as 'cat' and 'dog' ), and named by the
@@ -211,7 +245,7 @@ def data_dir_tfrecord(data_dir: str, output_file: str, shuffle: bool = False, ov
     If the output TFRecords file already exists, it is skipped unless `overwrite` is `True`.
 
     :param data_dir: Directory containing data files, whose contents are to be put in the output TFRecords files.
-    :param output_file: Base output file name, such as `data.tfrec`. An ouptut file name is the base file name plus the
+    :param output_fn: Base output file name, such as `data.tfrec`. An ouptut file name is the base file name plus the
                         shard ID and total number of shards, such as `data.tfrec00000-of-00005`
     :param shuffle: Whether or not to shuffle the data records. Default: no shuffle.
     :param overwrite: Whether or not to overwrite, when the output file already exists.
@@ -222,16 +256,18 @@ def data_dir_tfrecord(data_dir: str, output_file: str, shuffle: bool = False, ov
     :return: `paths`: list of paths to all input data files. `y`: list of labels, each of which is an integer. `labels`:
              list of string labels, such as the first corresponds to `y=0`, the second corresponds to `y=1`, and so on.
     """
+    if exclude_dirs is None:
+        exclude_dirs = []
     labels = sub_dirs(data_dir, exclude_dirs)
     paths, y = find_files(data_dir, labels, shuffle=shuffle, file_ext=file_ext)
-    files_tfrecord(paths, y, output_file, overwrite, extractor)
+    files_tfrecord(output_fn, paths, y, overwrite, extractor)
 
     return paths, y, labels
 
 
 # todo: add number of cores
-def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = False, overwrite: bool = False,
-                             extractor=None, file_ext: str = 'jpg', exclude_dirs: List[str] = [],
+def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = False, overwrite: bool = False,
+                             extractor=None, file_ext: str = 'jpg', exclude_dirs: List[str] = None,
                              num_shards: int = 2) -> Tuple[List[str], List[int], List[str]]:
     """
     Create a number of TFRecords data files from the contents of a data directory `data_dir`. Specifically, each
@@ -248,7 +284,7 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = Fa
     If an output TFRecords file already exists, it is skipped unless `overwrite` is `True`.
 
     :param data_dir: Directory containing data files, whose contents are to be put in the output TFRecords files.
-    :param output_file: Base output file name, such as `data.tfrec`. An ouptut file name is the base file name plus the
+    :param output_fn: Base output file name, such as `data.tfrec`. An ouptut file name is the base file name plus the
                         shard ID and total number of shards, such as `data.tfrec00000-of-00005`
     :param shuffle: Whether or not to shuffle the data records. Should be set to True for cross validation.
                     Default: False (no shuffle).
@@ -261,6 +297,9 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = Fa
     :return: `paths`: list of paths to all input data files. `y`: list of labels, each of which is an integer. `labels`:
              list of string labels, such as the first corresponds to `y=0`, the second corresponds to `y=1`, and so on.
     """
+    if exclude_dirs is None:
+        exclude_dirs = []
+
     labels = sub_dirs(data_dir, exclude_dirs)
     paths, y = find_files(data_dir, labels, shuffle=shuffle, file_ext=file_ext)
 
@@ -271,7 +310,7 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = Fa
     for i in range(num_shards):
         start, end = ranges[i][0], ranges[i][1]
         args = (paths[start:end], y[start:end],
-                f'{output_file}-{i:05d}-of-{num_shards:05d}', overwrite, extractor)
+                f'{output_fn}-{i:05d}-of-{num_shards:05d}', overwrite, extractor)
         t = threading.Thread(target=files_tfrecord, args=args)
         t = threading.Thread(target=files_tfrecord, args=args)
         t.start()
@@ -281,13 +320,20 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = Fa
     return paths, y, labels
 
 
-def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_file: str, shuffle: bool = False,
+def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_fn: str, shuffle: bool = False,
                                 overwrite: bool = False, extractor=None, file_ext: str = 'jpg') -> Tuple[
     List[str], List[int], List[str]]:
     paths, y, labels = find_files_with_label_csv(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext)
-    files_tfrecord(paths, y, output_file, overwrite, extractor)
+    files_tfrecord(output_fn, paths, y, overwrite, extractor)
 
     return paths, y, labels
+
+
+def data_dir_no_label_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False,
+                               overwrite: bool = False, extractor=None, file_ext: str = 'jpg') -> List[str]:
+    paths = find_files_no_label(data_dir, shuffle, file_ext)
+    files_tfrecord(output_fn, paths, overwrite=overwrite, extractor=extractor)
+    return paths
 
 
 def tfexample_raw_parser(example) -> Tuple[tf.Tensor, tf.Tensor]:

@@ -369,7 +369,7 @@ def tfexample_numpy_image_parser(example, h: int, w: int, c: int = 3, dtype=tf.f
 
 
 # todo: add dtype as a parameter.
-def tfexample_image_parser(example, tfms: List) -> Tuple[tf.Tensor, tf.Tensor]:
+def tfexample_image_parser(example, tfms: List = None) -> Tuple[tf.Tensor, tf.Tensor]:
     """
     Parse a given TFExample containing an encoded image (such as JPEG) and a label. Then apply the given sequence of
     transformations.
@@ -380,7 +380,8 @@ def tfexample_image_parser(example, tfms: List) -> Tuple[tf.Tensor, tf.Tensor]:
     """
     x, y = tfexample_raw_parser(example)
     x = tf.image.decode_image(x, channels=3, dtype=tf.float32)
-    x = apply_transforms(x, tfms)
+    if tfms is not None:
+        x = apply_transforms(x, tfms)
     return x, y
 
 
@@ -397,7 +398,7 @@ def get_tfexample_image_parser(h: int, w: int, training: bool = True, normalizer
     :return: A function that parses a TFExample into an image.
     """
     tfms = get_train_transforms(h, w, normalizer) if training else get_eval_transforms(h, w, normalizer=normalizer)
-    return lambda example: tfexample_image_parser(example, tfms)
+    return functools.partial(tfexample_image_parser, tfms=tfms)
 
 
 def tfrecord_fetch_dataset(fn: str) -> tf.data.Dataset:

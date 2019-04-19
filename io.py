@@ -60,7 +60,7 @@ def find_files(data_dir: str, labels: List[str], shuffle=False, file_ext: str = 
     return filepaths, filelabels
 
 
-def find_files_csv_labels(data_dir: str, csv_fn: str, shuffle=False, file_ext: str = 'jpg') -> Tuple[
+def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle=False, file_ext: str = 'jpg') -> Tuple[
     List[str], List[int], List[str]]:
     train_labels = pd.read_csv(csv_fn)
     labels = train_labels.label.unique()
@@ -90,6 +90,16 @@ def create_clean_dir(path: str):
     if tf.gfile.Exists(path):
         tf.gfile.DeleteRecursively(path)
     tf.io.gfile.makedirs(path)
+
+
+def file_size(fn: str) -> int:
+    """
+    Get the size of a file in bytes. Works for files on Google Cloud Storage.
+    :param fn: Path to the file.
+    :return: Size of the file.
+    """
+    stat = tf.io.gfile.stat(fn)
+    return stat.length
 
 
 def unzip(fn: str):
@@ -240,7 +250,8 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = Fa
     :param data_dir: Directory containing data files, whose contents are to be put in the output TFRecords files.
     :param output_file: Base output file name, such as `data.tfrec`. An ouptut file name is the base file name plus the
                         shard ID and total number of shards, such as `data.tfrec00000-of-00005`
-    :param shuffle: Whether or not to shuffle the data records. Default: no shuffle.
+    :param shuffle: Whether or not to shuffle the data records. Should be set to True for cross validation.
+                    Default: False (no shuffle).
     :param overwrite: Whether or not to overwrite, when the output file already exists.
     :param extractor: A Python function that transforms a data file. Its outputs are added to the output TFRecords.
                       If `extractor` is `None`, the original contents of the data file is added to the output TFRecords.
@@ -273,7 +284,7 @@ def data_dir_tfrecord_shards(data_dir: str, output_file: str, shuffle: bool = Fa
 def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_file: str, shuffle: bool = False,
                                 overwrite: bool = False, extractor=None, file_ext: str = 'jpg') -> Tuple[
     List[str], List[int], List[str]]:
-    paths, y, labels = find_files_csv_labels(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext)
+    paths, y, labels = find_files_with_label_csv(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext)
     files_tfrecord(paths, y, output_file, overwrite, extractor)
 
     return paths, y, labels
@@ -296,7 +307,7 @@ def tfexample_numpy_image_parser(example, h: int, w: int, c: int = 3, dtype=tf.f
     Parse a given TFExample containing an (image, label) pair, where the image is represented as an 3D array of shape
     [h*w*c] (i.e., flattened).
 
-    :param example: An input TFExmple.
+    :param example: An input TFExample.
     :param h: Height of the image.
     :param w: Weight of the image.
     :param c: Number of color channels. Default to 3 (RGB).

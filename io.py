@@ -400,7 +400,7 @@ def get_tfexample_image_parser(h: int, w: int, training: bool = True, normalizer
     return lambda example: tfexample_image_parser(example, tfms)
 
 
-def tfrecord_fetch_dataset(fn: str):
+def tfrecord_fetch_dataset(fn: str) -> tf.data.Dataset:
     """
     Create a `tf.data` dataset from a given TFRecord file name.
 
@@ -412,7 +412,7 @@ def tfrecord_fetch_dataset(fn: str):
     return dataset
 
 
-def crossval_ds(dataset, n_folds: int, val_fold_idx: int, training: bool = True):
+def crossval_ds(dataset, n_folds: int, val_fold_idx: int, training: bool = True) -> tf.data.Dataset:
     """
     Partition a given `tf.data` dataset into training and validation sets, according to k-fold cross validation
     requirements.
@@ -433,7 +433,7 @@ def crossval_ds(dataset, n_folds: int, val_fold_idx: int, training: bool = True)
 
 
 def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = True, shuffle_buf_sz: int = 50000,
-                n_cores: int = 2, n_folds: int = 1, val_fold_idx: int = 0):
+                n_cores: int = 2, n_folds: int = 1, val_fold_idx: int = 0, streaming: bool = False) -> tf.data.Dataset:
     """
     Create a `tf.data` input pipeline from TFRecords files whose names satisfying a given pattern. Optionally partitions
     the data into training and validation sets according to k-fold cross-validation requirements.
@@ -446,12 +446,12 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = Tru
     :param n_cores: Number of CPU cores, i.e., parallel threads.
     :param n_folds: Number of cross validation folds. Default: 1, meaning no cross validation.
     :param val_fold_idx: Fold ID for validation set, in cross validation. Ignored when `n_folds` is 1.
+    :param streaming: under construction.
     :return: a `tf.data` dataset satisfying the above descriptions.
     """
-    if not file_pattern.startswith('gs://'):
+    if streaming:
         # under construction
-        dataset = tpu_datasets.StreamingFilesDataset(file_pattern, filetype='tfrecord',
-                                                     batch_transfer_size=batch_size)
+        dataset = tpu_datasets.StreamingFilesDataset(file_pattern, filetype='tfrecord', batch_transfer_size=batch_size)
     else:
         dataset = tf.data.Dataset.list_files(file_pattern)
         fetcher = tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True)
@@ -473,7 +473,7 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = Tru
 
 
 def numpy_ds(x, y, batch_size: int, training: bool = True, shuffle_buf_sz: int = 50000, n_folds: int = 1,
-             val_fold_idx: int = 0):
+             val_fold_idx: int = 0) -> tf.data.Dataset:
     """
     Create a `tf.data` input pipeline from numpy arrays `x` and `y`. Optionally partitions the data into training and
     validation sets according to k-fold cross validation requirements.

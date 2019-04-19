@@ -14,8 +14,6 @@ from typing import List, Tuple
 from tqdm import tqdm_notebook as tqdm
 from tensorflow.contrib.tpu.python.tpu import datasets as tpu_datasets
 
-import libarchive.public
-
 
 def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
     """
@@ -102,6 +100,12 @@ def unzip(fn: str):
     :param report_freq: Frequency of progress reporting.
     :return: None.
     """
+
+    try:
+        import libarchive.public
+    except ImportError:
+        raise ImportError('libarchive not installed. Run !apt install libarchive-dev and then !pip install libarchive.')
+
     for _ in tqdm(libarchive.public.file_pour(fn)):
         pass
 

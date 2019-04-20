@@ -61,10 +61,10 @@ def find_files(data_dir: str, labels: List[str], shuffle: bool = False, file_ext
     return filepaths, filelabels
 
 
-def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle: bool = False, file_ext: str = 'jpg') -> Tuple[
-    List[str], List[int], List[str]]:
+def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle: bool = False, file_ext: str = 'jpg',
+                              _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
     train_labels = pd.read_csv(csv_fn)
-    labels = train_labels.label.unique()
+    labels = train_labels.label.unique() if _labels is None else _labels
     key_id = dict([(label, idx) for idx, label in enumerate(labels)])
 
     filepaths = []
@@ -321,9 +321,9 @@ def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = Fals
 
 
 def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_fn: str, shuffle: bool = False,
-                                overwrite: bool = False, extractor=None, file_ext: str = 'jpg') -> Tuple[
-    List[str], List[int], List[str]]:
-    paths, y, labels = find_files_with_label_csv(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext)
+                                overwrite: bool = False, extractor=None, file_ext: str = 'jpg',
+                                _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
+    paths, y, labels = find_files_with_label_csv(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext, _labels=_labels)
     files_tfrecord(output_fn, paths, y, overwrite, extractor)
 
     return paths, y, labels

@@ -72,8 +72,8 @@ def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN)
         opt = opt_func()
         opt = tf.contrib.tpu.CrossShardOptimizer(opt, reduction=reduction)
 
-        # train_op = tf.contrib.training.create_train_op(loss, optimizer)
-        grads_and_vars = opt.compute_gradients(loss)
+        var = model.trainable_variables  # this excludes frozen variables
+        grads_and_vars = opt.compute_gradients(loss, var_list=var)
         with tf.control_dependencies(model.get_updates_for(features)):
             train_op = opt.apply_gradients(grads_and_vars, global_step=step)
 

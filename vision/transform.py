@@ -115,10 +115,14 @@ def imagenet_normalize_caffe(x: tf.Tensor) -> tf.Tensor:
     return x[..., ::-1] * 255 - [103.939, 116.779, 123.68]
 
 
+def normalize(x: tf.Tensor, x_mean, x_std) -> tf.Tensor:
+    return (x - x_mean) / x_std
+
+
 def get_train_transforms(h: int, w: int, normalizer=imagenet_normalize_tf) -> List:
     return [distorted_bbox_crop,
             lambda x: x.set_shape([None, None, 3]) or x,
-            lambda x: tf.image.resize_images(x, [h, w]),
+            functools.partial(tf.image.resize_images, size=[h, w]),
             tf.image.random_flip_left_right,
             distort_color,
             normalizer,
@@ -126,8 +130,8 @@ def get_train_transforms(h: int, w: int, normalizer=imagenet_normalize_tf) -> Li
 
 
 def get_eval_transforms(h: int, w: int, center_frac: float = 1.0, normalizer=imagenet_normalize_tf) -> List:
-    return [lambda x: tf.image.central_crop(x, central_fraction=center_frac),
+    return [functools.partial(tf.image.central_crop, central_fraction=center_frac),
             lambda x: x.set_shape([None, None, 3]) or x,
-            lambda x: tf.image.resize_images(x, [h, w]),
+            functools.partial(tf.image.resize_images, size=[h, w]),
             normalizer,
             ]

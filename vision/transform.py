@@ -119,6 +119,11 @@ def normalize(x: tf.Tensor, x_mean, x_std) -> tf.Tensor:
     return (x - x_mean) / x_std
 
 
+def set_shape(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
+    x.set_shape([h, w, c])
+    return x
+
+
 def get_train_transforms(h: int, w: int, normalizer=imagenet_normalize_tf) -> List:
     return [distorted_bbox_crop,
             lambda x: x.set_shape([None, None, 3]) or x,

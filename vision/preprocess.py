@@ -1,11 +1,11 @@
 import tensorflow as tf
 import numpy as np
 from typing import Tuple
-from .. import io
+from .. import data
 
 
 def compute_image_mean_std(fn_data: str, n_data: int, batch_size: int = 1) -> Tuple[float, float, int, int]:
-    ds = io.tfrecord_ds(fn_data, io.tfexample_image_parser, batch_size=batch_size, training=False)
+    ds = data.tfrecord_ds(fn_data, data.tfexample_image_parser, batch_size=batch_size, training=False)
     data_op = ds.make_one_shot_iterator().get_next()
 
     x_count, x_sum, x_sum_sq = 0.0, np.zeros(3), np.zeros(3)

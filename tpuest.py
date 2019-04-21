@@ -50,7 +50,7 @@ def get_tpu_estimator(n_trn: int, n_val: int, model_func, work_dir: str, ws_dir:
 def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN):
     """
     Build a model function for a classification task to be used in a TPUEstimator, based on a given model architecture
-    and optimizer. Both the model architecture and optimizer must be callables, not model or optimizer objects. The
+    and an optimizer. Both the model architecture and optimizer must be callables, not model or optimizer objects. The
     reason for this design is to ensure that all variables are created in the same Tensorflow graph, which is created
     by the TPUEstimator.
 
@@ -83,7 +83,7 @@ def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN)
         metric_func = lambda classes, labels: {'accuracy': tf.metrics.accuracy(classes, labels)}
         tpu_metrics = (metric_func, [classes, labels])
 
-        return tf.contrib.tpu.TPUEstimatorSpec(mode=mode, loss=loss, predictions={"predictions": classes},
+        return tf.contrib.tpu.TPUEstimatorSpec(mode=mode, loss=loss, predictions={"y_pred": classes},
                                                train_op=train_op, eval_metrics=tpu_metrics)
 
     return model_func

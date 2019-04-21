@@ -4,6 +4,15 @@ import math
 
 
 def cutout(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
+    """
+    Cutout data augmentation. Randomly cuts a h by w whole in the image, and fill the whole with zeros.
+
+    :param x: Input image.
+    :param h: Height of the hole.
+    :param w: Width of the hole
+    :param c: Number of color channels in the image. Default: 3 (RGB).
+    :return: Transformed image.
+    """
     shape = tf.shape(x)
     x0 = tf.random.uniform([], 0, shape[0] + 1 - h, dtype=tf.int32)
     y0 = tf.random.uniform([], 0, shape[1] + 1 - w, dtype=tf.int32)
@@ -41,7 +50,7 @@ def distorted_bbox_crop(x: tf.Tensor, min_object_covered: float = 0.1, aspect_ra
     return x
 
 
-# under construction
+# fixme
 def random_crop(x: tf.Tensor, boxes, scales) -> tf.Tensor:
     # Create different crops for an image
     crops = tf.image.crop_and_resize([x], boxes=boxes, box_ind=np.zeros(len(scales)), crop_size=(32, 32))
@@ -49,7 +58,7 @@ def random_crop(x: tf.Tensor, boxes, scales) -> tf.Tensor:
     return crops[tf.random_uniform(shape=[], minval=0, maxval=len(scales), dtype=tf.int32)]
 
 
-# under construction
+# fixme
 def random_zoom(x: tf.Tensor) -> tf.Tensor:
     # Generate 20 crop settings, ranging from a 1% to 20% crop.
     scales = list(np.arange(0.8, 1.0, 0.01))
@@ -66,7 +75,7 @@ def random_zoom(x: tf.Tensor) -> tf.Tensor:
     return tf.cond(choice < 0.5, lambda: x, lambda: random_crop(x, boxes, scales))
 
 
-# under construction
+# fixme
 def random_color(x: tf.Tensor) -> tf.Tensor:
     x = tf.image.random_hue(x, 0.08)
     x = tf.image.random_saturation(x, 0.6, 1.6)
@@ -76,6 +85,13 @@ def random_color(x: tf.Tensor) -> tf.Tensor:
 
 
 def random_flip(x: tf.Tensor, vertical_flip: bool = False) -> tf.Tensor:
+    """
+    Randomly flip an image horizontally, and optionally also vertically.
+
+    :param x: Input image.
+    :param vertical_flip: Whether to perform vertical flipping. Default: False.
+    :return: Transformed image.
+    """
     x = tf.image.random_flip_left_right(x)
     if vertical_flip:
         x = tf.image.random_flip_up_down(x)
@@ -97,6 +113,16 @@ def random_translate(x: tf.Tensor, max_translation: int = 10) -> tf.Tensor:
 
 
 def ramdom_pad_crop(x: tf.Tensor, pad_size: int) -> tf.Tensor:
+    """
+    Randomly pad the image by `pad_size` at each border (top, bottom, left, right). Then, crop the padded image to its
+    original size.
+
+    :param x: Input image.
+    :param pad_size: Number of pixels to pad at each border. For example, a 32x32 image padded with 4 pixels becomes a
+                     40x40 image. Then, the subsequent cropping step crops the image back to 32x32. Padding is done in
+                     `reflect` mode.
+    :return: Transformed image.
+    """
     shape = tf.shape(x)
     x = tf.pad(x, [[pad_size, pad_size], [pad_size, pad_size], [0, 0]], mode='reflect')
     x = tf.random_crop(x, [shape[0], shape[1], 3])
@@ -104,14 +130,30 @@ def ramdom_pad_crop(x: tf.Tensor, pad_size: int) -> tf.Tensor:
 
 
 def imagenet_normalize_tf(x: tf.Tensor) -> tf.Tensor:
+    """
+    Default Tensorflow image normalization for Keras models pre-trained on ImageNet.
+
+    :param x: Input image. Each pixel must be already scaled to [0, 1].
+    :return: Normalized image.
+    """
     return (x - 0.5) * 2.0
 
 
 def imagenet_normalize_pytorch(x: tf.Tensor) -> tf.Tensor:
+    """
+    Default PyTorch image normalization for Keras models pre-trained on ImageNet.
+    :param x: Input image. Each pixel must be already scaled to [0, 1].
+    :return: Normalized image.
+    """
     return (x - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
 
 
 def imagenet_normalize_caffe(x: tf.Tensor) -> tf.Tensor:
+    """
+    Default Caffe image normalization for Keras models pre-trained on ImageNet.
+    :param x: Input image. Each pixel must be already scaled to [0, 1].
+    :return: Normalized image.
+    """
     return x[..., ::-1] * 255 - [103.939, 116.779, 123.68]
 
 
@@ -124,6 +166,7 @@ def set_shape(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
     return x
 
 
+# todo: use set_shape instead of lambda
 def get_train_transforms(h: int, w: int, normalizer=imagenet_normalize_tf) -> List:
     return [distorted_bbox_crop,
             lambda x: x.set_shape([None, None, 3]) or x,
@@ -134,6 +177,7 @@ def get_train_transforms(h: int, w: int, normalizer=imagenet_normalize_tf) -> Li
             ]
 
 
+# todo: uses set_shape instead of lambda
 def get_eval_transforms(h: int, w: int, center_frac: float = 1.0, normalizer=imagenet_normalize_tf) -> List:
     return [functools.partial(tf.image.central_crop, central_fraction=center_frac),
             lambda x: x.set_shape([None, None, 3]) or x,

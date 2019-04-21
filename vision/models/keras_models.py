@@ -59,7 +59,7 @@ def get_model(model_name: str, bucket: str, model_dir: str = None, include_top: 
         'ResNet101': dict(keras_model=resnet.ResNet101, img_size=224, normalizer=imagenet_normalize_caffe),
         'ResNet152': dict(keras_model=resnet.ResNet152, img_size=224, normalizer=imagenet_normalize_caffe),
 
-        # Note: ResNetV2 image size is 224, not 299 as stated in tf slim web page
+        # Note: ResNetV2 image size is 224, not 299 as stated on tf.slim web site
         'ResNet50V2': dict(keras_model=resnet_v2.ResNet50V2, img_size=224, normalizer=imagenet_normalize_tf),
         'ResNet101V2': dict(keras_model=resnet_v2.ResNet101V2, img_size=224, normalizer=imagenet_normalize_tf),
         'ResNet152V2': dict(keras_model=resnet_v2.ResNet152V2, img_size=224, normalizer=imagenet_normalize_tf),

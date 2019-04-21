@@ -232,6 +232,26 @@ def tfexample_raw_parser(tfexample: tf.train.Example, has_label: bool = True):
         return feat['image']
 
 
+def tfexample_numpy_image_parser(tfexample: tf.train.Example, h: int, w: int, c: int = 3, dtype=tf.float32) -> Tuple[
+    tf.Tensor, tf.Tensor]:
+    """
+    Parse a given TFExample containing an (image, label) pair, where the image is represented as an 3D array of shape
+    [h*w*c] (i.e., flattened).
+    :param tfexample: An input TFExample.
+    :param h: Height of the image.
+    :param w: Weight of the image.
+    :param c: Number of color channels. Default to 3 (RGB).
+    :param dtype: Data type of the returned image.
+    :return: Parsed image and label Tensors.
+    """
+    feat_dict = {'image': tf.FixedLenFeature([h * w * c], dtype),
+                 'label': tf.FixedLenFeature([], tf.int64)}
+    feat = tf.parse_single_example(tfexample, features=feat_dict)
+    x, y = feat['image'], feat['label']
+    x = tf.reshape(x, [h, w, c])
+    return x, y
+
+
 # todo: add dtype as a parameter.
 def tfexample_image_parser(tfexample: tf.train.Example, tfms: List = None, has_label: bool = True):
     """

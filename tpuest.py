@@ -67,23 +67,28 @@ def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN)
 
         model = model_arch()
         logits = model(features)
+        y_pred = tf.math.argmax(logits, axis=-1)
+        train_op = None
+        loss = None
 
-        loss = tf.losses.sparse_softmax_cross_entropy(labels, logits, reduction=reduction)
-        step = tf.train.get_or_create_global_step()
+        if mode != tf.estimator.ModeKeys.PREDICT:
+            loss = tf.losses.sparse_softmax_cross_entropy(labels, logits, reduction=reduction)
 
-        opt = opt_func()
-        opt = tf.contrib.tpu.CrossShardOptimizer(opt, reduction=reduction)
+        if mode == tf.estimator.ModeKeys.TRAIN:
+            step = tf.train.get_or_create_global_step()
 
-        var = model.trainable_variables  # this excludes frozen variables
-        grads_and_vars = opt.compute_gradients(loss, var_list=var)
-        with tf.control_dependencies(model.get_updates_for(features)):
-            train_op = opt.apply_gradients(grads_and_vars, global_step=step)
+            opt = opt_func()
+            opt = tf.contrib.tpu.CrossShardOptimizer(opt, reduction=reduction)
 
-        classes = tf.math.argmax(logits, axis=-1)
-        metric_func = lambda classes, labels: {'accuracy': tf.metrics.accuracy(classes, labels)}
-        tpu_metrics = (metric_func, [classes, labels])
+            var = model.trainable_variables  # this excludes frozen variables
+            grads_and_vars = opt.compute_gradients(loss, var_list=var)
+            with tf.control_dependencies(model.get_updates_for(features)):
+                train_op = opt.apply_gradients(grads_and_vars, global_step=step)
 
-        return tf.contrib.tpu.TPUEstimatorSpec(mode=mode, loss=loss, predictions={"y_pred": classes},
+        metric_func = lambda y_pred, labels: {'accuracy': tf.metrics.accuracy(y_pred, labels)}
+        tpu_metrics = (metric_func, [y_pred, labels])
+
+        return tf.contrib.tpu.TPUEstimatorSpec(mode=mode, loss=loss, predictions={"y_pred": y_pred},
                                                train_op=train_op, eval_metrics=tpu_metrics)
 
     return model_func

@@ -61,10 +61,10 @@ def find_files(data_dir: str, labels: List[str], shuffle: bool = False, file_ext
     return filepaths, filelabels
 
 
-def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle: bool = False, file_ext: str = 'jpg') -> Tuple[
-    List[str], List[int], List[str]]:
+def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle: bool = False, file_ext: str = 'jpg',
+                              _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
     train_labels = pd.read_csv(csv_fn)
-    labels = train_labels.label.unique()
+    labels = sorted(train_labels.label.unique()) if _labels is None else _labels
     key_id = dict([(label, idx) for idx, label in enumerate(labels)])
 
     filepaths = []
@@ -141,19 +141,19 @@ def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:
             if tf.gfile.IsDirectory(os.path.join(data_dir, path)) and path not in exclude_dirs]
 
 
-def float_tffeature(value):
+def float_tffeature(value) -> tf.train.Feature:
     if not isinstance(value, list):
         value = [value]
     return tf.train.Feature(float_list=tf.train.FloatList(value=value))
 
 
-def int_tffeature(value):
+def int_tffeature(value) -> tf.train.Feature:
     if not isinstance(value, list):
         value = [value]
     return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
 
 
-def bytes_tffeature(value):
+def bytes_tffeature(value) -> tf.train.Feature:
     if isinstance(value, str):
         value = bytes(value, encoding='utf-8')
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
@@ -321,9 +321,9 @@ def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = Fals
 
 
 def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_fn: str, shuffle: bool = False,
-                                overwrite: bool = False, extractor=None, file_ext: str = 'jpg') -> Tuple[
-    List[str], List[int], List[str]]:
-    paths, y, labels = find_files_with_label_csv(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext)
+                                overwrite: bool = False, extractor=None, file_ext: str = 'jpg',
+                                _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
+    paths, y, labels = find_files_with_label_csv(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext, _labels=_labels)
     files_tfrecord(output_fn, paths, y, overwrite, extractor)
 
     return paths, y, labels
@@ -336,24 +336,25 @@ def data_dir_no_label_tfrecord(data_dir: str, output_fn: str, shuffle: bool = Fa
     return paths
 
 
-def tfexample_raw_parser(example) -> Tuple[tf.Tensor, tf.Tensor]:
+def tfexample_raw_parser(tfexample: tf.train.Example) -> Tuple[tf.Tensor, tf.Tensor]:
     """
     Parse a given TFExample containing an (image, label) pair, whose contents are undefined.
-    :param example: An input TFExample.
+    :param tfexample: An input TFExample.
     :return: Parsed image and label Tensors.
     """
     feat_dict = {'image': tf.FixedLenFeature([], tf.string),
                  'label': tf.FixedLenFeature([], tf.int64)}
-    feat = tf.parse_single_example(example, features=feat_dict)
+    feat = tf.parse_single_example(tfexample, features=feat_dict)
     return feat['image'], feat['label']
 
 
-def tfexample_numpy_image_parser(example, h: int, w: int, c: int = 3, dtype=tf.float32) -> Tuple[tf.Tensor, tf.Tensor]:
+def tfexample_numpy_image_parser(tfexample: tf.train.Example, h: int, w: int, c: int = 3, dtype=tf.float32) -> Tuple[
+    tf.Tensor, tf.Tensor]:
     """
     Parse a given TFExample containing an (image, label) pair, where the image is represented as an 3D array of shape
     [h*w*c] (i.e., flattened).
 
-    :param example: An input TFExample.
+    :param tfexample: An input TFExample.
     :param h: Height of the image.
     :param w: Weight of the image.
     :param c: Number of color channels. Default to 3 (RGB).
@@ -362,23 +363,23 @@ def tfexample_numpy_image_parser(example, h: int, w: int, c: int = 3, dtype=tf.f
     """
     feat_dict = {'image': tf.FixedLenFeature([h * w * c], dtype),
                  'label': tf.FixedLenFeature([], tf.int64)}
-    feat = tf.parse_single_example(example, features=feat_dict)
+    feat = tf.parse_single_example(tfexample, features=feat_dict)
     x, y = feat['image'], feat['label']
     x = tf.reshape(x, [h, w, c])
     return x, y
 
 
 # todo: add dtype as a parameter.
-def tfexample_image_parser(example, tfms: List = None) -> Tuple[tf.Tensor, tf.Tensor]:
+def tfexample_image_parser(tfexample: tf.train.Example, tfms: List = None) -> Tuple[tf.Tensor, tf.Tensor]:
     """
     Parse a given TFExample containing an encoded image (such as JPEG) and a label. Then apply the given sequence of
     transformations.
 
-    :param example: An input TFExample.
+    :param tfexample: An input TFExample.
     :param tfms: A sequence of transforms.
     :return: Parsed image and label Tensors.
     """
-    x, y = tfexample_raw_parser(example)
+    x, y = tfexample_raw_parser(tfexample)
     x = tf.image.decode_image(x, channels=3, dtype=tf.float32)
     if tfms is not None:
         x = apply_transforms(x, tfms)
@@ -525,3 +526,8 @@ def get_gcs_dirs(bucket: str, project: str) -> Tuple[str, str]:
     data_dir = os.path.join(os.path.join(bucket, 'data'), project)
     work_dir = os.path.join(os.path.join(bucket, 'work'), project)
     return data_dir, work_dir
+
+
+def upload_to_gcs(local_path: str, gcs_path: str):
+    if not tf.gfile.Exists(gcs_path):
+        tf.gfile.Copy(local_path, gcs_path)

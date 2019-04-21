@@ -128,6 +128,7 @@ def weight_decay_loss(wd: float = 0.0005) -> tf.Tensor:
     return wd * tf.add_n(l2_loss)
 
 
+# fixme
 def inception_v3_lr(n_train, lr: float = 0.165, lr_decay: float = 0.94, lr_decay_epochs: int = 3,
                     batch_size: float = 1024, use_warmup: bool = False, warmup_epochs: int = 7, cold_epochs: int = 2):
     init_lr = lr * batch_size / 256

@@ -57,8 +57,17 @@ def plot_lr_func(lr_func, total_steps):
     plotly.offline.iplot(fig)
 
 
-def plot_df_counts(df: pd.DataFrame, col: str, max_bar: int = 10):
-    series = df[col].value_counts()[:max_bar]
+def plot_df_counts(df: pd.DataFrame, col: str, max_item: int = 10):
+    series = df[col].value_counts()[:max_item]
     layout = go.Layout(height=350, width=350, yaxis=go.layout.YAxis(title='Count'),
                        margin=go.layout.Margin(l=80, r=20, b=40, t=20))
     series.iplot(kind='bar', yTitle='Count', layout=layout)
+
+
+def plot_df_counts_pie(df: pd.DataFrame, col: str, max_item: int = 10):
+    s = df[col].value_counts()[:max_item]
+    pie_df = pd.DataFrame({'id': s.index, 'count': s.values})
+    layout = go.Layout(height=350, width=350, margin=go.layout.Margin(l=50, r=0, b=0, t=0),
+                       yaxis=go.layout.YAxis(title='y'),
+                       xaxis=go.layout.XAxis(title='x'))
+    pie_df.iplot(kind='pie', labels='id', values='count', layout=layout, pull=.05, hole=0.2)

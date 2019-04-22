@@ -144,9 +144,9 @@ def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:
 def merge_dirs(source_dirs: List[str], dest_dir: str):
     if not tf.gfile.Exists(dest_dir):
         tf.io.gfile.makedirs(dest_dir)
-        for d in source_dirs:
+        for d in tqdm(source_dirs):
             files = tf.gfile.ListDirectory(d)
-            for fn in files:
+            for fn in tqdm(files):
                 new_fn = os.path.join(dest_dir, fn)
                 tf.io.gfile.rename(fn, new_fn)
 

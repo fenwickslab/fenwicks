@@ -1,9 +1,11 @@
 import IPython
 import tensorflow as tf
+import pandas as pd
 import plotly.plotly
 import plotly.graph_objs as go
 import numpy as np
 from IPython.display import display
+import cufflinks as cf
 
 
 def configure_plotly_browser_state():
@@ -23,6 +25,7 @@ def configure_plotly_browser_state():
 def setup():
     plotly.offline.init_notebook_mode(connected=True)
     IPython.get_ipython().events.register('pre_run_cell', configure_plotly_browser_state)
+    cf.set_config_file(offline=True)
 
 
 def simulate_lr_func(lr_func, total_steps):
@@ -52,3 +55,9 @@ def plot_lr_func(lr_func, total_steps):
                        xaxis=go.layout.XAxis(title='Training step'), margin=go.layout.Margin(l=80, r=20, b=40, t=20))
     fig = go.Figure(data=data, layout=layout)
     plotly.offline.iplot(fig)
+
+
+def plot_df_counts(df: pd.DataFrame, col: str, max_bar: int = 10):
+    series = df[col].value_counts()[:max_bar]
+    layout = cf.Layout(height=350, width=350)
+    series.iplot(kind='bar', yTitle='Count', layout=layout)

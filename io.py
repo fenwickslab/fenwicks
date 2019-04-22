@@ -144,11 +144,12 @@ def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:
 def merge_dirs(source_dirs: List[str], dest_dir: str):
     if not tf.gfile.Exists(dest_dir):
         tf.io.gfile.makedirs(dest_dir)
-        for d in tqdm(source_dirs):
+        for d in source_dirs:
             files = tf.gfile.ListDirectory(d)
-            for fn in tqdm(files):
+            for fn in files:
+                old_fn = os.path.join(d, fn)
                 new_fn = os.path.join(dest_dir, fn)
-                tf.io.gfile.rename(fn, new_fn)
+                tf.io.gfile.rename(old_fn, new_fn)
 
 
 def get_model_dir(bucket: str, model: str) -> str:

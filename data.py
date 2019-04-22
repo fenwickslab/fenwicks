@@ -281,7 +281,8 @@ def tfexample_image_parser(tfexample: tf.train.Example, tfms: List = None, has_l
         return x
 
 
-def get_tfexample_image_parser(h: int, w: int, training: bool = True, normalizer=transform.imagenet_normalize_tf):
+def get_tfexample_image_parser(h: int, w: int, training: bool = True, flip_vert: bool = False,
+                               normalizer=transform.imagenet_normalize_tf):
     """
     Get a image parser function that parses a TFRecord into an image, applying standard transformations for ImageNet.
     For the training set, standard ImageNet data augmentation is also applied.
@@ -289,13 +290,14 @@ def get_tfexample_image_parser(h: int, w: int, training: bool = True, normalizer
     :param h: Height of a data image.
     :param w: Width of a data image.
     :param training: Whether this is a training set.
+    :param flip_vert: Whether to perform random vertical flipping in the training input pipeline.
     :param normalizer: Data normalization function. Default to Tensorflow's ImageNet noramlization function, i.e.,
     `x = (x-0.5)*2`.
     :return: A function that parses a TFExample into an image.
     """
 
     if training:
-        tfms = transform.get_train_transforms(h, w, normalizer=normalizer)
+        tfms = transform.get_train_transforms(h, w, flip_vert=flip_vert, normalizer=normalizer)
     else:
         tfms = transform.get_eval_transforms(h, w, normalizer=normalizer)
     return functools.partial(tfexample_image_parser, tfms=tfms)

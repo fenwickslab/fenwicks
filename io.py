@@ -102,11 +102,13 @@ def file_size(fn: str) -> int:
     return stat.length
 
 
-def unzip(fn: str):
+def unzip(fn: str, dest_dir: str = None):
     """
     Extract a .zip or .7z file.
 
     :param fn: Name of the file to be decompressed.
+    :param dest_dir: Destination directory. Default: None, in which case the decompressed files are stored in the current
+           directory.
     :return: None.
     """
 
@@ -115,8 +117,8 @@ def unzip(fn: str):
     except ImportError:
         raise ImportError('libarchive not installed. Run !apt install libarchive-dev and then !pip install libarchive.')
 
-    for _ in tqdm(libarchive.public.file_pour(fn)):
-        pass
+    for e in tqdm(libarchive.public.file_pour(fn)):
+        tf.io.gfile.rename(e, os.path.join(dest_dir, e))
 
 
 def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:
@@ -131,8 +133,6 @@ def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:
         exclude_dirs = []
     return [path for path in tf.gfile.ListDirectory(data_dir)
             if tf.gfile.IsDirectory(os.path.join(data_dir, path)) and path not in exclude_dirs]
-
-
 
 
 def get_model_dir(bucket: str, model: str) -> str:

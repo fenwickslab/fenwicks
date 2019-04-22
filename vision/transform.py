@@ -98,10 +98,12 @@ def random_flip(x: tf.Tensor, vertical_flip: bool = False) -> tf.Tensor:
     return x
 
 
+# todo: dtype
 def random_rotate_90(x: tf.Tensor) -> tf.Tensor:
     return tf.image.rot90(x, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
 
 
+# todo: dtype
 def random_rotate(x: tf.Tensor, max_deg: float = 45) -> tf.Tensor:
     deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
     return tf.contrib.image.rotate(x, math.radians(deg))
@@ -164,6 +166,10 @@ def normalize(x: tf.Tensor, x_mean, x_std) -> tf.Tensor:
 def set_shape(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
     x.set_shape([h, w, c])
     return x
+
+
+def get_transform(func, **kw_args):
+    return functools.partial(func, kw_args)
 
 
 # todo: use set_shape instead of lambda

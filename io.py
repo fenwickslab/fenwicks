@@ -102,13 +102,12 @@ def file_size(fn: str) -> int:
     return stat.length
 
 
-def unzip(fn: str, dest_dir: str = None):
+def unzip(fn: str, dest_dir: str = '.'):
     """
     Extract a .zip or .7z file.
 
     :param fn: Name of the file to be decompressed.
-    :param dest_dir: Destination directory. Default: None, in which case the decompressed files are stored in the current
-           directory.
+    :param dest_dir: Destination directory. Default: current directory.
     :return: None.
     """
 
@@ -119,9 +118,10 @@ def unzip(fn: str, dest_dir: str = None):
 
     if not tf.gfile.Exists(dest_dir):
         tf.io.gfile.makedirs(dest_dir)
-
-    for e in tqdm(libarchive.public.file_pour(fn)):
-        tf.io.gfile.rename(e, os.path.join(dest_dir, e))
+        new_fn = os.path.join(dest_dir, fn)
+        tf.io.gfile.rename(fn, new_fn)
+        for _ in tqdm(libarchive.public.file_pour(new_fn)):
+            pass
 
 
 def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:

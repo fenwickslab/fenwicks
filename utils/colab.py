@@ -52,7 +52,7 @@ def mount_google_drive(gdrive_path: str = './gdrive'):
     colab.drive.mount(gdrive_path)
 
 
-def kaggle_setup_from_gdrive(gdrive_path: str = './gdrive/My Drive/kaggle.json',
+def setup_kaggle_from_gdrive(gdrive_path: str = './gdrive/My Drive/kaggle.json',
                              local_path: str = '/root/.kaggle/kaggle.json'):
     if not tf.gfile.Exists(local_path):
         mount_google_drive()

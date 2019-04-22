@@ -117,6 +117,9 @@ def unzip(fn: str, dest_dir: str = None):
     except ImportError:
         raise ImportError('libarchive not installed. Run !apt install libarchive-dev and then !pip install libarchive.')
 
+    if not tf.gfile.Exists(dest_dir):
+        tf.io.gfile.makedirs(dest_dir)
+
     for e in tqdm(libarchive.public.file_pour(fn)):
         tf.io.gfile.rename(e, os.path.join(dest_dir, e))
 

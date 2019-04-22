@@ -84,16 +84,16 @@ def random_color(x: tf.Tensor) -> tf.Tensor:
     return x
 
 
-def random_flip(x: tf.Tensor, vertical_flip: bool = False) -> tf.Tensor:
+def random_flip(x: tf.Tensor, flip_vert: bool = False) -> tf.Tensor:
     """
     Randomly flip an image horizontally, and optionally also vertically.
 
     :param x: Input image.
-    :param vertical_flip: Whether to perform vertical flipping. Default: False.
+    :param flip_vert: Whether to perform vertical flipping. Default: False.
     :return: Transformed image.
     """
     x = tf.image.random_flip_left_right(x)
-    if vertical_flip:
+    if flip_vert:
         x = tf.image.random_flip_up_down(x)
     return x
 
@@ -174,21 +174,19 @@ def get_transform(func, **kw_args):
     return functools.partial(func, kw_args)
 
 
-# todo: use set_shape instead of lambda
-def get_train_transforms(h: int, w: int, normalizer=imagenet_normalize_tf) -> List:
+def get_train_transforms(h: int, w: int, flip_vert: bool = False, normalizer=imagenet_normalize_tf) -> List:
     return [distorted_bbox_crop,
-            lambda x: x.set_shape([None, None, 3]) or x,
+            functools.partial(set_shape, h=None, w=None),
             functools.partial(tf.image.resize_images, size=[h, w]),
-            tf.image.random_flip_left_right,
+            functools.partial(random_flip, flip_vert),
             distort_color,
             normalizer,
             ]
 
 
-# todo: uses set_shape instead of lambda
 def get_eval_transforms(h: int, w: int, center_frac: float = 1.0, normalizer=imagenet_normalize_tf) -> List:
     return [functools.partial(tf.image.central_crop, central_fraction=center_frac),
-            lambda x: x.set_shape([None, None, 3]) or x,
+            functools.partial(set_shape, h=None, w=None),
             functools.partial(tf.image.resize_images, size=[h, w]),
             normalizer,
             ]

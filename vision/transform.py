@@ -175,18 +175,10 @@ def get_transform(func, **kw_args):
 
 
 def get_train_transforms(h: int, w: int, flip_vert: bool = False, normalizer=imagenet_normalize_tf) -> List:
-    # return [distorted_bbox_crop,
-    #         functools.partial(set_shape, h=None, w=None),
-    #         functools.partial(tf.image.resize_images, size=[h, w]),
-    #         functools.partial(random_flip, flip_vert),
-    #         distort_color,
-    #         normalizer,
-    #         ]
-
     return [distorted_bbox_crop,
-            lambda x: x.set_shape([None, None, 3]) or x,
+            functools.partial(set_shape, h=None, w=None),
             functools.partial(tf.image.resize_images, size=[h, w]),
-            tf.image.random_flip_left_right,
+            functools.partial(random_flip, flip_vert=flip_vert),
             distort_color,
             normalizer,
             ]

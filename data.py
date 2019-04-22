@@ -194,10 +194,10 @@ def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = Fals
 
 
 def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_fn: str, shuffle: bool = False,
-                                overwrite: bool = False, extractor=None, file_ext: str = 'jpg',
-                                _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
-    paths, y, labels = io.find_files_with_label_csv(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext,
-                                                    _labels=_labels)
+                                overwrite: bool = False, extractor=None, file_ext: str = 'jpg', id_col='id',
+                                label_col='label', _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
+    paths, y, labels = io.find_files_with_label_csv(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext, id_col=id_col,
+                                                    label_col=label_col, _labels=_labels)
     files_tfrecord(output_fn, paths, y, overwrite, extractor)
 
     return paths, y, labels

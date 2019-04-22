@@ -59,5 +59,6 @@ def plot_lr_func(lr_func, total_steps):
 
 def plot_df_counts(df: pd.DataFrame, col: str, max_bar: int = 10):
     series = df[col].value_counts()[:max_bar]
-    layout = cf.Layout(height=350, width=350)
+    layout = go.Layout(height=350, width=350, yaxis=go.layout.YAxis(title='Count'),
+                       margin=go.layout.Margin(l=80, r=20, b=40, t=20))
     series.iplot(kind='bar', yTitle='Count', layout=layout)

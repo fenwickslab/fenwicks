@@ -118,9 +118,9 @@ def unzip(fn: str, dest_dir: str = '.'):
 
     if not tf.gfile.Exists(dest_dir):
         tf.io.gfile.makedirs(dest_dir)
-        new_fn = os.path.join(dest_dir, fn)
-        tf.io.gfile.rename(fn, new_fn)
-        for _ in tqdm(libarchive.public.file_pour(new_fn)):
+        fn = os.path.abspath(fn)
+        os.chdir(dest_dir)
+        for _ in tqdm(libarchive.public.file_pour(fn)):
             pass
 
 

@@ -119,9 +119,11 @@ def unzip(fn: str, dest_dir: str = '.'):
     if not tf.gfile.Exists(dest_dir):
         tf.io.gfile.makedirs(dest_dir)
         fn = os.path.abspath(fn)
+        cur_dir = os.getcwd()
         os.chdir(dest_dir)
         for _ in tqdm(libarchive.public.file_pour(fn)):
             pass
+        os.chdir(cur_dir)
 
 
 def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:

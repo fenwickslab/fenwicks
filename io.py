@@ -57,7 +57,7 @@ def find_files(data_dir: str, labels: List[str], shuffle: bool = False, file_ext
 def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle: bool = False, file_ext: str = 'jpg', id_col='id',
                               label_col='label', _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
     train_labels = pd.read_csv(csv_fn)
-    labels = sorted(train_labels.label.unique()) if _labels is None else _labels
+    labels = sorted(train_labels[label_col].unique()) if _labels is None else _labels
     key_id = dict([(label, idx) for idx, label in enumerate(labels)])
 
     filepaths = []

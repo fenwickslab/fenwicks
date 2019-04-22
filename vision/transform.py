@@ -114,6 +114,7 @@ def random_translate(x: tf.Tensor, max_translation: int = 10) -> tf.Tensor:
     return tf.contrib.image.translate(x, translation=[tl[0], tl[1]])
 
 
+# todo: get partial
 def ramdom_pad_crop(x: tf.Tensor, pad_size: int) -> tf.Tensor:
     """
     Randomly pad the image by `pad_size` at each border (top, bottom, left, right). Then, crop the padded image to its
@@ -159,6 +160,7 @@ def imagenet_normalize_caffe(x: tf.Tensor) -> tf.Tensor:
     return x[..., ::-1] * 255 - [103.939, 116.779, 123.68]
 
 
+# todo: rename to standard scaler
 def normalize(x: tf.Tensor, x_mean, x_std) -> tf.Tensor:
     return (x - x_mean) / x_std
 

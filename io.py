@@ -20,6 +20,7 @@ def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
     return matching_files
 
 
+# todo: generalize and move to core
 def shuffle_paths_labels(paths: List[str], labels: List[int]) -> Tuple[List[str], List[int]]:
     c = list(zip(paths, labels))
     random.shuffle(c)
@@ -140,6 +141,16 @@ def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:
             if tf.gfile.IsDirectory(os.path.join(data_dir, path)) and path not in exclude_dirs]
 
 
+def merge_dirs(source_dirs: List[str], dest_dir: str):
+    if not tf.gfile.Exists(dest_dir):
+        tf.io.gfile.makedirs(dest_dir)
+        for d in source_dirs:
+            files = tf.gfile.ListDirectory(d)
+            for fn in files:
+                new_fn = os.path.join(dest_dir, fn)
+                tf.io.gfile.rename(fn, new_fn)
+
+
 def get_model_dir(bucket: str, model: str) -> str:
     """
     Get recommended directory to store parameters of a pre-trained model.
@@ -165,6 +176,14 @@ def get_gcs_dirs(bucket: str, project: str) -> Tuple[str, str]:
     return data_dir, work_dir
 
 
+# todo: gcs_path is a dir
 def upload_to_gcs(local_path: str, gcs_path: str):
+    """
+    Upload a local file to Google Cloud Storage, if it doesn't already exist on GCS.
+
+    :param local_path: path to the local file to be uploaded.
+    :param gcs_path: path to the GCS file. Need to be the full file name.
+    :return: None.
+    """
     if not tf.gfile.Exists(gcs_path):
         tf.gfile.Copy(local_path, gcs_path)

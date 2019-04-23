@@ -45,3 +45,19 @@ def show_dataset(ds: tf.data.Dataset, num_batch: int = 1, n_img: int = 10):
             n_img -= len(x)
 
     show_images(X)
+
+
+def show_transform(tfm, fn: str, n: int = 5):
+    X = []
+
+    img = tf.read_file(fn)
+    img = tf.io.decode_image(img, channels=3, dtype=tf.float32)
+    img.set_shape([None, None, 3])
+    op = tfm(img)
+
+    with tf.Session() as sess:
+        for i in range(n):
+            x = sess.run(op)
+            X.append(x)
+
+    show_images(X)

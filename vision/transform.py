@@ -104,9 +104,9 @@ def random_rotate_90(x: tf.Tensor) -> tf.Tensor:
 
 
 # todo: dtype
-def random_rotate(x: tf.Tensor, max_deg: float = 45) -> tf.Tensor:
+def random_rotate(x: tf.Tensor, max_deg: float = 10) -> tf.Tensor:
     deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
-    return tf.contrib.image.rotate(x, math.radians(deg))
+    return tf.contrib.image.rotate(x, deg * math.pi / 180, interpolation='BILINEAR')
 
 
 def random_translate(x: tf.Tensor, max_translation: int = 10) -> tf.Tensor:

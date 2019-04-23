@@ -88,5 +88,5 @@ def plot_counts_pie(y: List[int], labels: List[str], max_item: int = 10):
         cnt[labels[k]] = cnt.pop(k)
 
     items = sorted(cnt.items(), key=operator.itemgetter(1), reverse=True)
-    pie_df = pd.DataFrame(items[max_item], columns=['id', 'count'])
+    pie_df = pd.DataFrame(items[:max_item], columns=['id', 'count'])
     plot_pie_df(pie_df)

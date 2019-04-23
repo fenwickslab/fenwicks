@@ -21,6 +21,7 @@ def show_images(X):
     ax.axis('off')
     anim = animation.FuncAnimation(fig, animate, frames=len(X), interval=1000)
     display(anim)
+    return anim
 
 
 def show_image_files(files: List[str]):

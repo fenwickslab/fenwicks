@@ -1,11 +1,15 @@
-import IPython
 import tensorflow as tf
 import pandas as pd
 import plotly.plotly
 import plotly.graph_objs as go
 import numpy as np
-from IPython.display import display
 import cufflinks as cf
+import operator
+import IPython
+
+from IPython.display import display
+from typing import List
+from collections import Counter
 
 
 def configure_plotly_browser_state():
@@ -58,16 +62,28 @@ def plot_lr_func(lr_func, total_steps):
 
 
 def plot_df_counts(df: pd.DataFrame, col: str, max_item: int = 10):
-    series = df[col].value_counts()[:max_item]
+    series = df[col].value_counts().sort_values(ascending=False)[:max_item]
     layout = go.Layout(height=350, width=350, yaxis=go.layout.YAxis(title='Count'),
                        margin=go.layout.Margin(l=80, r=20, b=40, t=20))
     series.iplot(kind='bar', yTitle='Count', layout=layout)
 
 
-def plot_df_counts_pie(df: pd.DataFrame, col: str, max_item: int = 10):
-    s = df[col].value_counts()[:max_item]
-    pie_df = pd.DataFrame({'id': s.index, 'count': s.values})
+def plot_pie_df(pie_df: pd.DataFrame):
     layout = go.Layout(height=350, width=350, margin=go.layout.Margin(l=50, r=0, b=0, t=0),
-                       yaxis=go.layout.YAxis(title='y'),
-                       xaxis=go.layout.XAxis(title='x'))
+                       yaxis=go.layout.YAxis(title='y'), xaxis=go.layout.XAxis(title='x'))
     pie_df.iplot(kind='pie', labels='id', values='count', layout=layout, pull=.05, hole=0.2)
+
+
+def plot_df_counts_pie(df: pd.DataFrame, col: str, max_item: int = 10):
+    s = df[col].value_counts().sort_values(ascending=False)[:max_item]
+    pie_df = pd.DataFrame({'id': s.index, 'count': s.values})
+    plot_pie_df(pie_df)
+
+
+def plot_counts_pie(y: List[int], labels: List[str], max_item: int = 10):
+    cnt = Counter(y)
+    for k in cnt:
+        cnt[labels[k]] = cnt.pop(k)
+    items = sorted(cnt.items(), key=operator.itemgetter(1), reverse=True)
+    pie_df = pd.DataFrame(items[max_item], columns=['id', 'count'])
+    plot_pie_df(pie_df)

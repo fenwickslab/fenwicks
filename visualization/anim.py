@@ -20,7 +20,7 @@ def show_images(X):
     fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
     ax.axis('off')
     anim = animation.FuncAnimation(fig, animate, frames=len(X), interval=1000)
-    display(anim)
+    # display(anim)
     return anim
 
 

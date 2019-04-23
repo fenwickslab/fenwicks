@@ -20,7 +20,7 @@ def show_images(X):
     fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
     ax.axis('off')
     anim = animation.FuncAnimation(fig, animate, frames=len(X), interval=1000)
-    # display(anim)
+    display(anim)
     return anim
 
 
@@ -29,7 +29,7 @@ def show_image_files(files: List[str]):
     for fn in files:
         x = plt.imread(fn)
         X.append(x)
-    show_images(X)
+    return show_images(X)
 
 
 def show_dataset(ds: tf.data.Dataset, num_batch: int = 1, n_img: int = 10):
@@ -45,7 +45,7 @@ def show_dataset(ds: tf.data.Dataset, num_batch: int = 1, n_img: int = 10):
             X.extend(x / 2 + 0.5)  # fixme
             n_img -= len(x)
 
-    show_images(X)
+    return show_images(X)
 
 
 def show_transform(tfm, fn: str, n: int = 5):
@@ -61,4 +61,4 @@ def show_transform(tfm, fn: str, n: int = 5):
             x = sess.run(op)
             X.append(x)
 
-    show_images(X)
+    return show_images(X)

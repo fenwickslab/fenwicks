@@ -74,7 +74,7 @@ def plot_pie_df(pie_df: pd.DataFrame):
     pie_df.iplot(kind='pie', labels='id', values='count', layout=layout, pull=.05, hole=0.2)
 
 
-def plot_df_counts_pie(df: pd.DataFrame, col: str, max_item: int = 10):
+def plot_counts_pie_df(df: pd.DataFrame, col: str, max_item: int = 10):
     s = df[col].value_counts().sort_values(ascending=False)[:max_item]
     pie_df = pd.DataFrame({'id': s.index, 'count': s.values})
     plot_pie_df(pie_df)
@@ -82,8 +82,11 @@ def plot_df_counts_pie(df: pd.DataFrame, col: str, max_item: int = 10):
 
 def plot_counts_pie(y: List[int], labels: List[str], max_item: int = 10):
     cnt = Counter(y)
-    for k in cnt:
+
+    cnt_copy = cnt.copy()
+    for k in cnt_copy:
         cnt[labels[k]] = cnt.pop(k)
+
     items = sorted(cnt.items(), key=operator.itemgetter(1), reverse=True)
     pie_df = pd.DataFrame(items[max_item], columns=['id', 'count'])
     plot_pie_df(pie_df)

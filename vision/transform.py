@@ -50,43 +50,15 @@ def distorted_bbox_crop(x: tf.Tensor, min_object_covered: float = 0.1, aspect_ra
     return x
 
 
-# fixme
-def random_crop(x: tf.Tensor, boxes, scales) -> tf.Tensor:
-    # Create different crops for an image
-    crops = tf.image.crop_and_resize([x], boxes=boxes, box_ind=np.zeros(len(scales)), crop_size=(32, 32))
-    # Return a random crop
-    return crops[tf.random_uniform(shape=[], minval=0, maxval=len(scales), dtype=tf.int32)]
-
-
-# fixme
-def random_zoom(x: tf.Tensor) -> tf.Tensor:
-    # Generate 20 crop settings, ranging from a 1% to 20% crop.
-    scales = list(np.arange(0.8, 1.0, 0.01))
-    boxes = np.zeros((len(scales), 4))
-
-    for i, scale in enumerate(scales):
-        x1 = y1 = 0.5 - (0.5 * scale)
-        x2 = y2 = 0.5 + (0.5 * scale)
-        boxes[i] = [x1, y1, x2, y2]
-
-    choice = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=tf.float32)
-
-    # Only apply cropping 50% of the time
-    return tf.cond(choice < 0.5, lambda: x, lambda: random_crop(x, boxes, scales))
-
-
-# fixme
-def random_color(x: tf.Tensor) -> tf.Tensor:
-    x = tf.image.random_hue(x, 0.08)
-    x = tf.image.random_saturation(x, 0.6, 1.6)
-    x = tf.image.random_brightness(x, 0.05)
-    x = tf.image.random_contrast(x, 0.7, 1.3)
+def random_lighting(x: tf.Tensor, max_lighting: float = 0.2) -> tf.Tensor:
+    x = tf.image.random_brightness(x, 0.5 * max_lighting)
+    x = tf.image.random_contrast(x, 1 - max_lighting, 1 / (1 - max_lighting))
     return x
 
 
 def random_flip(x: tf.Tensor, flip_vert: bool = False) -> tf.Tensor:
     """
-    Randomly flip an image horizontally, and optionally also vertically.
+    Randomly flip the input image horizontally, and optionally also vertically.
 
     :param x: Input image.
     :param flip_vert: Whether to perform vertical flipping. Default: False.
@@ -98,12 +70,15 @@ def random_flip(x: tf.Tensor, flip_vert: bool = False) -> tf.Tensor:
     return x
 
 
-# todo: dtype
 def random_rotate_90(x: tf.Tensor) -> tf.Tensor:
+    """
+    Randomly rotate the input image by either 0, 90, 180 or 270 degrees.
+    :param x: Input image.
+    :return: Transformed image.
+    """
     return tf.image.rot90(x, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
 
 
-# todo: dtype
 def random_rotate(x: tf.Tensor, max_deg: float = 10) -> tf.Tensor:
     deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
     return tf.contrib.image.rotate(x, deg * math.pi / 180, interpolation='BILINEAR')

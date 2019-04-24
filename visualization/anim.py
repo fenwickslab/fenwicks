@@ -2,7 +2,7 @@ import tensorflow as tf
 from matplotlib import animation, rc
 import matplotlib.pylab as plt
 from typing import List
-from IPython.display import Image
+from IPython.display import Image, display
 
 
 def setup():
@@ -63,5 +63,5 @@ def show_transform(tfm, img_fn: str, n_frames: int = 5, fps: int = 5, anim_fn: s
     anim = images_anim(images)
     anim.save(anim_fn, writer='imagemagick', fps=fps)
     anim_fn_png = f'{anim_fn}.png'
-    tf.gfile.Copy(anim_fn, anim_fn_png)
-    Image(anim_fn_png)
+    tf.gfile.Copy(anim_fn, anim_fn_png, overwrite=True)
+    display(Image(anim_fn_png))

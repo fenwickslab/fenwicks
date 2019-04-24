@@ -111,7 +111,7 @@ def random_rotate(x: tf.Tensor, max_deg: float = 10) -> tf.Tensor:
 
 def random_translate(x: tf.Tensor, max_translation: int = 10) -> tf.Tensor:
     tl = tf.random_uniform(shape=[2], minval=-max_translation, maxval=max_translation, dtype=tf.int32)
-    return tf.contrib.image.translate(x, translation=[tl[0], tl[1]])
+    return tf.contrib.image.translate(x, translations=[tl[0], tl[1]])
 
 
 # todo: get partial

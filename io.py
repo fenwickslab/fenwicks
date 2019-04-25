@@ -103,12 +103,14 @@ def file_size(fn: str) -> int:
     return stat.length
 
 
-def unzip(fn: str, dest_dir: str = '.'):
+def unzip(fn, dest_dir: str = '.', overwrite: bool = False):
     """
-    Extract a .zip or .7z file.
+    Extract one or more .zip or .7z file(s) to a destination directory.
 
-    :param fn: Name of the file to be decompressed.
+    :param fn: Name of the file(s) to be decompressed. The type of `fn` can be either `str`, or `List[str]`
     :param dest_dir: Destination directory. Default: current directory.
+    :param overwrite: Whether to overwrite when the destination directory already exists. Default: False, in which case
+                      nothing is done when the destination directory already exists.
     :return: None.
     """
 
@@ -117,13 +119,22 @@ def unzip(fn: str, dest_dir: str = '.'):
     except ImportError:
         raise ImportError('libarchive not installed. Run !apt install libarchive-dev and then !pip install libarchive.')
 
-    if not tf.gfile.Exists(dest_dir):
+    is_one_file = isinstance(fn, str)
+
+    if overwrite or not tf.gfile.Exists(dest_dir):
         tf.io.gfile.makedirs(dest_dir)
-        fn = os.path.abspath(fn)
+
+        if is_one_file:
+            files = [os.path.abspath(fn)]
+        else:
+            files = list(map(os.path.abspath, fn))
+
         cur_dir = os.getcwd()
         os.chdir(dest_dir)
-        for _ in tqdm(libarchive.public.file_pour(fn)):
-            pass
+        for fn in files:
+            tf.logging.info('Decompressing:', fn)
+            for _ in tqdm(libarchive.public.file_pour(fn)):
+                pass
         os.chdir(cur_dir)
 
 

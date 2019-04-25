@@ -185,6 +185,10 @@ def tfm_standard_scaler(mean, std):
     return functools.partial(standard_scaler, mean=mean, std=std)
 
 
+def tfm_cut(h: int, w: int):
+    return functools.partial(cutout, h=h, w=w)
+
+
 def get_train_transforms(h: int, w: int, flip_vert: bool = False, normalizer=imagenet_normalize_tf) -> List:
     return [distorted_bbox_crop,
             tfm_set_shape(),

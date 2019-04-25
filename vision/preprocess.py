@@ -24,3 +24,9 @@ def compute_image_mean_std(fn_data: str, n_data: int, batch_size: int = 1) -> Tu
     x_std = np.sqrt((x_count * x_sum_sq - x_sum * x_sum) / (x_count * (x_count - 1)))
 
     return x_mean, x_std, h, w
+
+
+def array2img(x: tf.Tensor) -> tf.Tensor:
+    x = x + tf.maximum(-tf.minimum(x), 0)
+    x_max = tf.maximum(x)
+    return x / x_max

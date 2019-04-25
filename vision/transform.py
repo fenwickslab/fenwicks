@@ -1,5 +1,4 @@
 from ..core import *
-import numpy as np
 import math
 
 

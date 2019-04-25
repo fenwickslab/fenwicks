@@ -82,9 +82,10 @@ def random_rotate_90(x: tf.Tensor) -> tf.Tensor:
 
 def random_affine(x: tf.Tensor, theta) -> tf.Tensor:
     x = tf.expand_dims(x, 0)
-    result = affine_transform(x, theta)
-    result = tf.squeeze(result, [0])
-    return result
+    x = affine_transform(x, theta)
+    x = tf.clip_by_value(x, 0.0, 1.0)
+    x = tf.squeeze(x, [0])
+    return x
 
 
 def random_rotate(x: tf.Tensor, max_deg: float = 10) -> tf.Tensor:
@@ -185,7 +186,7 @@ def tfm_standard_scaler(mean, std):
     return functools.partial(standard_scaler, mean=mean, std=std)
 
 
-def tfm_cut(h: int, w: int):
+def tfm_cutout(h: int, w: int):
     return functools.partial(cutout, h=h, w=w)
 
 

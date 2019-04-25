@@ -132,10 +132,12 @@ def unzip(fn, dest_dir: str = '.', overwrite: bool = False):
         cur_dir = os.getcwd()
         os.chdir(dest_dir)
         for fn in files:
-            tf.logging.info('Decompressing:', fn)
+            tf.logging.info(f'Decompressing: {fn}')
             for _ in tqdm(libarchive.public.file_pour(fn)):
                 pass
         os.chdir(cur_dir)
+    else:
+        tf.logging.info(f'Destination directory exists. Skipping.')
 
 
 def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:

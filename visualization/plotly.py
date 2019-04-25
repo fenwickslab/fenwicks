@@ -61,8 +61,8 @@ def plot_lr_func(lr_func, total_steps):
     plotly.offline.iplot(fig)
 
 
-def plot_df_counts(df: pd.DataFrame, col: str, max_item: int = 10):
-    series = df[col].value_counts().sort_values(ascending=False)[:max_item]
+def plot_df_counts(df: pd.DataFrame, col: str, max_items: int = 10):
+    series = df[col].value_counts().sort_values(ascending=False)[:max_items]
     layout = go.Layout(height=350, width=350, yaxis=go.layout.YAxis(title='Count'),
                        margin=go.layout.Margin(l=80, r=20, b=40, t=20))
     series.iplot(kind='bar', yTitle='Count', layout=layout)
@@ -74,13 +74,14 @@ def plot_pie_df(pie_df: pd.DataFrame):
     pie_df.iplot(kind='pie', labels='id', values='count', layout=layout, pull=.05, hole=0.2)
 
 
-def plot_counts_pie_df(df: pd.DataFrame, col: str, max_item: int = 10):
-    s = df[col].value_counts().sort_values(ascending=False)[:max_item]
+def plot_counts_pie_df(df: pd.DataFrame, col: str, max_items: int = 10):
+    s = df[col].value_counts().sort_values(ascending=False)[:max_items]
     pie_df = pd.DataFrame({'id': s.index, 'count': s.values})
     plot_pie_df(pie_df)
 
 
-def plot_counts_pie(y: List[int], labels: List[str], max_item: int = 10):
+# todo: merge items beyond max_item into an 'others' class
+def plot_counts_pie(y: List[int], labels: List[str], max_items: int = 10):
     cnt = Counter(y)
 
     cnt_copy = cnt.copy()
@@ -88,5 +89,5 @@ def plot_counts_pie(y: List[int], labels: List[str], max_item: int = 10):
         cnt[labels[k]] = cnt.pop(k)
 
     items = sorted(cnt.items(), key=operator.itemgetter(1), reverse=True)
-    pie_df = pd.DataFrame(items[:max_item], columns=['id', 'count'])
+    pie_df = pd.DataFrame(items[:max_items], columns=['id', 'count'])
     plot_pie_df(pie_df)

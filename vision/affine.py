@@ -2,7 +2,10 @@ import tensorflow as tf
 
 
 def get_pixel_value(img: tf.Tensor, x, y) -> tf.Tensor:
-    B, H, W, _ = tf.shape(x)
+    x_shape = tf.shape(x)
+    B = x_shape[0]
+    H = x_shape[1]
+    W = x_shape[2]
 
     batch_idx = tf.range(0, B)
     batch_idx = tf.reshape(batch_idx, (B, 1, 1))
@@ -13,7 +16,9 @@ def get_pixel_value(img: tf.Tensor, x, y) -> tf.Tensor:
 
 
 def bilinear_sampler(img: tf.Tensor, x, y) -> tf.Tensor:
-    _, H, W, _ = tf.shape(img)
+    img_shape = tf.shape(img)
+    H = img_shape[1]
+    W = img_shape[2]
     max_y = tf.cast(H - 1, tf.int32)
     max_x = tf.cast(W - 1, tf.int32)
     zero = tf.zeros([], dtype=tf.int32)
@@ -99,7 +104,10 @@ def affine_grid_generator(H: int, W: int, tfm_mat) -> tf.Tensor:
 
 
 def affine_transform(X: tf.Tensor, tfm_mat, out_dims=None) -> tf.Tensor:
-    B, H, W, _ = tf.shape(X)
+    X_shape = tf.shape(X)
+    B = X_shape[0]
+    H = X_shape[1]
+    W = X_shape[2]
     tfm_mat = tf.reshape(tfm_mat, [B, 2, 3])
 
     out_H, out_W = out_dims if out_dims else H, W

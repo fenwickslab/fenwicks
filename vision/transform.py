@@ -1,5 +1,5 @@
 from ..core import *
-import math
+from .affine import affine_transform
 
 
 def cutout(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
@@ -65,7 +65,7 @@ def random_flip(x: tf.Tensor, flip_vert: bool = False) -> tf.Tensor:
     """
     x = tf.image.random_flip_left_right(x)
     if flip_vert:
-        x = tf.image.random_flip_up_down(x)
+        x = random_rotate_90(x)
     return x
 
 
@@ -79,8 +79,17 @@ def random_rotate_90(x: tf.Tensor) -> tf.Tensor:
 
 
 def random_rotate(x: tf.Tensor, max_deg: float = 10) -> tf.Tensor:
+    x = tf.expand_dims(x, 0)
+
     deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
-    return tf.contrib.image.rotate(x, deg * math.pi / 180, interpolation='BILINEAR')
+    theta = tf.convert_to_tensor([
+        [tf.cos(deg2rad(deg)), -tf.sin(deg2rad(deg)), 0],
+        [tf.sin(deg2rad(deg)), tf.cos(deg2rad(deg)), 0]
+    ])
+
+    result = affine_transform(x, theta)
+    result = tf.squeeze(result, [0])
+    return result
 
 
 def random_translate(x: tf.Tensor, max_translation: int = 10) -> tf.Tensor:

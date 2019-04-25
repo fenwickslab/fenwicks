@@ -51,7 +51,9 @@ def distorted_bbox_crop(x: tf.Tensor, min_object_covered: float = 0.1, aspect_ra
 
 def random_lighting(x: tf.Tensor, max_lighting: float = 0.2) -> tf.Tensor:
     x = tf.image.random_brightness(x, 0.5 * max_lighting)
+    x = tf.clip_by_value(x, 0.0, 1.0)
     x = tf.image.random_contrast(x, 1 - max_lighting, 1 / (1 - max_lighting))
+    x = tf.clip_by_value(x, 0.0, 1.0)
     return x
 
 

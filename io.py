@@ -201,3 +201,5 @@ def upload_to_gcs(local_path: str, gcs_path: str):
     """
     if not tf.gfile.Exists(gcs_path):
         tf.gfile.Copy(local_path, gcs_path)
+    else:
+        tf.logging.info('Output file already exists. Skipping.')

@@ -154,6 +154,14 @@ def imagenet_normalize_caffe(x: tf.Tensor) -> tf.Tensor:
 
 
 def standard_scaler(x: tf.Tensor, mean, std) -> tf.Tensor:
+    """
+    Normalize an input image by subtracting a given mean and then divide by a given standard deviation.
+
+    :param x: Input image.
+    :param mean: Mean value of the pixels.
+    :param std: Standard deviation of the pixels.
+    :return: Normalized image.
+    """
     return (x - mean) / std
 
 
@@ -163,7 +171,7 @@ def set_shape(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
 
 
 def tfm_set_shape(h: int = None, w: int = None, c: int = 3):
-    return functools.partial(set_shape, h=h, w=w, c=c),
+    return functools.partial(set_shape, h=h, w=w, c=c)
 
 
 def tfm_resize(h: int, w: int):

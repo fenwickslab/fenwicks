@@ -3,6 +3,7 @@ from . import io
 from . import data
 from . import layers
 from . import train
+from . import vision
 
 from .utils import colab as colab_utils
 

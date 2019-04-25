@@ -59,3 +59,5 @@ def setup_kaggle_from_gdrive(gdrive_path: str = './gdrive/My Drive/kaggle.json',
         create_clean_dir(os.path.dirname(local_path))
         tf.gfile.Copy(gdrive_path, local_path)
         os.chmod(local_path, 600)
+    else:
+        tf.logging.info(f'Kaggle already set up. Skipping.')

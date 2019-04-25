@@ -20,6 +20,7 @@ def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
     return matching_files
 
 
+# todo: generalize and move to core
 def shuffle_paths_labels(paths: List[str], labels: List[int]) -> Tuple[List[str], List[int]]:
     c = list(zip(paths, labels))
     random.shuffle(c)
@@ -53,18 +54,18 @@ def find_files(data_dir: str, labels: List[str], shuffle: bool = False, file_ext
     return filepaths, filelabels
 
 
-def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle: bool = False, file_ext: str = 'jpg',
-                              _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
+def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle: bool = False, file_ext: str = 'jpg', id_col='id',
+                              label_col='label', _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
     train_labels = pd.read_csv(csv_fn)
-    labels = sorted(train_labels.label.unique()) if _labels is None else _labels
+    labels = sorted(train_labels[label_col].unique()) if _labels is None else _labels
     key_id = dict([(label, idx) for idx, label in enumerate(labels)])
 
     filepaths = []
     filelabels = []
 
     for _, row in train_labels.iterrows():
-        filepaths.append(os.path.join(data_dir, f'{row["id"]}.{file_ext}'))
-        filelabels.append(key_id[row['label']])
+        filepaths.append(os.path.join(data_dir, f'{row[id_col]}.{file_ext}'))
+        filelabels.append(key_id[row[label_col]])
 
     if shuffle:
         filepaths, filelabels = shuffle_paths_labels(filepaths, filelabels)
@@ -102,11 +103,14 @@ def file_size(fn: str) -> int:
     return stat.length
 
 
-def unzip(fn: str):
+def unzip(fn, dest_dir: str = '.', overwrite: bool = False):
     """
-    Extract a .zip or .7z file.
+    Extract one or more .zip or .7z file(s) to a destination directory.
 
-    :param fn: Name of the file to be decompressed.
+    :param fn: Name of the file(s) to be decompressed. The type of `fn` can be either `str`, or `List[str]`
+    :param dest_dir: Destination directory. Default: current directory.
+    :param overwrite: Whether to overwrite when the destination directory already exists. Default: False, in which case
+                      nothing is done when the destination directory already exists.
     :return: None.
     """
 
@@ -115,8 +119,25 @@ def unzip(fn: str):
     except ImportError:
         raise ImportError('libarchive not installed. Run !apt install libarchive-dev and then !pip install libarchive.')
 
-    for _ in tqdm(libarchive.public.file_pour(fn)):
-        pass
+    is_one_file = isinstance(fn, str)
+
+    if overwrite or not tf.gfile.Exists(dest_dir):
+        tf.io.gfile.makedirs(dest_dir)
+
+        if is_one_file:
+            files = [os.path.abspath(fn)]
+        else:
+            files = list(map(os.path.abspath, fn))
+
+        cur_dir = os.getcwd()
+        os.chdir(dest_dir)
+        for fn in files:
+            tf.logging.info(f'Decompressing: {fn}')
+            for _ in tqdm(libarchive.public.file_pour(fn)):
+                pass
+        os.chdir(cur_dir)
+    else:
+        tf.logging.info(f'Destination directory exists. Skipping.')
 
 
 def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:
@@ -133,6 +154,15 @@ def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:
             if tf.gfile.IsDirectory(os.path.join(data_dir, path)) and path not in exclude_dirs]
 
 
+def merge_dirs(source_dirs: List[str], dest_dir: str):
+    if not tf.gfile.Exists(dest_dir):
+        tf.io.gfile.makedirs(dest_dir)
+        for d in source_dirs:
+            files = tf.gfile.ListDirectory(d)
+            for fn in files:
+                old_fn = os.path.join(d, fn)
+                new_fn = os.path.join(dest_dir, fn)
+                tf.io.gfile.rename(old_fn, new_fn)
 
 
 def get_model_dir(bucket: str, model: str) -> str:
@@ -160,6 +190,16 @@ def get_gcs_dirs(bucket: str, project: str) -> Tuple[str, str]:
     return data_dir, work_dir
 
 
+# todo: gcs_path is a dir
 def upload_to_gcs(local_path: str, gcs_path: str):
+    """
+    Upload a local file to Google Cloud Storage, if it doesn't already exist on GCS.
+
+    :param local_path: path to the local file to be uploaded.
+    :param gcs_path: path to the GCS file. Need to be the full file name.
+    :return: None.
+    """
     if not tf.gfile.Exists(gcs_path):
         tf.gfile.Copy(local_path, gcs_path)
+    else:
+        tf.logging.info('Output file already exists. Skipping.')

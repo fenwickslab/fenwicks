@@ -57,6 +57,8 @@ def numpy_tfrecord(output_fn: str, X, y=None, overwrite: bool = False):
             for i in tqdm(range(n)):
                 example = numpy_tfexample(X_reshape[i]) if y is None else numpy_tfexample(X_reshape[i], y[i])
                 record_writer.write(example.SerializeToString())
+    else:
+        tf.logging.info('Output file already exists. Skipping.')
 
 
 # todo: number of threads.
@@ -102,6 +104,8 @@ def files_tfrecord(output_fn: str, paths: List[str], y: List[int] = None, overwr
                     img = img.reshape(-1)
                     example = numpy_tfexample(img) if y is None else numpy_tfexample(img, y[i])
                 record_writer.write(example.SerializeToString())
+    else:
+        tf.logging.info('Output file already exists. Skipping.')
 
 
 def data_dir_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False, overwrite: bool = False, extractor=None,
@@ -194,10 +198,10 @@ def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = Fals
 
 
 def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_fn: str, shuffle: bool = False,
-                                overwrite: bool = False, extractor=None, file_ext: str = 'jpg',
-                                _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
-    paths, y, labels = io.find_files_with_label_csv(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext,
-                                                    _labels=_labels)
+                                overwrite: bool = False, extractor=None, file_ext: str = 'jpg', id_col='id',
+                                label_col='label', _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
+    paths, y, labels = io.find_files_with_label_csv(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext, id_col=id_col,
+                                                    label_col=label_col, _labels=_labels)
     files_tfrecord(output_fn, paths, y, overwrite, extractor)
 
     return paths, y, labels
@@ -281,7 +285,8 @@ def tfexample_image_parser(tfexample: tf.train.Example, tfms: List = None, has_l
         return x
 
 
-def get_tfexample_image_parser(h: int, w: int, training: bool = True, normalizer=transform.imagenet_normalize_tf):
+def get_tfexample_image_parser(h: int, w: int, training: bool = True, flip_vert: bool = False,
+                               normalizer=transform.imagenet_normalize_tf):
     """
     Get a image parser function that parses a TFRecord into an image, applying standard transformations for ImageNet.
     For the training set, standard ImageNet data augmentation is also applied.
@@ -289,13 +294,14 @@ def get_tfexample_image_parser(h: int, w: int, training: bool = True, normalizer
     :param h: Height of a data image.
     :param w: Width of a data image.
     :param training: Whether this is a training set.
+    :param flip_vert: Whether to perform random vertical flipping in the training input pipeline.
     :param normalizer: Data normalization function. Default to Tensorflow's ImageNet noramlization function, i.e.,
     `x = (x-0.5)*2`.
     :return: A function that parses a TFExample into an image.
     """
 
     if training:
-        tfms = transform.get_train_transforms(h, w, normalizer=normalizer)
+        tfms = transform.get_train_transforms(h, w, flip_vert=flip_vert, normalizer=normalizer)
     else:
         tfms = transform.get_eval_transforms(h, w, normalizer=normalizer)
     return functools.partial(tfexample_image_parser, tfms=tfms)

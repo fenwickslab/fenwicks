@@ -4,6 +4,7 @@ from .core import *
 
 
 # todo: SequentialLayer
+# todo: Parallel
 class Sequential(tf.keras.Model):
     """
     A sequential model (or composite layer), which executes its internal layers sequentially in the same order they are

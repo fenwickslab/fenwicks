@@ -78,27 +78,34 @@ def random_rotate_90(x: tf.Tensor) -> tf.Tensor:
     return tf.image.rot90(x, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
 
 
-def random_rotate(x: tf.Tensor, max_deg: float = 10) -> tf.Tensor:
+def random_affine(x: tf.Tensor, theta) -> tf.Tensor:
     x = tf.expand_dims(x, 0)
-
-    deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
-    theta = tf.convert_to_tensor([
-        [tf.cos(deg2rad(deg)), -tf.sin(deg2rad(deg)), 0],
-        [tf.sin(deg2rad(deg)), tf.cos(deg2rad(deg)), 0]
-    ])
-
     result = affine_transform(x, theta)
     result = tf.squeeze(result, [0])
     return result
 
 
-def random_translate(x: tf.Tensor, max_translation: int = 10) -> tf.Tensor:
-    tl = tf.random_uniform(shape=[2], minval=-max_translation, maxval=max_translation, dtype=tf.int32)
-    return tf.contrib.image.translate(x, translations=[tl[0], tl[1]])
+def random_rotate(x: tf.Tensor, max_deg: float = 10) -> tf.Tensor:
+    deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
+    rad = deg2rad(deg)
+    theta = tf.convert_to_tensor([[tf.cos(rad), -tf.sin(rad), 0],
+                                  [tf.sin(rad), tf.cos(rad), 0]])
+    return random_affine(x, theta)
 
 
-# todo: get partial
-def ramdom_pad_crop(x: tf.Tensor, pad_size: int) -> tf.Tensor:
+def random_zoom(x: tf.Tensor, max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5):
+    scale = tf.random_uniform(shape=[], minval=1.0, maxval=max_zoom, dtype=tf.float32)
+
+    s = 1 - 1 / scale
+    col_c = s * (2 * col_pct - 1)
+    row_c = s * (2 * row_pct - 1)
+
+    theta = tf.convert_to_tensor([[1 / scale, 0, col_c],
+                                  [0, 1 / scale, row_c]])
+    return random_affine(x, theta)
+
+
+def random_pad_crop(x: tf.Tensor, pad_size: int) -> tf.Tensor:
     """
     Randomly pad the image by `pad_size` at each border (top, bottom, left, right). Then, crop the padded image to its
     original size.
@@ -143,9 +150,8 @@ def imagenet_normalize_caffe(x: tf.Tensor) -> tf.Tensor:
     return x[..., ::-1] * 255 - [103.939, 116.779, 123.68]
 
 
-# todo: rename to standard scaler
-def normalize(x: tf.Tensor, x_mean, x_std) -> tf.Tensor:
-    return (x - x_mean) / x_std
+def standard_scaler(x: tf.Tensor, mean, std) -> tf.Tensor:
+    return (x - mean) / std
 
 
 def set_shape(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
@@ -153,23 +159,43 @@ def set_shape(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
     return x
 
 
-def get_transform(func, **kw_args):
-    return functools.partial(func, kw_args)
+def tfm_set_shape(h: int = None, w: int = None, c: int = 3):
+    return functools.partial(set_shape, h=h, w=w, c=c),
+
+
+def tfm_resize(h: int, w: int):
+    return functools.partial(tf.image.resize_images, size=[h, w])
+
+
+def tfm_random_flip(flip_vert: bool = False):
+    return functools.partial(random_flip, flip_vert=flip_vert)
+
+
+def tfm_central_crop(center_frac: float = 1.0):
+    return functools.partial(tf.image.central_crop, central_fraction=center_frac)
+
+
+def tfm_pad_crop(pad_size: int):
+    return functools.partial(random_pad_crop, pad_size=pad_size)
+
+
+def tfm_standard_scaler(mean, std):
+    return functools.partial(standard_scaler, mean=mean, std=std)
 
 
 def get_train_transforms(h: int, w: int, flip_vert: bool = False, normalizer=imagenet_normalize_tf) -> List:
     return [distorted_bbox_crop,
-            functools.partial(set_shape, h=None, w=None),
-            functools.partial(tf.image.resize_images, size=[h, w]),
-            functools.partial(random_flip, flip_vert=flip_vert),
+            tfm_set_shape(),
+            tfm_resize(h, w),
+            tfm_random_flip(flip_vert),
             distort_color,
             normalizer,
             ]
 
 
 def get_eval_transforms(h: int, w: int, center_frac: float = 1.0, normalizer=imagenet_normalize_tf) -> List:
-    return [functools.partial(tf.image.central_crop, central_fraction=center_frac),
-            functools.partial(set_shape, h=None, w=None),
-            functools.partial(tf.image.resize_images, size=[h, w]),
+    return [tfm_central_crop(center_frac),
+            tfm_set_shape(),
+            tfm_resize(h, w),
             normalizer,
             ]

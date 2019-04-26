@@ -133,8 +133,7 @@ def data_dir_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False, over
     :return: `paths`: list of paths to all input data files. `y`: list of labels, each of which is an integer. `labels`:
              list of string labels, such as the first corresponds to `y=0`, the second corresponds to `y=1`, and so on.
     """
-    if exclude_dirs is None:
-        exclude_dirs = []
+    exclude_dirs = exclude_dirs or []
     labels = io.sub_dirs(data_dir, exclude_dirs)
     paths, y = io.find_files(data_dir, labels, shuffle=shuffle, file_ext=file_ext)
     files_tfrecord(output_fn, paths, y, overwrite, extractor)
@@ -174,8 +173,7 @@ def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = Fals
     :return: `paths`: list of paths to all input data files. `y`: list of labels, each of which is an integer. `labels`:
              list of string labels, such as the first corresponds to `y=0`, the second corresponds to `y=1`, and so on.
     """
-    if exclude_dirs is None:
-        exclude_dirs = []
+    exclude_dirs = exclude_dirs or []
 
     labels = io.sub_dirs(data_dir, exclude_dirs)
     paths, y = io.find_files(data_dir, labels, shuffle=shuffle, file_ext=file_ext)

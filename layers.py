@@ -102,7 +102,7 @@ class ConvBlk(Sequential):
         for i in range(convs):
             self.add(
                 ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom, bn_eps=bn_eps))
-        self.add(tf.keras.layers.MaxPooling2D() if pool is None else pool)
+        self.add(pool or tf.keras.layers.MaxPooling2D())
 
 
 class ConvResBlk(ConvBlk):

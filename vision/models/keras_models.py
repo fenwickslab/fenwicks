@@ -85,8 +85,8 @@ def get_model(model_name: str, bucket: str, model_dir: str = None, include_top: 
         'DenseNet169': dict(keras_model=densenet.DenseNet169, img_size=224, normalizer=imagenet_normalize_pytorch),
         'DenseNet201': dict(keras_model=densenet.DenseNet201, img_size=224, normalizer=imagenet_normalize_pytorch),
     }
-    if model_dir is None:
-        model_dir = get_model_dir(bucket, model_name)
+
+    model_dir = model_dir or get_model_dir(bucket, model_name)
     params = dict(**models[model_name], model_dir=model_dir, include_top=include_top, pooling=pooling,
                   overwrite=overwrite)
     return get_keras_model(**params)

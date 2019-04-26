@@ -27,8 +27,7 @@ def exp_decay_lr(init_lr: float, decay_steps: int, base_lr: float = 0, decay_rat
     """
 
     def lr_func(step: tf.Tensor = None) -> tf.Tensor:
-        if step is None:
-            step = tf.train.get_or_create_global_step()
+        step = step or tf.train.get_or_create_global_step()
         return base_lr + tf.train.exponential_decay(init_lr, step, decay_steps, decay_rate)
 
     return lr_func
@@ -47,8 +46,7 @@ def triangular_lr(init_lr: float, total_steps: int, warmup_steps: int):
     """
 
     def lr_func(step: tf.Tensor = None) -> tf.Tensor:
-        if step is None:
-            step = tf.train.get_or_create_global_step()
+        step = step or tf.train.get_or_create_global_step()
         step = tf.cast(step, tf.float32)
         warmup_sched = lambda: step * init_lr / warmup_steps
         decay_sched = lambda: (total_steps - step) * init_lr / (total_steps - warmup_steps)
@@ -69,8 +67,7 @@ def cosine_lr(init_lr: float, total_steps: int):
     """
 
     def lr_func(step: tf.Tensor = None) -> tf.Tensor:
-        if step is None:
-            step = tf.train.get_or_create_global_step()
+        step = step or tf.train.get_or_create_global_step()
         return tf.train.cosine_decay_restarts(init_lr, step, total_steps)
 
     return lr_func

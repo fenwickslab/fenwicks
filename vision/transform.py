@@ -1,4 +1,9 @@
-from ..core import *
+import tensorflow as tf
+import functools
+
+from typing import List
+
+from .. import core
 from .affine import affine_transform
 
 
@@ -15,7 +20,7 @@ def cutout(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
     shape = tf.shape(x)
     x0 = tf.random.uniform([], 0, shape[0] + 1 - h, dtype=tf.int32)
     y0 = tf.random.uniform([], 0, shape[1] + 1 - w, dtype=tf.int32)
-    x = replace_slice(x, tf.zeros([h, w, c]), [x0, y0, 0])
+    x = core.replace_slice(x, tf.zeros([h, w, c]), [x0, y0, 0])
     return x
 
 
@@ -90,7 +95,7 @@ def random_affine(x: tf.Tensor, theta) -> tf.Tensor:
 
 def random_rotate(x: tf.Tensor, max_deg: float = 10) -> tf.Tensor:
     deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
-    rad = deg2rad(deg)
+    rad = core.deg2rad(deg)
     theta = tf.convert_to_tensor([[tf.cos(rad), -tf.sin(rad), 0],
                                   [tf.sin(rad), tf.cos(rad), 0]])
     return random_affine(x, theta)

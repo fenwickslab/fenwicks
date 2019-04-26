@@ -1,6 +1,7 @@
 import math
+import tensorflow as tf
 import numpy as np
-from .core import *
+from . import core
 
 
 # todo: SequentialLayer
@@ -19,7 +20,7 @@ class Sequential(tf.keras.Model):
         self.fw_layers.append(layer)
 
     def call(self, x):
-        return apply_transforms(x, self.fw_layers)
+        return core.apply_transforms(x, self.fw_layers)
 
 
 class Scaling(tf.keras.layers.Layer):
@@ -122,7 +123,7 @@ class ConvResBlk(ConvBlk):
 
     def call(self, inputs):
         h = super().call(inputs)
-        hh = apply_transforms(h, self.res)
+        hh = core.apply_transforms(h, self.res)
         return h + hh
 
 

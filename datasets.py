@@ -17,12 +17,16 @@ class URLs:
 
     KAGGLE_COMPETITION_DOWNLOAD = 'competitions download -c '
     KAGGLE_DATASETS_DOWNLOAD = 'datasets download -d '
+
     KAGGLE_CIFAR10 = f'{KAGGLE_COMPETITION_DOWNLOAD}cifar-10'
     KAGGLE_IMDB = f'{KAGGLE_COMPETITION_DOWNLOAD}word2vec-nlp-tutorial'
     KAGGLE_DIABETIC_RETINOPATHY = f'{KAGGLE_COMPETITION_DOWNLOAD}diabetic-retinopathy-detection'
-    KAGGLE_CARDIAC_FUNCTION = '{KAGGLE_COMPETITION_DOWNLOAD}second-annual-data-science-bowl'
+    KAGGLE_CARDIAC_FUNCTION = f'{KAGGLE_COMPETITION_DOWNLOAD}second-annual-data-science-bowl'
+    KAGGLE_RSNA_PNEUMONIA_DETECTION = f'rsna-pneumonia-detection-challenge'
+
     KAGGLE_SKIN_CANCER = f'{KAGGLE_DATASETS_DOWNLOAD}kmader/skin-cancer-mnist-ham10000'
     KAGGLE_BONE_AGE = f'{KAGGLE_DATASETS_DOWNLOAD}kmader/rsna-bone-age'
+    KAGGLE_PNEUMONIA = f'{KAGGLE_DATASETS_DOWNLOAD}paultimothymooney/chest-xray-pneumonia'
 
 
 def untar_data(url: str, dest: str = '.') -> str:

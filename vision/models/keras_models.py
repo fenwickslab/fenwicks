@@ -4,6 +4,7 @@ import functools
 
 from ...io import get_model_dir, create_clean_dir
 from ..transform import imagenet_normalize_tf, imagenet_normalize_caffe, imagenet_normalize_pytorch
+
 from typing import List, Tuple
 from collections import namedtuple
 from keras_applications import vgg16, vgg19, resnet, resnet50, resnext, resnet_v2, inception_resnet_v2, inception_v3, \

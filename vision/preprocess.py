@@ -1,6 +1,5 @@
 import tensorflow as tf
 import numpy as np
-import pydicom
 import imageio
 
 from typing import Tuple
@@ -37,6 +36,8 @@ def array2img(x: tf.Tensor) -> tf.Tensor:
 
 
 def dicom2png(fn_dcn: str, fn_png: str):
+    import pydicom
+
     dcm_data = pydicom.read_file(fn_dcn)
     im = dcm_data.pixel_array
     imageio.imwrite(fn_png, im)

@@ -5,8 +5,22 @@ from . import core
 from typing import Union, Callable
 
 
+class Parallel(tf.keras.Model):
+    def __init__(self):
+        super().__init__()
+        self.fw_layers = []
+
+    def add(self, layer):
+        self.fw_layers.append(layer)
+
+    def call(self, x):
+        outputs = []
+        for ll in self.fw_layers:
+            outputs.append(ll(x))
+        return tf.keras.layers.concatenate(outputs)
+
+
 # todo: SequentialLayer
-# todo: Parallel
 class Sequential(tf.keras.Model):
     """
     A sequential model (or composite layer), which executes its internal layers sequentially in the same order they are
@@ -20,7 +34,7 @@ class Sequential(tf.keras.Model):
     def add(self, layer):
         self.fw_layers.append(layer)
 
-    def call(self, x):
+    def call(self, x: tf.Tensor) -> tf.Tensor:
         return core.apply_transforms(x, self.fw_layers)
 
 
@@ -34,22 +48,19 @@ class Scaling(tf.keras.layers.Layer):
         super().__init__()
         self.weight = weight
 
-    def call(self, x):
+    def call(self, x: tf.Tensor) -> tf.Tensor:
         return x * self.weight
 
 
-class GlobalPools(tf.keras.layers.Layer):
+class GlobalPools2D(Parallel):
     """
     A concatenation of GlobalMaxPooling2D and GlobalAveragiePooling2D.
     """
 
     def __init__(self):
         super().__init__()
-        self.gmp = tf.keras.layers.GlobalMaxPooling2D()
-        self.gap = tf.keras.layers.GlobalAveragePooling2D()
-
-    def call(self, x):
-        return tf.keras.layers.concatenate([self.gmp(x), self.gap(x)])
+        self.add(tf.keras.layers.GlobalMaxPooling2D())
+        self.add(tf.keras.layers.GlobalAveragePooling2D())
 
 
 class DenseBN(Sequential):
@@ -131,13 +142,13 @@ class ConvResBlk(ConvBlk):
                              bn_eps=bn_eps)
             self.res.append(conv_bn)
 
-    def call(self, inputs):
-        h = super().call(inputs)
+    def call(self, x: tf.Tensor) -> tf.Tensor:
+        h = super().call(x)
         hh = core.apply_transforms(h, self.res)
         return h + hh
 
 
-def init_pytorch(shape, dtype=tf.float32, partition_info=None):
+def init_pytorch(shape, dtype=tf.float32, partition_info=None) -> tf.Tensor:
     """
     Initialize a given layer, such as Conv2D or Dense, in the same way as PyTorch.
 
@@ -158,7 +169,7 @@ PYTORCH_PARAMS = {'kernel_initializer': init_pytorch, 'bn_mom': 0.9, 'bn_eps': 1
 class FastAiHead(Sequential):
     def __init__(self, n_classes: int):
         super().__init__()
-        self.add(GlobalPools)
+        self.add(GlobalPools2D)
         self.add(tf.keras.layers.Flatten())
         self.add(tf.keras.layers.BatchNormalization(momentum=PYTORCH_PARAMS['bn_mom'],
                                                     epsilon=PYTORCH_PARAMS['bn_eps']))

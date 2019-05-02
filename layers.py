@@ -2,6 +2,7 @@ import math
 import tensorflow as tf
 import numpy as np
 from . import core
+from typing import Union, Callable
 
 
 # todo: SequentialLayer
@@ -57,7 +58,7 @@ class DenseBN(Sequential):
     """
 
     def __init__(self, c: int, kernel_initializer='glorot_uniform', bn_mom=0.99,
-                 bn_eps=0.001, drop_rate: float = 0.0):
+                 bn_eps=0.001, drop_rate: float = 0.0, bn_before_relu=True):
         """
         :param c: number of neurons in the Dense layer.
         :param kernel_initializer: initialization method for the Dense layer.
@@ -65,14 +66,23 @@ class DenseBN(Sequential):
         """
         super().__init__()
         self.add(tf.keras.layers.Dense(c, kernel_initializer=kernel_initializer, use_bias=False))
-        self.add(tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps))
-        self.add(tf.keras.layers.Activation('relu'))
+        bn = tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps)
+        relu = tf.keras.layers.Activation('relu')
+
+        if bn_before_relu:
+            self.add(bn)
+            self.add(relu)
+        else:
+            self.add(relu)
+            self.add(bn)
+
         if drop_rate > 0.0:
             self.add(tf.keras.layers.Dropout(drop_rate))
 
 
 class Classifier(Sequential):
-    def __init__(self, n_classes: int, kernel_initializer='glorot_uniform', weight=1.0):
+    def __init__(self, n_classes: int, kernel_initializer: Union[str, Callable] = 'glorot_uniform',
+                 weight: float = 1.0):
         super().__init__()
         self.add(tf.keras.layers.Dense(n_classes, kernel_initializer=kernel_initializer, use_bias=False))
         self.add(Scaling(weight))
@@ -142,4 +152,17 @@ def init_pytorch(shape, dtype=tf.float32, partition_info=None):
     return tf.random.uniform(shape, minval=-bound, maxval=bound, dtype=dtype)
 
 
-PYTORCH_CONV_PARAMS = {'kernel_initializer': init_pytorch, 'bn_mom': 0.9, 'bn_eps': 1e-5}
+PYTORCH_PARAMS = {'kernel_initializer': init_pytorch, 'bn_mom': 0.9, 'bn_eps': 1e-5}
+
+
+class FastAiHead(Sequential):
+    def __init__(self, n_classes: int):
+        super().__init__()
+        self.add(GlobalPools)
+        self.add(tf.keras.layers.Flatten())
+        self.add(tf.keras.layers.BatchNormalization(momentum=PYTORCH_PARAMS['bn_mom'],
+                                                    epsilon=PYTORCH_PARAMS['bn_eps']))
+        self.add(tf.keras.layers.Dropout(0.25))
+        self.add(DenseBN(512, bn_before_relu=False, **PYTORCH_PARAMS))
+        self.add(tf.keras.layers.Dropout(0.5))
+        self.add(Classifier(n_classes, kernel_initializer=PYTORCH_PARAMS['kernel_initializer']))

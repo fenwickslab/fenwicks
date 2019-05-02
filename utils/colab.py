@@ -16,8 +16,7 @@ def setup_gcs(tpu_address: str = None):
     """
     colab.auth.authenticate_user()
 
-    if tpu_address is None:
-        tpu_address = TPU_ADDRESS
+    tpu_address = tpu_address or TPU_ADDRESS
 
     with tf.Session(tpu_address) as sess:
         with open('/content/adc.json', 'r') as f:

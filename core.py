@@ -5,6 +5,13 @@ from typing import List
 
 
 def apply_transforms(x, tfms: List):
+    """
+    Apply a sequence of transform functions to a given input.
+
+    :param x: The input.
+    :param tfms: A sequence of transforms, each of which is a function.
+    :return: Transformed input.
+    """
     update_func = lambda x, y: y(x)
     return functools.reduce(update_func, tfms, x)
 

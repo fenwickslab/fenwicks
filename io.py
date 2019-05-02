@@ -57,7 +57,7 @@ def find_files(data_dir: str, labels: List[str], shuffle: bool = False, file_ext
 def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle: bool = False, file_ext: str = 'jpg', id_col='id',
                               label_col='label', _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
     train_labels = pd.read_csv(csv_fn)
-    labels = sorted(train_labels[label_col].unique()) if _labels is None else _labels
+    labels = _labels or sorted(train_labels[label_col].unique())
     key_id = dict([(label, idx) for idx, label in enumerate(labels)])
 
     filepaths = []
@@ -148,8 +148,8 @@ def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:
     :param exclude_dirs: names (not full paths) of subdirectories to exclude.
     :return: List of subdirectories' names (not full paths).
     """
-    if exclude_dirs is None:
-        exclude_dirs = []
+
+    exclude_dirs = exclude_dirs or []
     return [path for path in tf.gfile.ListDirectory(data_dir)
             if tf.gfile.IsDirectory(os.path.join(data_dir, path)) and path not in exclude_dirs]
 

@@ -4,6 +4,7 @@ import functools
 
 from ...io import get_model_dir, create_clean_dir
 from ..transform import imagenet_normalize_tf, imagenet_normalize_caffe, imagenet_normalize_pytorch
+
 from typing import List, Tuple
 from collections import namedtuple
 from keras_applications import vgg16, vgg19, resnet, resnet50, resnext, resnet_v2, inception_resnet_v2, inception_v3, \
@@ -85,8 +86,8 @@ def get_model(model_name: str, bucket: str, model_dir: str = None, include_top: 
         'DenseNet169': dict(keras_model=densenet.DenseNet169, img_size=224, normalizer=imagenet_normalize_pytorch),
         'DenseNet201': dict(keras_model=densenet.DenseNet201, img_size=224, normalizer=imagenet_normalize_pytorch),
     }
-    if model_dir is None:
-        model_dir = get_model_dir(bucket, model_name)
+
+    model_dir = model_dir or get_model_dir(bucket, model_name)
     params = dict(**models[model_name], model_dir=model_dir, include_top=include_top, pooling=pooling,
                   overwrite=overwrite)
     return get_keras_model(**params)

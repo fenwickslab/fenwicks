@@ -1,6 +1,9 @@
 import tensorflow as tf
 import numpy as np
+import imageio
+
 from typing import Tuple
+
 from .. import data
 
 
@@ -30,3 +33,11 @@ def array2img(x: tf.Tensor) -> tf.Tensor:
     x = x + tf.maximum(-tf.minimum(x), 0)
     x_max = tf.maximum(x)
     return x / x_max
+
+
+def dicom2png(fn_dcn: str, fn_png: str):
+    import pydicom
+
+    dcm_data = pydicom.read_file(fn_dcn)
+    im = dcm_data.pixel_array
+    imageio.imwrite(fn_png, im)

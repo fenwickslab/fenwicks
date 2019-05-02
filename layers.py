@@ -1,10 +1,26 @@
 import math
+import tensorflow as tf
 import numpy as np
-from .core import *
+from . import core
+from typing import Union, Callable
+
+
+class Parallel(tf.keras.Model):
+    def __init__(self):
+        super().__init__()
+        self.fw_layers = []
+
+    def add(self, layer):
+        self.fw_layers.append(layer)
+
+    def call(self, x):
+        outputs = []
+        for ll in self.fw_layers:
+            outputs.append(ll(x))
+        return tf.keras.layers.concatenate(outputs)
 
 
 # todo: SequentialLayer
-# todo: Parallel
 class Sequential(tf.keras.Model):
     """
     A sequential model (or composite layer), which executes its internal layers sequentially in the same order they are
@@ -18,8 +34,8 @@ class Sequential(tf.keras.Model):
     def add(self, layer):
         self.fw_layers.append(layer)
 
-    def call(self, x):
-        return apply_transforms(x, self.fw_layers)
+    def call(self, x: tf.Tensor) -> tf.Tensor:
+        return core.apply_transforms(x, self.fw_layers)
 
 
 class Scaling(tf.keras.layers.Layer):
@@ -32,22 +48,19 @@ class Scaling(tf.keras.layers.Layer):
         super().__init__()
         self.weight = weight
 
-    def call(self, x):
+    def call(self, x: tf.Tensor) -> tf.Tensor:
         return x * self.weight
 
 
-class GlobalPools(tf.keras.layers.Layer):
+class GlobalPools2D(Parallel):
     """
     A concatenation of GlobalMaxPooling2D and GlobalAveragiePooling2D.
     """
 
     def __init__(self):
         super().__init__()
-        self.gmp = tf.keras.layers.GlobalMaxPooling2D()
-        self.gap = tf.keras.layers.GlobalAveragePooling2D()
-
-    def call(self, x):
-        return tf.keras.layers.concatenate([self.gmp(x), self.gap(x)])
+        self.add(tf.keras.layers.GlobalMaxPooling2D())
+        self.add(tf.keras.layers.GlobalAveragePooling2D())
 
 
 class DenseBN(Sequential):
@@ -56,7 +69,7 @@ class DenseBN(Sequential):
     """
 
     def __init__(self, c: int, kernel_initializer='glorot_uniform', bn_mom=0.99,
-                 bn_eps=0.001, drop_rate: float = 0.0):
+                 bn_eps=0.001, drop_rate: float = 0.0, bn_before_relu=True):
         """
         :param c: number of neurons in the Dense layer.
         :param kernel_initializer: initialization method for the Dense layer.
@@ -64,14 +77,23 @@ class DenseBN(Sequential):
         """
         super().__init__()
         self.add(tf.keras.layers.Dense(c, kernel_initializer=kernel_initializer, use_bias=False))
-        self.add(tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps))
-        self.add(tf.keras.layers.Activation('relu'))
+        bn = tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps)
+        relu = tf.keras.layers.Activation('relu')
+
+        if bn_before_relu:
+            self.add(bn)
+            self.add(relu)
+        else:
+            self.add(relu)
+            self.add(bn)
+
         if drop_rate > 0.0:
             self.add(tf.keras.layers.Dropout(drop_rate))
 
 
 class Classifier(Sequential):
-    def __init__(self, n_classes: int, kernel_initializer='glorot_uniform', weight=1.0):
+    def __init__(self, n_classes: int, kernel_initializer: Union[str, Callable] = 'glorot_uniform',
+                 weight: float = 1.0):
         super().__init__()
         self.add(tf.keras.layers.Dense(n_classes, kernel_initializer=kernel_initializer, use_bias=False))
         self.add(Scaling(weight))
@@ -102,7 +124,7 @@ class ConvBlk(Sequential):
         for i in range(convs):
             self.add(
                 ConvBN(c, kernel_size=kernel_size, kernel_initializer=kernel_initializer, bn_mom=bn_mom, bn_eps=bn_eps))
-        self.add(tf.keras.layers.MaxPooling2D() if pool is None else pool)
+        self.add(pool or tf.keras.layers.MaxPooling2D())
 
 
 class ConvResBlk(ConvBlk):
@@ -120,13 +142,13 @@ class ConvResBlk(ConvBlk):
                              bn_eps=bn_eps)
             self.res.append(conv_bn)
 
-    def call(self, inputs):
-        h = super().call(inputs)
-        hh = apply_transforms(h, self.res)
+    def call(self, x: tf.Tensor) -> tf.Tensor:
+        h = super().call(x)
+        hh = core.apply_transforms(h, self.res)
         return h + hh
 
 
-def init_pytorch(shape, dtype=tf.float32, partition_info=None):
+def init_pytorch(shape, dtype=tf.float32, partition_info=None) -> tf.Tensor:
     """
     Initialize a given layer, such as Conv2D or Dense, in the same way as PyTorch.
 
@@ -141,4 +163,17 @@ def init_pytorch(shape, dtype=tf.float32, partition_info=None):
     return tf.random.uniform(shape, minval=-bound, maxval=bound, dtype=dtype)
 
 
-PYTORCH_CONV_PARAMS = {'kernel_initializer': init_pytorch, 'bn_mom': 0.9, 'bn_eps': 1e-5}
+PYTORCH_PARAMS = {'kernel_initializer': init_pytorch, 'bn_mom': 0.9, 'bn_eps': 1e-5}
+
+
+class FastAiHead(Sequential):
+    def __init__(self, n_classes: int):
+        super().__init__()
+        self.add(GlobalPools2D)
+        self.add(tf.keras.layers.Flatten())
+        self.add(tf.keras.layers.BatchNormalization(momentum=PYTORCH_PARAMS['bn_mom'],
+                                                    epsilon=PYTORCH_PARAMS['bn_eps']))
+        self.add(tf.keras.layers.Dropout(0.25))
+        self.add(DenseBN(512, bn_before_relu=False, **PYTORCH_PARAMS))
+        self.add(tf.keras.layers.Dropout(0.5))
+        self.add(Classifier(n_classes, kernel_initializer=PYTORCH_PARAMS['kernel_initializer']))

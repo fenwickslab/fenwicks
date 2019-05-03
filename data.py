@@ -205,8 +205,37 @@ def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_fn: str, shuf
     return paths, y, labels
 
 
+def data_dir_re_tfrecord(data_dir: str, pat: str, output_fn: str, shuffle: bool = False, overwrite: bool = False,
+                         extractor=None, file_ext: str = 'jpg') -> Tuple[List[str], List[int], List[str]]:
+    paths = io.find_files_no_label(data_dir, shuffle, file_ext)
+    labels, y = io.extract_labels_re(pat, paths)
+    files_tfrecord(output_fn, paths, y, overwrite, extractor)
+    return paths, y, labels
+
+
 def data_dir_no_label_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False,
                                overwrite: bool = False, extractor=None, file_ext: str = 'jpg') -> List[str]:
+    """
+    Create a TFRecords data file from the contents of a data directory `data_dir`, which contain data files with a given
+    file extension specified in `file_ext`. No labels are given for these data files, i.e., this is an unlabeled test
+    dataset.
+
+    When `extractor` is `None`, each data record is stored in its original encoding, e.g., a JPEG image. The `extractor`
+    can be an arbitrary Python function that transforms an original data record, e.g., from sound to image.
+
+    If the output TFRecords file already exists, it is skipped unless `overwrite` is `True`.
+
+    :param data_dir: Directory containing data files, whose contents are to be put in the output TFRecords files.
+    :param output_fn: Base output file name, such as `data.tfrec`. An ouptut file name is the base file name plus the
+                        shard ID and total number of shards, such as `data.tfrec00000-of-00005`
+    :param shuffle: Whether or not to shuffle the data records. Default: no shuffle.
+    :param overwrite: Whether or not to overwrite, when the output file already exists.
+    :param extractor: A Python function that transforms a data file. Its outputs are added to the output TFRecords.
+                      If `extractor` is `None`, the original contents of the data file is added to the output TFRecords.
+    :param file_ext: Extension of input data files. Default: 'jpg'.
+    :return: list of paths to all input data files.
+
+    """
     paths = io.find_files_no_label(data_dir, shuffle, file_ext)
     files_tfrecord(output_fn, paths, overwrite=overwrite, extractor=extractor)
     return paths

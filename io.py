@@ -2,6 +2,7 @@ import tensorflow as tf
 import pandas as pd
 import random
 import os
+import urllib.request
 
 from typing import List, Tuple
 from tqdm import tqdm_notebook as tqdm
@@ -101,6 +102,13 @@ def file_size(fn: str) -> int:
     """
     stat = tf.io.gfile.stat(fn)
     return stat.length
+
+
+def download(url: str, fn: str, overwrite: bool = False):
+    if overwrite or not tf.gfile.Exists(fn):
+        urllib.request.urlretrieve(url, fn)
+    else:
+        tf.logging.info(f'Destination file exists. Skipping.')
 
 
 def unzip(fn, dest_dir: str = '.', overwrite: bool = False):

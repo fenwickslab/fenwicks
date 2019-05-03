@@ -6,7 +6,8 @@ import re
 import urllib.request
 
 from typing import List, Tuple
-from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm_notebook
+from sklearn.preprocessing import LabelEncoder
 
 
 def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
@@ -89,16 +90,19 @@ def find_files_no_label(data_dir: str, shuffle: bool = False, file_ext: str = 'j
     return filepaths
 
 
-def extract_labels_re(pat: str, filepaths: List[str]) -> List[str]:
+def extract_labels_re(pat: str, filepaths: List[str]) -> Tuple[List[str], List[int]]:
     """
-    Extract labels from a list of file paths, using a regular expression.
+    Extract labels and class names from a list of file paths, using a regular expression.
 
     :param pat: Regular expression to extract the label from a file path. The first matching group is the label.
     :param filepaths: List of file paths.
-    :return: List of labels, in the same order of the file paths.
+    :return: (i) list of class names, (ii) list of integer labels, in the same order of the file paths.
     """
     pat = re.compile(pat)
-    return list(map(lambda x: pat.search(x).group(1), filepaths))
+    labels = list(map(lambda x: pat.search(x).group(1), filepaths))
+    le = LabelEncoder()
+    labels = le.fit_transform(labels)
+    return le.classes_, labels
 
 
 def create_clean_dir(path: str):
@@ -161,7 +165,7 @@ def unzip(fn, dest_dir: str = '.', overwrite: bool = False):
         os.chdir(dest_dir)
         for fn in files:
             tf.logging.info(f'Decompressing: {fn}')
-            for _ in tqdm(libarchive.public.file_pour(fn)):
+            for _ in tqdm_notebook(libarchive.public.file_pour(fn)):
                 pass
         os.chdir(cur_dir)
     else:

@@ -11,7 +11,7 @@ class URLs:
     FASTAI_S3_IMAGE = f'{FASTAI_S3}imageclas/'
 
     DVC = f'{FASTAI}dogscats.zip'
-    PETS = f'{FASTAI_S3_IMAGE}oxford-iiit-pet'
+    PETS = f'{FASTAI_S3_IMAGE}oxford-iiit-pet.tgz'
 
     TF = 'http://download.tensorflow.org/'
     SPEECH_CMD_001 = f'{TF}data/speech_commands_v0.01.tar.gz'

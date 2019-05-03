@@ -7,8 +7,11 @@ __all__ = ['URLs', 'untar_data']
 
 class URLs:
     FASTAI = 'http://files.fast.ai/data/'
+    FASTAI_S3 = 'https://s3.amazonaws.com/fast-ai-'
+    FASTAI_S3_IMAGE = f'{FASTAI_S3}imageclas/'
+
     DVC = f'{FASTAI}dogscats.zip'
-    CIFAR10 = f'{FASTAI}cifar10.tgz'
+    PETS = f'{FASTAI_S3_IMAGE}oxford-iiit-pet'
 
     TF = 'http://download.tensorflow.org/'
     SPEECH_CMD_001 = f'{TF}data/speech_commands_v0.01.tar.gz'

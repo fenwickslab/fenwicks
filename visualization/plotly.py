@@ -68,20 +68,24 @@ def plot_df_counts(df: pd.DataFrame, col: str, max_items: int = 10):
     series.iplot(kind='bar', yTitle='Count', layout=layout)
 
 
-def plot_pie_df(pie_df: pd.DataFrame):
-    layout = go.Layout(height=350, width=350, margin=go.layout.Margin(l=50, r=0, b=0, t=0),
+def plot_pie_df(pie_df: pd.DataFrame, width: int = 350):
+    layout = go.Layout(height=350, width=width, margin=go.layout.Margin(l=50, r=0, b=0, t=0),
                        yaxis=go.layout.YAxis(title='y'), xaxis=go.layout.XAxis(title='x'))
     pie_df.iplot(kind='pie', labels='id', values='count', layout=layout, pull=.05, hole=0.2)
 
 
-def plot_counts_pie_df(df: pd.DataFrame, col: str, max_items: int = 10):
+# todo: merge items beyond max_item into an 'others' class
+def plot_counts_pie_df(df: pd.DataFrame, col: str, max_items: int = 10, width: int = 350):
     s = df[col].value_counts().sort_values(ascending=False)[:max_items]
     pie_df = pd.DataFrame({'id': s.index, 'count': s.values})
-    plot_pie_df(pie_df)
+    plot_pie_df(pie_df, width=width)
 
 
 # todo: merge items beyond max_item into an 'others' class
-def plot_counts_pie(y: List[int], labels: List[str], max_items: int = 10):
+def plot_counts_pie(y: List[int], labels: List[str], max_items: int = -1, width: int = 350):
+    if max_items < 0:
+        max_items = len(labels)
+
     cnt = Counter(y)
 
     cnt_copy = cnt.copy()
@@ -90,4 +94,4 @@ def plot_counts_pie(y: List[int], labels: List[str], max_items: int = 10):
 
     items = sorted(cnt.items(), key=operator.itemgetter(1), reverse=True)
     pie_df = pd.DataFrame(items[:max_items], columns=['id', 'count'])
-    plot_pie_df(pie_df)
+    plot_pie_df(pie_df, width=width)

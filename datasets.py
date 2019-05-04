@@ -34,7 +34,7 @@ class URLs:
 
 def untar_data(url: str, dest: str = '.') -> str:
     if not os.path.isdir(dest):
-        tf.gfile.MkDir(dest)
+        tf.io.gfile.makedirs(dest)
     url_path = urlparse(url).path
     fn = os.path.basename(url_path)
     data_dir = os.path.join(dest, 'datasets')

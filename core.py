@@ -4,7 +4,7 @@ import functools
 from typing import List
 
 
-def apply_transforms(x, tfms: List):
+def sequential_transforms(x, tfms: List):
     """
     Apply a sequence of transform functions to a given input.
 
@@ -14,6 +14,11 @@ def apply_transforms(x, tfms: List):
     """
     update_func = lambda x, y: y(x)
     return functools.reduce(update_func, tfms, x)
+
+
+def parallel_transforms(x, trms: List):
+    update_func = lambda y: y(x)
+    return list(map(update_func, trms))
 
 
 def replace_slice(input_: tf.Tensor, replacement, begin) -> tf.Tensor:

@@ -14,7 +14,7 @@ class Parallel(tf.keras.layers.Layer):
         self.fw_layers.append(layer)
 
     def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
-        outputs = list(map(lambda l: l(x), self.fw_layers))
+        outputs = core.parallel_transforms(x, self.fw_layers)
         return tf.keras.layers.concatenate(outputs)
 
 
@@ -33,7 +33,7 @@ class Sequential(tf.keras.Model):
         self.fw_layers.append(layer)
 
     def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
-        return core.apply_transforms(x, self.fw_layers)
+        return core.sequential_transforms(x, self.fw_layers)
 
 
 class Scaling(tf.keras.layers.Layer):
@@ -142,7 +142,7 @@ class ConvResBlk(ConvBlk):
 
     def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
         h = super().call(x)
-        hh = core.apply_transforms(h, self.res)
+        hh = core.sequential_transforms(h, self.res)
         return h + hh
 
 

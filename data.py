@@ -187,7 +187,6 @@ def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = Fals
         args = (paths[start:end], y[start:end],
                 f'{output_fn}-{i:05d}-of-{num_shards:05d}', overwrite, extractor)
         t = threading.Thread(target=files_tfrecord, args=args)
-        t = threading.Thread(target=files_tfrecord, args=args)
         t.start()
         threads.append(t)
 
@@ -304,7 +303,7 @@ def tfexample_image_parser(tfexample: tf.train.Example, tfms: List = None, has_l
 
     x = tf.image.decode_image(x, channels=3, dtype=tf.float32)
     if tfms is not None:
-        x = core.apply_transforms(x, tfms)
+        x = core.sequential_transforms(x, tfms)
 
     if has_label:
         return x, y

@@ -101,7 +101,7 @@ def random_rotate(x: tf.Tensor, max_deg: float = 10) -> tf.Tensor:
     return random_affine(x, theta)
 
 
-def random_zoom(x: tf.Tensor, max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5):
+def random_zoom(x: tf.Tensor, max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5) -> tf.Tensor:
     scale = tf.random_uniform(shape=[], minval=1.0, maxval=max_zoom, dtype=tf.float32)
 
     s = 1 - 1 / scale
@@ -113,12 +113,32 @@ def random_zoom(x: tf.Tensor, max_zoom: float = 1.1, row_pct: float = 0.5, col_p
     return random_affine(x, theta)
 
 
+def random_shear(x: tf.Tensor, max_shear: float = 10) -> tf.Tensor:
+    deg = tf.random_uniform(shape=[], minval=-max_shear, maxval=max_shear, dtype=tf.float32)
+    rad = core.deg2rad(deg)
+    theta = tf.convert_to_tensor([[1, -tf.sin(rad), 0],
+                                  [0, tf.cos(rad), 0]])
+    return random_affine(x, theta)
+
+
+def random_shift(x: tf.Tensor, wrg: float = 0.1, hrg: float = 0.1) -> tf.Tensor:
+    shape = tf.shape(x)
+    h, w = shape[0], shape[1]
+    tx = tf.random_uniform(shape=[], minval=-hrg, maxval=hrg, dtype=tf.float32) * h
+    ty = tf.random_uniform(shape=[], minval=-wrg, maxval=wrg, dtype=tf.float32) * w
+
+    theta = tf.convert_to_tensor([[1, 0, tx],
+                                  [0, 1, ty]])
+    return random_affine(x, theta)
+
+
 def random_affine_combo(x: tf.Tensor, max_deg: float = 10.0, p_rotate=1.0, max_zoom: float = 1.1,
                         row_pct: float = 0.5, col_pct: float = 0.5, p_zoom=1.0) -> tf.Tensor:
     deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
     rad = core.deg2rad(deg)
     theta_rotate = tf.convert_to_tensor([[tf.cos(rad), -tf.sin(rad), 0],
-                                         [tf.sin(rad), tf.cos(rad), 0]])
+                                         [tf.sin(rad), tf.cos(rad), 0],
+                                         [0, 0, 1]])
 
     scale = tf.random_uniform(shape=[], minval=1.0, maxval=max_zoom, dtype=tf.float32)
 
@@ -127,9 +147,11 @@ def random_affine_combo(x: tf.Tensor, max_deg: float = 10.0, p_rotate=1.0, max_z
     row_c = s * (2 * row_pct - 1)
 
     theta_zoom = tf.convert_to_tensor([[1 / scale, 0, col_c],
-                                       [0, 1 / scale, row_c]])
+                                       [0, 1 / scale, row_c],
+                                       [0, 0, 1]])
 
     theta = tf.matmul(theta_rotate, theta_zoom)
+    theta = tf.reshape(theta, [-1])[:6]
     return random_affine(x, theta)
 
 

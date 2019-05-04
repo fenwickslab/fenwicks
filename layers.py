@@ -5,18 +5,16 @@ from . import core
 from typing import Union, Callable
 
 
-class Parallel(tf.keras.Model):
+class Parallel(tf.keras.layers.Layer):
     def __init__(self):
         super().__init__()
         self.fw_layers = []
 
-    def add(self, layer):
+    def add(self, layer: tf.keras.layers.Layer):
         self.fw_layers.append(layer)
 
-    def call(self, x):
-        outputs = []
-        for ll in self.fw_layers:
-            outputs.append(ll(x))
+    def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
+        outputs = list(map(lambda l: l(x), self.fw_layers))
         return tf.keras.layers.concatenate(outputs)
 
 
@@ -31,10 +29,10 @@ class Sequential(tf.keras.Model):
         super().__init__()
         self.fw_layers = []
 
-    def add(self, layer):
+    def add(self, layer: tf.keras.layers.Layer):
         self.fw_layers.append(layer)
 
-    def call(self, x: tf.Tensor) -> tf.Tensor:
+    def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
         return core.apply_transforms(x, self.fw_layers)
 
 
@@ -48,13 +46,13 @@ class Scaling(tf.keras.layers.Layer):
         super().__init__()
         self.weight = weight
 
-    def call(self, x: tf.Tensor) -> tf.Tensor:
+    def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
         return x * self.weight
 
 
 class GlobalPools2D(Parallel):
     """
-    A concatenation of GlobalMaxPooling2D and GlobalAveragiePooling2D.
+    A concatenation of GlobalMaxPooling2D and GlobalAveragePooling2D.
     """
 
     def __init__(self):
@@ -142,7 +140,7 @@ class ConvResBlk(ConvBlk):
                              bn_eps=bn_eps)
             self.res.append(conv_bn)
 
-    def call(self, x: tf.Tensor) -> tf.Tensor:
+    def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
         h = super().call(x)
         hh = core.apply_transforms(h, self.res)
         return h + hh
@@ -169,7 +167,7 @@ PYTORCH_PARAMS = {'kernel_initializer': init_pytorch, 'bn_mom': 0.9, 'bn_eps': 1
 class FastAiHead(Sequential):
     def __init__(self, n_classes: int):
         super().__init__()
-        self.add(GlobalPools2D)
+        self.add(GlobalPools2D())
         self.add(tf.keras.layers.Flatten())
         self.add(tf.keras.layers.BatchNormalization(momentum=PYTORCH_PARAMS['bn_mom'],
                                                     epsilon=PYTORCH_PARAMS['bn_eps']))
@@ -177,3 +175,11 @@ class FastAiHead(Sequential):
         self.add(DenseBN(512, bn_before_relu=False, **PYTORCH_PARAMS))
         self.add(tf.keras.layers.Dropout(0.5))
         self.add(Classifier(n_classes, kernel_initializer=PYTORCH_PARAMS['kernel_initializer']))
+
+
+def check_model(build_nn: Callable, h: int, w: int):
+    model = build_nn()
+    shape = [1, h, w, 3]
+    test_input = tf.random.uniform(shape, minval=0, maxval=1)
+    test_output = model(test_input)
+    return test_output

@@ -1,7 +1,7 @@
 import tensorflow as tf
 import functools
 
-from typing import List
+from typing import List, Callable
 
 from .. import core
 from .affine import affine_transform
@@ -133,8 +133,8 @@ def random_pad_crop(x: tf.Tensor, pad_size: int) -> tf.Tensor:
 def imagenet_normalize_tf(x: tf.Tensor) -> tf.Tensor:
     """
     Default Tensorflow image normalization for Keras models pre-trained on ImageNet.
-
-    :param x: Input image. Each pixel must be already scaled to [0, 1].
+    :param x: Input image of shape [h, w, 3] or a batch of images of shape [n, h, h, 3]. Each pixel must be already
+              scaled to [0, 1].
     :return: Normalized image.
     """
     return (x - 0.5) * 2.0
@@ -143,7 +143,8 @@ def imagenet_normalize_tf(x: tf.Tensor) -> tf.Tensor:
 def imagenet_normalize_pytorch(x: tf.Tensor) -> tf.Tensor:
     """
     Default PyTorch image normalization for Keras models pre-trained on ImageNet.
-    :param x: Input image. Each pixel must be already scaled to [0, 1].
+    :param x: Input image of shape [h, w, 3] or a batch of images of shape [n, h, h, 3]. Each pixel must be already
+              scaled to [0, 1].
     :return: Normalized image.
     """
     return (x - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
@@ -152,7 +153,8 @@ def imagenet_normalize_pytorch(x: tf.Tensor) -> tf.Tensor:
 def imagenet_normalize_caffe(x: tf.Tensor) -> tf.Tensor:
     """
     Default Caffe image normalization for Keras models pre-trained on ImageNet.
-    :param x: Input image. Each pixel must be already scaled to [0, 1].
+    :param x: Input image of shape [h, w, 3] or a batch of images of shape [n, h, h, 3]. Each pixel must be already
+              scaled to [0, 1].
     :return: Normalized image.
     """
     return x[..., ::-1] * 255 - [103.939, 116.779, 123.68]
@@ -175,35 +177,35 @@ def set_shape(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
     return x
 
 
-def tfm_set_shape(h: int = None, w: int = None, c: int = 3):
+def tfm_set_shape(h: int = None, w: int = None, c: int = 3) -> Callable:
     return functools.partial(set_shape, h=h, w=w, c=c)
 
 
-def tfm_resize(h: int, w: int):
+def tfm_resize(h: int, w: int) -> Callable:
     return functools.partial(tf.image.resize_images, size=[h, w])
 
 
-def tfm_random_flip(flip_vert: bool = False):
+def tfm_random_flip(flip_vert: bool = False) -> Callable:
     return functools.partial(random_flip, flip_vert=flip_vert)
 
 
-def tfm_central_crop(center_frac: float = 1.0):
+def tfm_central_crop(center_frac: float = 1.0) -> Callable:
     return functools.partial(tf.image.central_crop, central_fraction=center_frac)
 
 
-def tfm_pad_crop(pad_size: int):
+def tfm_pad_crop(pad_size: int) -> Callable:
     return functools.partial(random_pad_crop, pad_size=pad_size)
 
 
-def tfm_standard_scaler(mean, std):
+def tfm_standard_scaler(mean, std) -> Callable:
     return functools.partial(standard_scaler, mean=mean, std=std)
 
 
-def tfm_cutout(h: int, w: int):
+def tfm_cutout(h: int, w: int) -> Callable:
     return functools.partial(cutout, h=h, w=w)
 
 
-def get_train_transforms(h: int, w: int, flip_vert: bool = False, normalizer=imagenet_normalize_tf) -> List:
+def get_train_transforms(h: int, w: int, flip_vert: bool = False, normalizer=imagenet_normalize_tf) -> List[Callable]:
     return [distorted_bbox_crop,
             tfm_set_shape(),
             tfm_resize(h, w),
@@ -213,7 +215,7 @@ def get_train_transforms(h: int, w: int, flip_vert: bool = False, normalizer=ima
             ]
 
 
-def get_eval_transforms(h: int, w: int, center_frac: float = 1.0, normalizer=imagenet_normalize_tf) -> List:
+def get_eval_transforms(h: int, w: int, center_frac: float = 1.0, normalizer=imagenet_normalize_tf) -> List[Callable]:
     return [tfm_central_crop(center_frac),
             tfm_set_shape(),
             tfm_resize(h, w),

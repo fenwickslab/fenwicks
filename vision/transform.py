@@ -124,8 +124,8 @@ def random_shear(x: tf.Tensor, max_shear: float = 10) -> tf.Tensor:
 def random_shift(x: tf.Tensor, wrg: float = 0.1, hrg: float = 0.1) -> tf.Tensor:
     shape = tf.shape(x)
     h, w = shape[0], shape[1]
-    tx = tf.random_uniform(shape=[], minval=-hrg, maxval=hrg, dtype=tf.float32) * h
-    ty = tf.random_uniform(shape=[], minval=-wrg, maxval=wrg, dtype=tf.float32) * w
+    tx = tf.random_uniform(shape=[], minval=-hrg, maxval=hrg, dtype=tf.float32) * tf.cast(h, tf.float32)
+    ty = tf.random_uniform(shape=[], minval=-wrg, maxval=wrg, dtype=tf.float32) * tf.cast(w, tf.float32)
 
     theta = tf.convert_to_tensor([[1, 0, tx],
                                   [0, 1, ty]])

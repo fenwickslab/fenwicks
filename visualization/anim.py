@@ -4,6 +4,8 @@ import matplotlib.pylab as plt
 from typing import List, Callable
 from IPython.display import Image, display
 
+from .. import vision
+
 
 def setup():
     rc('animation', html='jshtml')
@@ -31,7 +33,8 @@ def show_image_files(files: List[str]):
     return images_anim(X)
 
 
-def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10, reverse_normalizer: Callable = None):
+def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10,
+                 reverse_normalizer: Callable = vision.transform.reverse_imagenet_normalize_tf):
     X = []
     data_op = ds.make_one_shot_iterator().get_next()
 
@@ -44,7 +47,8 @@ def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10, reverse
             X.extend(reverse_normalizer(x))
             n_img -= len(x)
 
-    return images_anim(X)
+    anim = images_anim(X)
+    display(anim)
 
 
 def show_transform(tfm, img_fn: str, n_frames: int = 5, fps: int = 5, anim_fn: str = '/tmp/anim.gif'):

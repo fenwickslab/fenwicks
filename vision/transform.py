@@ -113,6 +113,26 @@ def random_zoom(x: tf.Tensor, max_zoom: float = 1.1, row_pct: float = 0.5, col_p
     return random_affine(x, theta)
 
 
+def random_affine_combo(x: tf.Tensor, max_deg: float = 10.0, p_rotate=1.0, max_zoom: float = 1.1,
+                        row_pct: float = 0.5, col_pct: float = 0.5, p_zoom=1.0) -> tf.Tensor:
+    deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
+    rad = core.deg2rad(deg)
+    theta_rotate = tf.convert_to_tensor([[tf.cos(rad), -tf.sin(rad), 0],
+                                         [tf.sin(rad), tf.cos(rad), 0]])
+
+    scale = tf.random_uniform(shape=[], minval=1.0, maxval=max_zoom, dtype=tf.float32)
+
+    s = 1 - 1 / scale
+    col_c = s * (2 * col_pct - 1)
+    row_c = s * (2 * row_pct - 1)
+
+    theta_zoom = tf.convert_to_tensor([[1 / scale, 0, col_c],
+                                       [0, 1 / scale, row_c]])
+
+    theta = tf.matmul(theta_rotate, theta_zoom)
+    return random_affine(x, theta)
+
+
 def random_pad_crop(x: tf.Tensor, pad_size: int) -> tf.Tensor:
     """
     Randomly pad the image by `pad_size` at each border (top, bottom, left, right). Then, crop the padded image to its
@@ -140,6 +160,10 @@ def imagenet_normalize_tf(x: tf.Tensor) -> tf.Tensor:
     return (x - 0.5) * 2.0
 
 
+def reverse_imagenet_normalize_tf(x: tf.Tensor) -> tf.Tensor:
+    return x / 2.0 + 0.5
+
+
 def imagenet_normalize_pytorch(x: tf.Tensor) -> tf.Tensor:
     """
     Default PyTorch image normalization for Keras models pre-trained on ImageNet.
@@ -150,6 +174,10 @@ def imagenet_normalize_pytorch(x: tf.Tensor) -> tf.Tensor:
     return (x - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
 
 
+def reverse_imagenet_normalize_pytorch(x: tf.Tensor) -> tf.Tensor:
+    return x * [0.229, 0.224, 0.225] + [0.485, 0.456, 0.406]
+
+
 def imagenet_normalize_caffe(x: tf.Tensor) -> tf.Tensor:
     """
     Default Caffe image normalization for Keras models pre-trained on ImageNet.
@@ -158,6 +186,10 @@ def imagenet_normalize_caffe(x: tf.Tensor) -> tf.Tensor:
     :return: Normalized image.
     """
     return x[..., ::-1] * 255 - [103.939, 116.779, 123.68]
+
+
+def reverse_imagenet_normalize_caffe(x: tf.Tensor) -> tf.Tensor:
+    return ((x + [103.939, 116.779, 123.68]) / 255.0)[..., ::-1]
 
 
 def standard_scaler(x: tf.Tensor, mean, std) -> tf.Tensor:

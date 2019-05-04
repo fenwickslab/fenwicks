@@ -1,10 +1,10 @@
 import tensorflow as tf
 import numpy as np
 import functools
-from typing import List
+from typing import List, Callable
 
 
-def sequential_transforms(x, tfms: List):
+def sequential_transforms(x: tf.Tensor, tfms: List[Callable]) -> tf.Tensor:
     """
     Apply a sequence of transform functions to a given input.
 
@@ -16,7 +16,7 @@ def sequential_transforms(x, tfms: List):
     return functools.reduce(update_func, tfms, x)
 
 
-def parallel_transforms(x, trms: List):
+def parallel_transforms(x: tf.Tensor, trms: List[Callable]) -> List[tf.Tensor]:
     update_func = lambda y: y(x)
     return list(map(update_func, trms))
 
@@ -30,7 +30,7 @@ def replace_slice(input_: tf.Tensor, replacement, begin) -> tf.Tensor:
     return tf.where(mask, replacement_pad, input_)
 
 
-def deg2rad(x):
+def deg2rad(x: tf.Tensor) -> tf.Tensor:
     """
     Converts an angle in degrees to radians.
     :param x: Input angle, in degrees.

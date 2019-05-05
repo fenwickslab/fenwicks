@@ -64,7 +64,8 @@ def random_lighting(x: tf.Tensor, max_lighting: float = 0.2) -> tf.Tensor:
 
 def random_flip(x: tf.Tensor, flip_vert: bool = False) -> tf.Tensor:
     """
-    Randomly flip the input image horizontally, and optionally also vertically.
+    Randomly flip the input image horizontally, and optionally also vertically, which is implemented as 90-degree
+    rotations.
 
     :param x: Input image.
     :param flip_vert: Whether to perform vertical flipping. Default: False.
@@ -85,7 +86,8 @@ def random_rotate_90(x: tf.Tensor) -> tf.Tensor:
     return tf.image.rot90(x, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
 
 
-def random_affine(x: tf.Tensor, theta) -> tf.Tensor:
+def apply_affine_matrix(x: tf.Tensor, theta: tf.Tensor) -> tf.Tensor:
+    theta = tf.reshape(theta, [-1])[:6]
     x = tf.expand_dims(x, 0)
     x = affine_transform(x, theta)
     x = tf.clip_by_value(x, 0.0, 1.0)
@@ -93,64 +95,76 @@ def random_affine(x: tf.Tensor, theta) -> tf.Tensor:
     return x
 
 
-def random_rotate(x: tf.Tensor, max_deg: float = 10) -> tf.Tensor:
+def random_rotate_matrix(max_deg: float = 10) -> tf.Tensor:
     deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
     rad = core.deg2rad(deg)
-    theta = tf.convert_to_tensor([[tf.cos(rad), -tf.sin(rad), 0],
-                                  [tf.sin(rad), tf.cos(rad), 0]])
-    return random_affine(x, theta)
+    return tf.convert_to_tensor([[tf.cos(rad), -tf.sin(rad), 0], [tf.sin(rad), tf.cos(rad), 0], [0, 0, 1]])
+
+
+def random_rotate(x: tf.Tensor, max_rot_deg: float = 10) -> tf.Tensor:
+    mat = random_rotate_matrix(max_rot_deg)
+    return apply_affine_matrix(x, mat)
+
+
+def random_zoom_matrix(max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5) -> tf.Tensor:
+    scale = tf.random_uniform(shape=[], minval=1.0, maxval=max_zoom, dtype=tf.float32)
+    s = 1 - 1 / scale
+    col_c = s * (2 * col_pct - 1)
+    row_c = s * (2 * row_pct - 1)
+    return tf.convert_to_tensor([[1 / scale, 0, col_c], [0, 1 / scale, row_c], [0, 0, 1]])
 
 
 def random_zoom(x: tf.Tensor, max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5) -> tf.Tensor:
-    scale = tf.random_uniform(shape=[], minval=1.0, maxval=max_zoom, dtype=tf.float32)
-
-    s = 1 - 1 / scale
-    col_c = s * (2 * col_pct - 1)
-    row_c = s * (2 * row_pct - 1)
-
-    theta = tf.convert_to_tensor([[1 / scale, 0, col_c],
-                                  [0, 1 / scale, row_c]])
-    return random_affine(x, theta)
+    mat = random_zoom_matrix(max_zoom, row_pct, col_pct)
+    return apply_affine_matrix(x, mat)
 
 
-def random_shear(x: tf.Tensor, max_shear: float = 10) -> tf.Tensor:
-    deg = tf.random_uniform(shape=[], minval=-max_shear, maxval=max_shear, dtype=tf.float32)
+def random_shear_matrix(max_shear_deg: float = 10) -> tf.Tensor:
+    deg = tf.random_uniform(shape=[], minval=-max_shear_deg, maxval=max_shear_deg, dtype=tf.float32)
     rad = core.deg2rad(deg)
-    theta = tf.convert_to_tensor([[1, -tf.sin(rad), 0],
-                                  [0, tf.cos(rad), 0]])
-    return random_affine(x, theta)
+    return tf.convert_to_tensor([[1, -tf.sin(rad), 0], [0, tf.cos(rad), 0], [0, 0, 1]])
+
+
+def random_shear(x: tf.Tensor, max_shear_deg: float = 10) -> tf.Tensor:
+    mat = random_shear_matrix(max_shear_deg)
+    return apply_affine_matrix(x, mat)
+
+
+def random_shift_matrix(wrg: float = 0.1, hrg: float = 0.1) -> tf.Tensor:
+    tx = tf.random_uniform(shape=[], minval=-hrg, maxval=hrg, dtype=tf.float32)
+    ty = tf.random_uniform(shape=[], minval=-wrg, maxval=wrg, dtype=tf.float32)
+    return tf.convert_to_tensor([[1, 0, tx], [0, 1, ty], [0, 0, 1]])
 
 
 def random_shift(x: tf.Tensor, wrg: float = 0.1, hrg: float = 0.1) -> tf.Tensor:
-    tx = tf.random_uniform(shape=[], minval=-hrg, maxval=hrg, dtype=tf.float32)
-    ty = tf.random_uniform(shape=[], minval=-wrg, maxval=wrg, dtype=tf.float32)
-
-    theta = tf.convert_to_tensor([[1, 0, tx],
-                                  [0, 1, ty]])
-    return random_affine(x, theta)
+    mat = random_shift_matrix(wrg, hrg)
+    return apply_affine_matrix(x, mat)
 
 
-def random_affine_combo(x: tf.Tensor, max_deg: float = 10.0, p_rotate=1.0, max_zoom: float = 1.1,
-                        row_pct: float = 0.5, col_pct: float = 0.5, p_zoom=1.0) -> tf.Tensor:
-    deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
-    rad = core.deg2rad(deg)
-    theta_rotate = tf.convert_to_tensor([[tf.cos(rad), -tf.sin(rad), 0],
-                                         [tf.sin(rad), tf.cos(rad), 0],
-                                         [0, 0, 1]])
+def random_matmul(mat1: tf.Tensor, mat2: tf.Tensor, p: float):
+    choice = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=tf.float32)
+    return tf.cond(choice < p, lambda: tf.matmul(mat1, mat2), lambda: mat1)
 
-    scale = tf.random_uniform(shape=[], minval=1.0, maxval=max_zoom, dtype=tf.float32)
 
-    s = 1 - 1 / scale
-    col_c = s * (2 * col_pct - 1)
-    row_c = s * (2 * row_pct - 1)
+def random_affine_combo(x: tf.Tensor,
+                        max_rot_deg: float = 10.0, p_rot: float = 0.75,  # rotation
+                        max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5, p_zoom=0.75,  # zoom
+                        max_shear_deg: float = 10, p_shear: float = 0.0,  # shear
+                        wrg: float = 0.1, hrg: float = 0.1, p_shift=0.0,  # shift
+                        ) -> tf.Tensor:
+    mat = tf.convert_to_tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
-    theta_zoom = tf.convert_to_tensor([[1 / scale, 0, col_c],
-                                       [0, 1 / scale, row_c],
-                                       [0, 0, 1]])
+    mat_rot = random_rotate_matrix(max_rot_deg)
+    mat_zoom = random_zoom_matrix(max_zoom, row_pct, col_pct)
+    mat_shear = random_shear_matrix(max_shear_deg)
+    mat_shift = random_shift_matrix(wrg, hrg)
 
-    theta = tf.matmul(theta_rotate, theta_zoom)
-    theta = tf.reshape(theta, [-1])[:6]
-    return random_affine(x, theta)
+    mat = random_matmul(mat, mat_rot, p_rot)
+    mat = random_matmul(mat, mat_zoom, p_zoom)
+    mat = random_matmul(mat, mat_shear, p_shear)
+    mat = random_matmul(mat, mat_shift, p_shift)
+
+    return apply_affine_matrix(x, mat)
 
 
 def random_pad_crop(x: tf.Tensor, pad_size: int) -> tf.Tensor:

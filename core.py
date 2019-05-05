@@ -21,6 +21,16 @@ def parallel_transforms(x: tf.Tensor, trms: List[Callable]) -> List[tf.Tensor]:
     return list(map(update_func, trms))
 
 
+def random_matmul(mat1: tf.Tensor, mat2: tf.Tensor, p: float) -> tf.Tensor:
+    choice = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=tf.float32)
+    return tf.cond(choice < p, lambda: tf.matmul(mat1, mat2), lambda: mat1)
+
+
+def random_transform(x: tf.Tensor, tfm: Callable, p: float) -> tf.Tensor:
+    choice = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=tf.float32)
+    return tf.cond(choice < p, lambda: tfm(x), lambda: x)
+
+
 def replace_slice(input_: tf.Tensor, replacement, begin) -> tf.Tensor:
     inp_shape = tf.shape(input_)
     size = tf.shape(replacement)

@@ -54,14 +54,6 @@ def distorted_bbox_crop(x: tf.Tensor, min_object_covered: float = 0.1, aspect_ra
     return x
 
 
-def random_lighting(x: tf.Tensor, max_lighting: float = 0.2) -> tf.Tensor:
-    x = tf.image.random_brightness(x, 0.5 * max_lighting)
-    x = tf.clip_by_value(x, 0.0, 1.0)
-    x = tf.image.random_contrast(x, 1 - max_lighting, 1 / (1 - max_lighting))
-    x = tf.clip_by_value(x, 0.0, 1.0)
-    return x
-
-
 def random_flip(x: tf.Tensor, flip_vert: bool = False) -> tf.Tensor:
     """
     Randomly flip the input image horizontally, and optionally also vertically, which is implemented as 90-degree
@@ -86,13 +78,22 @@ def random_rotate_90(x: tf.Tensor) -> tf.Tensor:
     return tf.image.rot90(x, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
 
 
-def apply_affine_matrix(x: tf.Tensor, theta: tf.Tensor) -> tf.Tensor:
-    theta = tf.reshape(theta, [-1])[:6]
+def apply_affine_mat(x: tf.Tensor, mat: tf.Tensor) -> tf.Tensor:
+    mat = tf.reshape(mat, [-1])[:6]
     x = tf.expand_dims(x, 0)
-    x = affine_transform(x, theta)
+    x = affine_transform(x, mat)
     x = tf.clip_by_value(x, 0.0, 1.0)
     x = tf.squeeze(x, [0])
     return x
+
+
+def apply_affine_mats(x: tf.Tensor, mats: List[tf.Tensor], ps: List[float]) -> tf.Tensor:
+    m = tf.convert_to_tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+
+    for mat, p in zip(mats, ps):
+        m = core.random_matmul(m, mat, p)
+
+    return apply_affine_mat(x, m)
 
 
 def random_rotate_matrix(max_deg: float = 10) -> tf.Tensor:
@@ -103,7 +104,7 @@ def random_rotate_matrix(max_deg: float = 10) -> tf.Tensor:
 
 def random_rotate(x: tf.Tensor, max_rot_deg: float = 10) -> tf.Tensor:
     mat = random_rotate_matrix(max_rot_deg)
-    return apply_affine_matrix(x, mat)
+    return apply_affine_mat(x, mat)
 
 
 def random_zoom_matrix(max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5) -> tf.Tensor:
@@ -116,7 +117,7 @@ def random_zoom_matrix(max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: flo
 
 def random_zoom(x: tf.Tensor, max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5) -> tf.Tensor:
     mat = random_zoom_matrix(max_zoom, row_pct, col_pct)
-    return apply_affine_matrix(x, mat)
+    return apply_affine_mat(x, mat)
 
 
 def random_shear_matrix(max_shear_deg: float = 10) -> tf.Tensor:
@@ -127,7 +128,7 @@ def random_shear_matrix(max_shear_deg: float = 10) -> tf.Tensor:
 
 def random_shear(x: tf.Tensor, max_shear_deg: float = 10) -> tf.Tensor:
     mat = random_shear_matrix(max_shear_deg)
-    return apply_affine_matrix(x, mat)
+    return apply_affine_mat(x, mat)
 
 
 def random_shift_matrix(wrg: float = 0.1, hrg: float = 0.1) -> tf.Tensor:
@@ -138,12 +139,24 @@ def random_shift_matrix(wrg: float = 0.1, hrg: float = 0.1) -> tf.Tensor:
 
 def random_shift(x: tf.Tensor, wrg: float = 0.1, hrg: float = 0.1) -> tf.Tensor:
     mat = random_shift_matrix(wrg, hrg)
-    return apply_affine_matrix(x, mat)
+    return apply_affine_mat(x, mat)
 
 
-def random_matmul(mat1: tf.Tensor, mat2: tf.Tensor, p: float):
-    choice = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=tf.float32)
-    return tf.cond(choice < p, lambda: tf.matmul(mat1, mat2), lambda: mat1)
+def random_dihedral_matrix() -> tf.Tensor:
+    k = tf.random_uniform(shape=[], minval=0, maxval=8, dtype=tf.int32)
+    x = tf.bitwise.bitwise_and(k, 1) * -2 + 1
+    y = tf.bitwise.bitwise_and(k, 2) * -2 + 1
+    return tf.cond(tf.bitwise.bitwise_and(k, 4) > 0, lambda: tf.convert_to_tensor([[0, x, 0.], [y, 0, 0], [0, 0, 1.]]),
+                   lambda: tf.convert_to_tensor([[x, 0, 0.], [0, y, 0], [0, 0, 1.]]))
+
+
+def flip_matrix() -> tf.Tensor:
+    return tf.convert_to_tensor([[-1, 0, 0.], [0, 1, 0], [0, 0, 1.]])
+
+
+def random_dihedral(x: tf.Tensor) -> tf.Tensor:
+    mat = random_dihedral_matrix()
+    return apply_affine_mat(x, mat)
 
 
 def random_affine_combo(x: tf.Tensor,
@@ -152,19 +165,79 @@ def random_affine_combo(x: tf.Tensor,
                         max_shear_deg: float = 10, p_shear: float = 0.0,  # shear
                         wrg: float = 0.1, hrg: float = 0.1, p_shift=0.0,  # shift
                         ) -> tf.Tensor:
-    mat = tf.convert_to_tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    mats = [random_rotate_matrix(max_rot_deg),
+            random_zoom_matrix(max_zoom, row_pct, col_pct),
+            random_shear_matrix(max_shear_deg),
+            random_shift_matrix(wrg, hrg),
+            ]
+    ps = [p_rot,
+          p_zoom,
+          p_shear,
+          p_shift,
+          ]
+    return apply_affine_mats(x, mats, ps)
 
-    mat_rot = random_rotate_matrix(max_rot_deg)
-    mat_zoom = random_zoom_matrix(max_zoom, row_pct, col_pct)
-    mat_shear = random_shear_matrix(max_shear_deg)
-    mat_shift = random_shift_matrix(wrg, hrg)
 
-    mat = random_matmul(mat, mat_rot, p_rot)
-    mat = random_matmul(mat, mat_zoom, p_zoom)
-    mat = random_matmul(mat, mat_shear, p_shear)
-    mat = random_matmul(mat, mat_shift, p_shift)
+def random_lighting(x: tf.Tensor, max_lighting: float = 0.2) -> tf.Tensor:
+    x = tf.image.random_brightness(x, 0.5 * max_lighting)
+    x = tf.clip_by_value(x, 0.0, 1.0)
+    x = tf.image.random_contrast(x, 1 - max_lighting, 1 / (1 - max_lighting))
+    x = tf.clip_by_value(x, 0.0, 1.0)
+    return x
 
-    return apply_affine_matrix(x, mat)
+
+def tfm_random_brightness(max_delta: float) -> Callable:
+    return functools.partial(tf.image.random_brightness, max_delta=max_delta)
+
+
+def tfm_random_contrast(lower: float, upper: float) -> Callable:
+    return functools.partial(tf.image.random_contrast, lower=lower, upper=upper)
+
+
+def fastai_transforms(x: tf.Tensor,
+                      do_flip: bool = True, flip_vert: bool = False,
+                      max_rotate: float = 10., max_zoom: float = 1.1,
+                      max_lighting: float = 0.2,
+                      max_warp: float = 0.2,
+                      p_affine: float = 0.75,
+                      p_lighting: float = 0.75,
+                      ) -> tf.Tensor:
+    mats = []
+    ps = []
+
+    # res = [rand_crop()]
+    if do_flip:
+        if flip_vert:
+            mats.append(random_dihedral_matrix())
+            ps.append(1.0)
+        else:
+            mats.append(flip_matrix())
+            ps.append(0.5)
+
+    x = apply_affine_mats(x, mats, ps)
+
+    # if max_warp:   res.append(symmetric_warp(magnitude=(-max_warp,max_warp), p=p_affine))
+
+    mats = []
+    ps = []
+
+    if max_rotate:
+        mats.append(random_rotate_matrix(max_rotate))
+        ps.append(p_affine)
+
+    if max_zoom > 1:
+        mats.append(random_zoom_matrix(max_zoom))
+        ps.append(p_affine)
+
+    x = apply_affine_mats(x, mats, ps)
+
+    if max_lighting:
+        x = core.random_transform(x, tfm_random_brightness(0.5 * max_lighting), p_lighting)
+        x = core.random_transform(x, tfm_random_contrast(1 - max_lighting, 1 / (1 - max_lighting)), p_lighting)
+
+    # return (res + listify(xtra_tfms), [crop_pad()])
+
+    return tf.clip_by_value(x, 0.0, 1.0)
 
 
 def random_pad_crop(x: tf.Tensor, pad_size: int) -> tf.Tensor:

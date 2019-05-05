@@ -205,7 +205,6 @@ def fastai_transforms(x: tf.Tensor,
     mats = []
     ps = []
 
-    # res = [rand_crop()]
     if do_flip:
         if flip_vert:
             mats.append(random_dihedral_matrix())
@@ -214,12 +213,7 @@ def fastai_transforms(x: tf.Tensor,
             mats.append(flip_matrix())
             ps.append(0.5)
 
-    x = apply_affine_mats(x, mats, ps)
-
     # if max_warp:   res.append(symmetric_warp(magnitude=(-max_warp,max_warp), p=p_affine))
-
-    mats = []
-    ps = []
 
     if max_rotate:
         mats.append(random_rotate_matrix(max_rotate))
@@ -234,8 +228,6 @@ def fastai_transforms(x: tf.Tensor,
     if max_lighting:
         x = core.random_transform(x, tfm_random_brightness(0.5 * max_lighting), p_lighting)
         x = core.random_transform(x, tfm_random_contrast(1 - max_lighting, 1 / (1 - max_lighting)), p_lighting)
-
-    # return (res + listify(xtra_tfms), [crop_pad()])
 
     return tf.clip_by_value(x, 0.0, 1.0)
 

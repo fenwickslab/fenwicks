@@ -1,5 +1,6 @@
 import math
 import tensorflow as tf
+import tensorflow.keras.backend as K
 import numpy as np
 from . import core
 from typing import Union, Callable
@@ -180,7 +181,7 @@ class FastAiHead(Sequential):
 class SelfAttention(tf.keras.layers.Layer):
     def __init__(self, n_channels: int):
         super().__init__()
-        self.query = tf.keras.layers.Dense(n_channels // 8)
+        self.query = tf.keras.layers.Dense(n_channels // 8)  # relu?
         self.key = tf.keras.layers.Dense(n_channels // 8)
         self.value = tf.keras.layers.Dense(n_channels // 8)
         self.gamma = 0.0
@@ -192,6 +193,26 @@ class SelfAttention(tf.keras.layers.Layer):
         # beta = F.softmax(torch.bmm(f.permute(0, 2, 1).contiguous(), g), dim=1)
         # o = self.gamma * torch.bmm(h, beta) + x
         return None  # o.view(*size).contiguous()
+
+
+class LayerNorm(tf.keras.layers.Layer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def build(self, input_shape):
+        self.a = self.add_weight(name='kernel', shape=(1, input_shape[-1]), initializer='ones', trainable=True)
+        self.b = self.add_weight(name='kernel', shape=(1, input_shape[-1]), initializer='zeros', trainable=True)
+        super().build(input_shape)
+
+    def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
+        eps = 0.000001
+        mu = K.mean(x, keepdims=True, axis=-1)
+        sigma = K.std(x, keepdims=True, axis=-1)
+        ln_out = (x - mu) / (sigma + eps)
+        return ln_out * self.a + self.b
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
 
 
 def check_model(build_nn: Callable, h: int, w: int):

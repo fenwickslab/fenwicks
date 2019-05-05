@@ -88,7 +88,7 @@ def apply_affine_mat(x: tf.Tensor, mat: tf.Tensor) -> tf.Tensor:
 
 
 def apply_affine_mats(x: tf.Tensor, mats: List[tf.Tensor], ps: List[float]) -> tf.Tensor:
-    m = tf.convert_to_tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    m = tf.convert_to_tensor([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]])
 
     for mat, p in zip(mats, ps):
         m = core.random_matmul(m, mat, p)

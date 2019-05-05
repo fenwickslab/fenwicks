@@ -1,6 +1,6 @@
 import math
 import tensorflow as tf
-import tensorflow.python.keras.backend as K
+import tensorflow.keras.backend as K
 import numpy as np
 from . import core
 from typing import Union, Callable

@@ -177,6 +177,23 @@ class FastAiHead(Sequential):
         self.add(Classifier(n_classes, kernel_initializer=PYTORCH_PARAMS['kernel_initializer']))
 
 
+class SelfAttention(tf.keras.layers.Layer):
+    def __init__(self, n_channels: int):
+        super().__init__()
+        self.query = tf.keras.layers.Dense(n_channels // 8)
+        self.key = tf.keras.layers.Dense(n_channels // 8)
+        self.value = tf.keras.layers.Dense(n_channels // 8)
+        self.gamma = 0.0
+
+    def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
+        size = x.size()
+        x = x.view(*size[:2], -1)
+        f, g, h = self.query(x), self.key(x), self.value(x)
+        # beta = F.softmax(torch.bmm(f.permute(0, 2, 1).contiguous(), g), dim=1)
+        # o = self.gamma * torch.bmm(h, beta) + x
+        return None  # o.view(*size).contiguous()
+
+
 def check_model(build_nn: Callable, h: int, w: int):
     model = build_nn()
     shape = [1, h, w, 3]

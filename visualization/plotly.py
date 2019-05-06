@@ -95,3 +95,29 @@ def plot_counts_pie(y: List[int], labels: List[str], max_items: int = -1, width:
     items = sorted(cnt.items(), key=operator.itemgetter(1), reverse=True)
     pie_df = pd.DataFrame(items[:max_items], columns=['id', 'count'])
     plot_pie_df(pie_df, width=width)
+
+
+def plot_confusion_mat(xs, ys, zs, h: int = 350, w: int = 550):
+    trace = {"x": xs, "y": ys, "z": zs,
+             "autocolorscale": False,
+             "colorscale": [
+                 [0, "rgb(255,245,240)"],
+                 [0.2, "rgb(254,224,210)"],
+                 [0.4, "rgb(252,187,161)"],
+                 [0.5, "rgb(252,146,114)"],
+                 [0.6, "rgb(251,106,74)"],
+                 [0.7, "rgb(239,59,44)"],
+                 [0.8, "rgb(203,24,29)"],
+                 [0.9, "rgb(165,15,21)"],
+                 [1, "rgb(103,0,13)"]],
+             }
+    layout = {"autosize": False,
+              "height": h, "width": w,
+              "xaxis": {"title": "Predicted value"},
+              "yaxis": {"title": "True Value"},
+              "margin": go.layout.Margin(l=100, r=20, b=40, t=20),
+              }
+
+    data = [go.Heatmap(**trace)]
+    fig = go.Figure(data=data, layout=layout)
+    plotly.offline.iplot(fig)

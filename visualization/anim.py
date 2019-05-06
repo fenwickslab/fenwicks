@@ -42,7 +42,7 @@ def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10,
         for _ in range(n_batch):
             x, _ = sess.run(data_op)
             if len(x) >= n_img:
-                X.extend(x[:n_img])
+                X.extend(reverse_normalizer(x[:n_img]))
                 break
             X.extend(reverse_normalizer(x))
             n_img -= len(x)

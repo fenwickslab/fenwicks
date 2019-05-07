@@ -1,8 +1,10 @@
 import tensorflow as tf
+import numpy as np
+
 from matplotlib import animation, rc
 import matplotlib.pylab as plt
 from typing import List, Callable
-from IPython.display import Image, display
+from IPython.display import Image
 
 from .. import vision
 
@@ -47,6 +49,7 @@ def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10,
             X.extend(reverse_normalizer(x))
             n_img -= len(x)
 
+    X = np.clip(np.array(X), 0.0, 1.0)
     return images_anim(X)
 
 

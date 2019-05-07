@@ -1,8 +1,10 @@
 import tensorflow as tf
 import numpy as np
 import imageio
+import os
 
 from typing import Tuple
+from PIL import Image
 
 from .. import data
 
@@ -41,3 +43,13 @@ def dicom2png(fn_dcn: str, fn_png: str):
     dcm_data = pydicom.read_file(fn_dcn)
     im = dcm_data.pixel_array
     imageio.imwrite(fn_png, im)
+
+
+def check_rgb(data_dir: str, file_ext: str = 'jpg'):
+    for file in os.listdir(data_dir):
+        extension = file.split('.')[-1]
+        if extension == file_ext:
+            fp = os.path.join(data_dir + file)
+            img = Image.open(fp)
+            if img.mode != 'RGB':
+                tf.logging.error(file + ', ' + img.mode)

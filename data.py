@@ -6,6 +6,7 @@ import itertools
 
 from typing import List, Tuple
 from tqdm import tqdm_notebook as tqdm
+from sklearn.model_selection import train_test_split
 
 from . import core
 from . import io
@@ -210,6 +211,18 @@ def data_dir_re_tfrecord(data_dir: str, pat: str, output_fn: str, shuffle: bool 
     labels, y = io.extract_labels_re(pat, paths)
     files_tfrecord(output_fn, paths, y, overwrite, extractor)
     return paths, y, labels
+
+
+def data_dir_re_tfrecord_split(data_dir: str, pat: str, train_fn: str, test_fn: str, test_pct: float = 0.2,
+                               split_rand_state=777, overwrite: bool = False, extractor=None, file_ext: str = 'jpg') -> \
+        Tuple[List[str], List[int], List[str], List[int], List[str]]:
+    paths = io.find_files_no_label(data_dir, file_ext=file_ext)
+    labels, y = io.extract_labels_re(pat, paths)
+    paths_train, y_train, paths_test, y_test = train_test_split(paths, labels, test_size=test_pct,
+                                                                random_state=split_rand_state)
+    files_tfrecord(train_fn, paths_train, y_train, overwrite, extractor)
+    files_tfrecord(test_fn, paths_train, y_train, overwrite, extractor)
+    return paths_train, y_train, paths_test, y_test, labels
 
 
 def data_dir_no_label_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False,

@@ -1,7 +1,8 @@
 import tensorflow as tf
 import numpy as np
+import random
 import functools
-from typing import List, Callable
+from typing import List, Callable, Tuple
 
 
 def sequential_transforms(x: tf.Tensor, tfms: List[Callable]) -> tf.Tensor:
@@ -47,3 +48,10 @@ def deg2rad(x: tf.Tensor) -> tf.Tensor:
     :return: Angle in radians
     """
     return (x * np.pi) / 180
+
+
+def shuffle_lists(list1: List, list2: List) -> Tuple[List, List]:
+    c = list(zip(list1, list2))
+    random.shuffle(c)
+    list1, list2 = zip(*c)
+    return list(list1), list(list2)

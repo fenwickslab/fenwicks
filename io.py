@@ -9,6 +9,8 @@ from typing import List, Tuple
 from tqdm import tqdm_notebook
 from sklearn.preprocessing import LabelEncoder
 
+from . import core
+
 
 def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
     """
@@ -21,13 +23,6 @@ def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
     file_pattern = os.path.join(data_dir, f'*.{file_ext}')
     matching_files = tf.gfile.Glob(file_pattern)
     return matching_files
-
-
-def shuffle_paths_labels(paths: List[str], labels: List[int]) -> Tuple[List[str], List[int]]:
-    c = list(zip(paths, labels))
-    random.shuffle(c)
-    paths, labels = zip(*c)
-    return list(paths), list(labels)
 
 
 def find_files(data_dir: str, labels: List[str], shuffle: bool = False, file_ext: str = 'jpg') -> Tuple[
@@ -51,7 +46,7 @@ def find_files(data_dir: str, labels: List[str], shuffle: bool = False, file_ext
         filelabels.extend([i] * len(matching_files))
 
     if shuffle:
-        filepaths, filelabels = shuffle_paths_labels(filepaths, filelabels)
+        filepaths, filelabels = core.shuffle_lists(filepaths, filelabels)
 
     return filepaths, filelabels
 
@@ -70,7 +65,7 @@ def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle: bool = False,
         filelabels.append(key_id[row[label_col]])
 
     if shuffle:
-        filepaths, filelabels = shuffle_paths_labels(filepaths, filelabels)
+        filepaths, filelabels = core.shuffle_lists(filepaths, filelabels)
 
     return filepaths, filelabels, labels
 

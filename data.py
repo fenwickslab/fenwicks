@@ -328,7 +328,7 @@ def tfexample_image_parser(tfexample: tf.train.Example, tfms: List = None, has_l
         return x
 
 
-def get_tfexample_image_parser(h: int, w: int, training: bool = True, flip_vert: bool = False,
+def get_tfexample_image_parser(h: int = None, w: int = None, training: bool = True, flip_vert: bool = False,
                                tfms: List[Callable] = None, normalizer=transform.imagenet_normalize_tf):
     """
     Get a image parser function that parses a TFRecord into an image, applying standard transformations for ImageNet.

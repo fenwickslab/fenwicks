@@ -344,6 +344,12 @@ def tfm_cutout(h: int, w: int) -> Callable:
     return functools.partial(cutout, h=h, w=w)
 
 
+def tfm_fastai(do_flip: bool = True, flip_vert: bool = False, max_rotate: float = 10., max_zoom: float = 1.1,
+               max_lighting: float = 0.2, p_affine: float = 0.75, p_lighting: float = 0.75) -> Callable:
+    return functools.partial(fastai_transforms, do_flip=do_flip, flip_vert=flip_vert, max_rotate=max_rotate,
+                             max_zoom=max_zoom, max_lighting=max_lighting, p_affine=p_affine, p_lighting=p_lighting)
+
+
 def get_inception_transforms(h: int, w: int, training: bool, flip_vert: bool = False, center_frac: float = 1.0,
                              normalizer=imagenet_normalize_tf) -> List[Callable]:
     if training:
@@ -351,3 +357,10 @@ def get_inception_transforms(h: int, w: int, training: bool, flip_vert: bool = F
                 normalizer]
     else:
         return [tfm_central_crop(center_frac), tfm_set_shape(), tfm_resize(h, w), normalizer]
+
+
+def get_fastai_transforms(h: int, w: int, training: bool, normalizer=imagenet_normalize_tf) -> List[Callable]:
+    if training:
+        return [tfm_set_shape(), tfm_resize(h, w), tfm_fastai(), normalizer]
+    else:
+        return [tfm_set_shape(), tfm_resize(h, w), normalizer]

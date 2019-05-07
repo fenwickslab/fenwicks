@@ -4,7 +4,7 @@ import threading
 import functools
 import itertools
 
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 from tqdm import tqdm_notebook as tqdm
 from sklearn.model_selection import train_test_split
 
@@ -79,7 +79,8 @@ def numpy_tfrecord_shards(output_fn: str, x, y=None, num_shards: int = 2):
     tf.train.Coordinator().join(threads)
 
 
-def files_tfrecord(output_fn: str, paths: List[str], y: List[int] = None, overwrite: bool = False, extractor=None):
+def files_tfrecord(output_fn: str, paths: List[str], y: List[int] = None, overwrite: bool = False,
+                   extractor: Callable = None):
     """
     Create a TFRecord file that contains the contents of a given list of files, and optionally their corresponding
     labels. The contents of the given files can be transformed through an extractor function.
@@ -109,8 +110,9 @@ def files_tfrecord(output_fn: str, paths: List[str], y: List[int] = None, overwr
         tf.logging.info('Output file already exists. Skipping.')
 
 
-def data_dir_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False, overwrite: bool = False, extractor=None,
-                      file_ext: str = 'jpg', exclude_dirs: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
+def data_dir_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False, overwrite: bool = False,
+                      extractor: Callable = None, file_ext: str = 'jpg', exclude_dirs: List[str] = None) -> Tuple[
+    List[str], List[int], List[str]]:
     """
     Create a TFRecords data file from the contents of a data directory `data_dir`. Specifically, each
     sub-directory of `data_dir` corresponds to a label in the dataset (such as 'cat' and 'dog' ), and named by the
@@ -144,7 +146,7 @@ def data_dir_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False, over
 
 # todo: add number of cores
 def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = False, overwrite: bool = False,
-                             extractor=None, file_ext: str = 'jpg', exclude_dirs: List[str] = None,
+                             extractor: Callable = None, file_ext: str = 'jpg', exclude_dirs: List[str] = None,
                              num_shards: int = 2) -> Tuple[List[str], List[int], List[str]]:
     """
     Create a number of TFRecords data files from the contents of a data directory `data_dir`. Specifically, each
@@ -196,7 +198,7 @@ def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = Fals
 
 
 def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_fn: str, shuffle: bool = False,
-                                overwrite: bool = False, extractor=None, file_ext: str = 'jpg', id_col='id',
+                                overwrite: bool = False, extractor: Callable = None, file_ext: str = 'jpg', id_col='id',
                                 label_col='label', _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
     paths, y, labels = io.find_files_with_label_csv(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext, id_col=id_col,
                                                     label_col=label_col, _labels=_labels)
@@ -206,7 +208,7 @@ def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_fn: str, shuf
 
 
 def data_dir_re_tfrecord(data_dir: str, pat: str, output_fn: str, shuffle: bool = False, overwrite: bool = False,
-                         extractor=None, file_ext: str = 'jpg') -> Tuple[List[str], List[int], List[str]]:
+                         extractor: Callable = None, file_ext: str = 'jpg') -> Tuple[List[str], List[int], List[str]]:
     paths = io.find_files_no_label(data_dir, shuffle, file_ext)
     labels, y = io.extract_labels_re(pat, paths)
     files_tfrecord(output_fn, paths, y, overwrite, extractor)
@@ -214,7 +216,8 @@ def data_dir_re_tfrecord(data_dir: str, pat: str, output_fn: str, shuffle: bool 
 
 
 def data_dir_re_tfrecord_split(data_dir: str, pat: str, train_fn: str, test_fn: str, test_pct: float = 0.2,
-                               split_rand_state=777, overwrite: bool = False, extractor=None, file_ext: str = 'jpg') -> \
+                               split_rand_state=777, overwrite: bool = False, extractor: Callable = None,
+                               file_ext: str = 'jpg') -> \
         Tuple[List[str], List[int], List[str], List[int], List[str]]:
     paths = io.find_files_no_label(data_dir, file_ext=file_ext)
     labels, y = io.extract_labels_re(pat, paths)
@@ -226,7 +229,7 @@ def data_dir_re_tfrecord_split(data_dir: str, pat: str, train_fn: str, test_fn: 
 
 
 def data_dir_no_label_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False,
-                               overwrite: bool = False, extractor=None, file_ext: str = 'jpg') -> List[str]:
+                               overwrite: bool = False, extractor: Callable = None, file_ext: str = 'jpg') -> List[str]:
     """
     Create a TFRecords data file from the contents of a data directory `data_dir`, which contain data files with a given
     file extension specified in `file_ext`. No labels are given for these data files, i.e., this is an unlabeled test

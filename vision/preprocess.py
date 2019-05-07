@@ -49,7 +49,7 @@ def check_rgb(data_dir: str, file_ext: str = 'jpg'):
     for file in os.listdir(data_dir):
         extension = file.split('.')[-1]
         if extension == file_ext:
-            fp = os.path.join(data_dir + file)
+            fp = os.path.join(data_dir, file)
             img = Image.open(fp)
             if img.mode != 'RGB':
                 tf.logging.error(file + ', ' + img.mode)

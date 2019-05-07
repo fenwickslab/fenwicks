@@ -47,8 +47,7 @@ def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10,
             X.extend(reverse_normalizer(x))
             n_img -= len(x)
 
-    anim = images_anim(X)
-    display(anim)
+    return images_anim(X)
 
 
 def show_transform(tfm, img_fn: str, n_frames: int = 5, fps: int = 5, anim_fn: str = '/tmp/anim.gif'):
@@ -68,4 +67,4 @@ def show_transform(tfm, img_fn: str, n_frames: int = 5, fps: int = 5, anim_fn: s
     anim.save(anim_fn, writer='imagemagick', fps=fps)
     anim_fn_png = f'{anim_fn}.png'
     tf.gfile.Copy(anim_fn, anim_fn_png, overwrite=True)
-    display(Image(anim_fn_png))
+    return Image(anim_fn_png)

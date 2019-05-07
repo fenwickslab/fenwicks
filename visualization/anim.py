@@ -1,8 +1,10 @@
 import tensorflow as tf
 import numpy as np
 
-from matplotlib import animation, rc
+import random
 import matplotlib.pylab as plt
+
+from matplotlib import animation, rc
 from typing import List, Callable
 from IPython.display import Image
 
@@ -27,8 +29,10 @@ def images_anim(images):
     return anim
 
 
-def show_image_files(files: List[str]):
+def show_image_files(files: List[str], n_img: int = 20):
+    n_img = min(n_img, len(files))
     X = []
+    files = random.sample(files, n_img)
     for fn in files:
         x = plt.imread(fn)
         X.append(x)

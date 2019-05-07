@@ -45,11 +45,13 @@ def dicom2png(fn_dcn: str, fn_png: str):
     imageio.imwrite(fn_png, im)
 
 
-def check_rgb(data_dir: str, file_ext: str = 'jpg'):
-    for file in os.listdir(data_dir):
-        extension = file.split('.')[-1]
+def check_rgb(data_dir: str, file_ext: str = 'jpg', fix: bool = True):
+    for fp in os.listdir(data_dir):
+        extension = fp.split('.')[-1]
         if extension == file_ext:
-            fp = os.path.join(data_dir, file)
+            fp = os.path.join(data_dir, fp)
             img = Image.open(fp)
             if img.mode != 'RGB':
-                tf.logging.error(file + ', ' + img.mode)
+                tf.logging.error(f'{fp} is not an RGB image but of mode: {img.mode}')
+                if fix:
+                    img.convert("RGB").save(fp)

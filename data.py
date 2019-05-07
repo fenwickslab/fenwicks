@@ -221,7 +221,8 @@ def data_dir_re_tfrecord_split(data_dir: str, pat: str, train_fn: str, test_fn: 
         Tuple[List[str], List[int], List[str], List[int], List[str]]:
     paths = io.find_files_no_label(data_dir, file_ext=file_ext)
     labels, y = io.extract_labels_re(pat, paths)
-    paths_train, paths_test, y_train, y_test = train_test_split(paths, y, test_size=test_pct,
+    n_test = int(len(y) * test_pct) // 8 * 8
+    paths_train, paths_test, y_train, y_test = train_test_split(paths, y, test_size=n_test,
                                                                 random_state=split_rand_state)
     files_tfrecord(train_fn, paths_train, y_train, overwrite, extractor)
     files_tfrecord(test_fn, paths_test, y_test, overwrite, extractor)

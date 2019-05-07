@@ -198,7 +198,6 @@ def fastai_transforms(x: tf.Tensor,
                       do_flip: bool = True, flip_vert: bool = False,
                       max_rotate: float = 10., max_zoom: float = 1.1,
                       max_lighting: float = 0.2,
-                      max_warp: float = 0.2,
                       p_affine: float = 0.75,
                       p_lighting: float = 0.75,
                       ) -> tf.Tensor:
@@ -212,8 +211,6 @@ def fastai_transforms(x: tf.Tensor,
         else:
             mats.append(flip_matrix())
             ps.append(0.5)
-
-    # if max_warp:   res.append(symmetric_warp(magnitude=(-max_warp,max_warp), p=p_affine))
 
     if max_rotate:
         mats.append(random_rotate_matrix(max_rotate))
@@ -291,6 +288,13 @@ def reverse_imagenet_normalize_caffe(x: tf.Tensor) -> tf.Tensor:
     return ((x + [103.939, 116.779, 123.68]) / 255.0)[..., ::-1]
 
 
+REVERSE_IMAGENET_NORMALIZE = {
+    imagenet_normalize_tf: reverse_imagenet_normalize_tf,
+    imagenet_normalize_pytorch: reverse_imagenet_normalize_pytorch,
+    imagenet_normalize_caffe: reverse_imagenet_normalize_caffe,
+}
+
+
 def standard_scaler(x: tf.Tensor, mean, std) -> tf.Tensor:
     """
     Normalize an input image by subtracting a given mean and then divide by a given standard deviation.
@@ -301,6 +305,10 @@ def standard_scaler(x: tf.Tensor, mean, std) -> tf.Tensor:
     :return: Normalized image.
     """
     return (x - mean) / std
+
+
+def reverse_stardard_scaler(x: tf.Tensor, mean, std) -> tf.Tensor:
+    return x * std + mean
 
 
 def set_shape(x: tf.Tensor, h: int, w: int, c: int = 3) -> tf.Tensor:
@@ -336,19 +344,10 @@ def tfm_cutout(h: int, w: int) -> Callable:
     return functools.partial(cutout, h=h, w=w)
 
 
-def get_train_transforms(h: int, w: int, flip_vert: bool = False, normalizer=imagenet_normalize_tf) -> List[Callable]:
-    return [distorted_bbox_crop,
-            tfm_set_shape(),
-            tfm_resize(h, w),
-            tfm_random_flip(flip_vert),
-            distort_color,
-            normalizer,
-            ]
-
-
-def get_eval_transforms(h: int, w: int, center_frac: float = 1.0, normalizer=imagenet_normalize_tf) -> List[Callable]:
-    return [tfm_central_crop(center_frac),
-            tfm_set_shape(),
-            tfm_resize(h, w),
-            normalizer,
-            ]
+def get_inception_transforms(h: int, w: int, training: bool, flip_vert: bool = False, center_frac: float = 1.0,
+                             normalizer=imagenet_normalize_tf) -> List[Callable]:
+    if training:
+        return [distorted_bbox_crop, tfm_set_shape(), tfm_resize(h, w), tfm_random_flip(flip_vert), distort_color,
+                normalizer]
+    else:
+        return [tfm_central_crop(center_frac), tfm_set_shape(), tfm_resize(h, w), normalizer]

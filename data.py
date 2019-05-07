@@ -221,11 +221,11 @@ def data_dir_re_tfrecord_split(data_dir: str, pat: str, train_fn: str, test_fn: 
         Tuple[List[str], List[int], List[str], List[int], List[str]]:
     paths = io.find_files_no_label(data_dir, file_ext=file_ext)
     labels, y = io.extract_labels_re(pat, paths)
-    paths_train, y_train, paths_test, y_test = train_test_split(paths, y, test_size=test_pct,
+    paths_train, paths_test, y_train, y_test = train_test_split(paths, y, test_size=test_pct,
                                                                 random_state=split_rand_state)
     files_tfrecord(train_fn, paths_train, y_train, overwrite, extractor)
-    files_tfrecord(test_fn, paths_train, y_train, overwrite, extractor)
-    return paths_train, y_train, paths_test, y_test, labels
+    files_tfrecord(test_fn, paths_test, y_test, overwrite, extractor)
+    return paths_train, paths_test, y_train, y_test, labels
 
 
 def data_dir_no_label_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False,

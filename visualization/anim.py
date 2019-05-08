@@ -40,7 +40,7 @@ def show_image_files(files: List[str], n_img: int = 20) -> FuncAnimation:
 
 
 def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10,
-                 reverse_normalizer: Callable = vision.transform.reverse_imagenet_normalize_tf) -> FuncAnimation:
+                 converter: Callable = vision.transform.reverse_imagenet_normalize_tf) -> FuncAnimation:
     X = []
     data_op = ds.make_one_shot_iterator().get_next()
 
@@ -48,9 +48,9 @@ def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10,
         for _ in range(n_batch):
             x, _ = sess.run(data_op)
             if len(x) >= n_img:
-                X.extend(reverse_normalizer(x[:n_img]))
+                X.extend(converter(x[:n_img]))
                 break
-            X.extend(reverse_normalizer(x))
+            X.extend(converter(x))
             n_img -= len(x)
 
     X = np.clip(np.array(X), 0.0, 1.0)

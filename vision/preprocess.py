@@ -5,6 +5,7 @@ import os
 
 from typing import Tuple
 from PIL import Image
+from tqdm import tqdm_notebook
 
 from .. import data
 
@@ -46,7 +47,7 @@ def dicom2png(fn_dcn: str, fn_png: str):
 
 
 def check_rgb(data_dir: str, file_ext: str = 'jpg', fix: bool = True):
-    for fp in os.listdir(data_dir):
+    for fp in tqdm_notebook(os.listdir(data_dir)):
         extension = fp.split('.')[-1]
         if extension == file_ext:
             fp = os.path.join(data_dir, fp)

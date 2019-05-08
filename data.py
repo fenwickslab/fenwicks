@@ -5,7 +5,7 @@ import functools
 import itertools
 
 from typing import List, Tuple, Callable
-from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm_notebook
 from sklearn.model_selection import train_test_split
 
 from . import core
@@ -55,7 +55,7 @@ def numpy_tfrecord(output_fn: str, X, y=None, overwrite: bool = False):
 
     if overwrite or not tf.gfile.Exists(output_fn):
         with tf.io.TFRecordWriter(output_fn) as record_writer:
-            for i in tqdm(range(n)):
+            for i in tqdm_notebook(range(n)):
                 example = numpy_tfexample(X_reshape[i]) if y is None else numpy_tfexample(X_reshape[i], y[i])
                 record_writer.write(example.SerializeToString())
     else:
@@ -96,7 +96,7 @@ def files_tfrecord(output_fn: str, paths: List[str], y: List[int] = None, overwr
     """
     if overwrite or not tf.gfile.Exists(output_fn):
         with tf.io.TFRecordWriter(output_fn) as record_writer:
-            for i, path in enumerate(tqdm(paths)):
+            for i, path in enumerate(tqdm_notebook(paths)):
                 if extractor is None:
                     with tf.gfile.GFile(path, 'rb') as f:
                         img = f.read()

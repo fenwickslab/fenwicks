@@ -59,5 +59,7 @@ def check_rgb(data_dir: str, file_ext: str = 'jpg', fix: bool = True):
                     img.convert("RGB").save(fp)
 
 
-def gray2rgb(x: np.ndarray) -> np.ndarray:
+def gray2rgb(x: np.ndarray, normalize: bool = False) -> np.ndarray:
+    if normalize:
+        x = x / np.max(x)
     return np.concatenate([x, x, x], axis=-1)

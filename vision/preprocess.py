@@ -1,8 +1,11 @@
 import tensorflow as tf
 import numpy as np
 import imageio
+import os
 
 from typing import Tuple
+from PIL import Image
+from tqdm import tqdm_notebook
 
 from .. import data
 
@@ -41,3 +44,22 @@ def dicom2png(fn_dcn: str, fn_png: str):
     dcm_data = pydicom.read_file(fn_dcn)
     im = dcm_data.pixel_array
     imageio.imwrite(fn_png, im)
+
+
+def check_rgb(data_dir: str, file_ext: str = 'jpg', fix: bool = True):
+    for fp in tqdm_notebook(os.listdir(data_dir)):
+        extension = fp.split('.')[-1]
+        if extension == file_ext:
+            fp = os.path.join(data_dir, fp)
+            img = Image.open(fp)
+            if img.mode != 'RGB':
+                fix_msg = 'Fixing it now.' if fix else ''
+                tf.logging.error(f'{fp} is not an RGB image but of mode: {img.mode}. {fix_msg}')
+                if fix:
+                    img.convert("RGB").save(fp)
+
+
+def gray2rgb(x: np.ndarray, normalize: bool = False) -> np.ndarray:
+    if normalize:
+        x = x / np.max(x)
+    return np.concatenate([x, x, x], axis=-1)

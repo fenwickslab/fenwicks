@@ -2,10 +2,14 @@ import tensorflow as tf
 import pandas as pd
 import random
 import os
+import re
 import urllib.request
 
 from typing import List, Tuple
-from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm_notebook
+from sklearn.preprocessing import LabelEncoder
+
+from . import core
 
 
 def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
@@ -19,14 +23,6 @@ def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
     file_pattern = os.path.join(data_dir, f'*.{file_ext}')
     matching_files = tf.gfile.Glob(file_pattern)
     return matching_files
-
-
-# todo: generalize and move to core
-def shuffle_paths_labels(paths: List[str], labels: List[int]) -> Tuple[List[str], List[int]]:
-    c = list(zip(paths, labels))
-    random.shuffle(c)
-    paths, labels = zip(*c)
-    return list(paths), list(labels)
 
 
 def find_files(data_dir: str, labels: List[str], shuffle: bool = False, file_ext: str = 'jpg') -> Tuple[
@@ -50,7 +46,7 @@ def find_files(data_dir: str, labels: List[str], shuffle: bool = False, file_ext
         filelabels.extend([i] * len(matching_files))
 
     if shuffle:
-        filepaths, filelabels = shuffle_paths_labels(filepaths, filelabels)
+        filepaths, filelabels = core.shuffle_lists(filepaths, filelabels)
 
     return filepaths, filelabels
 
@@ -69,16 +65,39 @@ def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle: bool = False,
         filelabels.append(key_id[row[label_col]])
 
     if shuffle:
-        filepaths, filelabels = shuffle_paths_labels(filepaths, filelabels)
+        filepaths, filelabels = core.shuffle_lists(filepaths, filelabels)
 
     return filepaths, filelabels, labels
 
 
 def find_files_no_label(data_dir: str, shuffle: bool = False, file_ext: str = 'jpg') -> List[str]:
+    """
+    Get all files with a given extension in a data directory.
+
+    :param data_dir: Data directory.
+    :param shuffle: Whether to shuffle the resulting file paths.
+    :param file_ext: File extension.
+    :return: List of file paths.
+    """
     filepaths = enum_files(data_dir, file_ext)
     if shuffle:
         random.shuffle(filepaths)
     return filepaths
+
+
+def extract_labels_re(pat: str, filepaths: List[str]) -> Tuple[List[str], List[int]]:
+    """
+    Extract labels and class names from a list of file paths, using a regular expression.
+
+    :param pat: Regular expression to extract the label from a file path. The first matching group is the label.
+    :param filepaths: List of file paths.
+    :return: (i) list of class names, (ii) list of integer labels, in the same order of the file paths.
+    """
+    pat = re.compile(pat)
+    labels = list(map(lambda x: pat.search(x).group(1), filepaths))
+    le = LabelEncoder()
+    labels = le.fit_transform(labels)
+    return le.classes_, labels
 
 
 def create_clean_dir(path: str):
@@ -141,7 +160,7 @@ def unzip(fn, dest_dir: str = '.', overwrite: bool = False):
         os.chdir(dest_dir)
         for fn in files:
             tf.logging.info(f'Decompressing: {fn}')
-            for _ in tqdm(libarchive.public.file_pour(fn)):
+            for _ in tqdm_notebook(libarchive.public.file_pour(fn)):
                 pass
         os.chdir(cur_dir)
     else:

@@ -1,7 +1,13 @@
+from .. import io
+
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+
 import tensorflow as tf
+from tensorflow.python.framework import graph_util, graph_io
+from tensorflow.python.tools import import_pb_to_tensorboard
+
 import os
 import keras.backend as K
 
@@ -70,8 +76,7 @@ class PytorchToKeras(object):
 
 
 def keras_to_tensorflow(keras_model, output_dir, model_name, out_prefix="output_", log_tensorboard=True):
-    if os.path.exists(output_dir) == False:
-        os.mkdir(output_dir)
+    io.create_clean_dir(output_dir)
 
     out_nodes = []
 
@@ -81,8 +86,6 @@ def keras_to_tensorflow(keras_model, output_dir, model_name, out_prefix="output_
 
     sess = K.get_session()
 
-    from tensorflow.python.framework import graph_util, graph_io
-
     init_graph = sess.graph.as_graph_def()
 
     main_graph = graph_util.convert_variables_to_constants(sess, init_graph, out_nodes)
@@ -90,8 +93,6 @@ def keras_to_tensorflow(keras_model, output_dir, model_name, out_prefix="output_
     graph_io.write_graph(main_graph, output_dir, name=model_name, as_text=False)
 
     if log_tensorboard:
-        from tensorflow.python.tools import import_pb_to_tensorboard
-
         import_pb_to_tensorboard.import_to_tensorboard(
             os.path.join(output_dir, model_name),
             output_dir)

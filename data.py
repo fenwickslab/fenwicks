@@ -4,13 +4,13 @@ import threading
 import functools
 import itertools
 
-from typing import List, Tuple
-from tqdm import tqdm_notebook as tqdm
+from typing import List, Tuple, Callable
+from tqdm import tqdm_notebook
+from sklearn.model_selection import train_test_split
 
 from . import core
 from . import io
 
-from .vision import transform
 from tensorflow.contrib.tpu.python.tpu import datasets as tpu_datasets
 
 
@@ -54,7 +54,7 @@ def numpy_tfrecord(output_fn: str, X, y=None, overwrite: bool = False):
 
     if overwrite or not tf.gfile.Exists(output_fn):
         with tf.io.TFRecordWriter(output_fn) as record_writer:
-            for i in tqdm(range(n)):
+            for i in tqdm_notebook(range(n)):
                 example = numpy_tfexample(X_reshape[i]) if y is None else numpy_tfexample(X_reshape[i], y[i])
                 record_writer.write(example.SerializeToString())
     else:
@@ -78,7 +78,8 @@ def numpy_tfrecord_shards(output_fn: str, x, y=None, num_shards: int = 2):
     tf.train.Coordinator().join(threads)
 
 
-def files_tfrecord(output_fn: str, paths: List[str], y: List[int] = None, overwrite: bool = False, extractor=None):
+def files_tfrecord(output_fn: str, paths: List[str], y: List[int] = None, overwrite: bool = False,
+                   extractor: Callable = None):
     """
     Create a TFRecord file that contains the contents of a given list of files, and optionally their corresponding
     labels. The contents of the given files can be transformed through an extractor function.
@@ -94,7 +95,7 @@ def files_tfrecord(output_fn: str, paths: List[str], y: List[int] = None, overwr
     """
     if overwrite or not tf.gfile.Exists(output_fn):
         with tf.io.TFRecordWriter(output_fn) as record_writer:
-            for i, path in enumerate(tqdm(paths)):
+            for i, path in enumerate(tqdm_notebook(paths)):
                 if extractor is None:
                     with tf.gfile.GFile(path, 'rb') as f:
                         img = f.read()
@@ -108,8 +109,9 @@ def files_tfrecord(output_fn: str, paths: List[str], y: List[int] = None, overwr
         tf.logging.info('Output file already exists. Skipping.')
 
 
-def data_dir_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False, overwrite: bool = False, extractor=None,
-                      file_ext: str = 'jpg', exclude_dirs: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
+def data_dir_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False, overwrite: bool = False,
+                      extractor: Callable = None, file_ext: str = 'jpg', exclude_dirs: List[str] = None) -> Tuple[
+    List[str], List[int], List[str]]:
     """
     Create a TFRecords data file from the contents of a data directory `data_dir`. Specifically, each
     sub-directory of `data_dir` corresponds to a label in the dataset (such as 'cat' and 'dog' ), and named by the
@@ -141,9 +143,30 @@ def data_dir_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False, over
     return paths, y, labels
 
 
+def to_tfrecord_split(paths: List[str], y: List[int], labels: List[str], train_fn: str, valid_fn: str,
+                      valid_pct: float = 0.2, split_rand_state=777, overwrite: bool = False,
+                      extractor: Callable = None) -> Tuple[List[str], List[int], List[str], List[int], List[str]]:
+    n_valid = int(len(y) * valid_pct) // 8 * 8
+    paths_train, paths_valid, y_train, y_valid = train_test_split(paths, y, test_size=n_valid,
+                                                                  random_state=split_rand_state)
+    files_tfrecord(train_fn, paths_train, y_train, overwrite, extractor)
+    files_tfrecord(valid_fn, paths_valid, y_valid, overwrite, extractor)
+    return paths_train, paths_valid, y_train, y_valid, labels
+
+
+def data_dir_tfrecord_split(data_dir: str, train_fn: str, valid_fn: str, valid_pct: float = 0.2, split_rand_state=777,
+                            overwrite: bool = False, extractor: Callable = None, file_ext: str = 'jpg',
+                            exclude_dirs: List[str] = None) -> Tuple[
+    List[str], List[int], List[str], List[int], List[str]]:
+    exclude_dirs = exclude_dirs or []
+    labels = io.sub_dirs(data_dir, exclude_dirs)
+    paths, y = io.find_files(data_dir, labels, file_ext=file_ext)
+    return to_tfrecord_split(paths, y, labels, train_fn, valid_fn, valid_pct, split_rand_state, overwrite, extractor)
+
+
 # todo: add number of cores
 def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = False, overwrite: bool = False,
-                             extractor=None, file_ext: str = 'jpg', exclude_dirs: List[str] = None,
+                             extractor: Callable = None, file_ext: str = 'jpg', exclude_dirs: List[str] = None,
                              num_shards: int = 2) -> Tuple[List[str], List[int], List[str]]:
     """
     Create a number of TFRecords data files from the contents of a data directory `data_dir`. Specifically, each
@@ -187,7 +210,6 @@ def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = Fals
         args = (paths[start:end], y[start:end],
                 f'{output_fn}-{i:05d}-of-{num_shards:05d}', overwrite, extractor)
         t = threading.Thread(target=files_tfrecord, args=args)
-        t = threading.Thread(target=files_tfrecord, args=args)
         t.start()
         threads.append(t)
 
@@ -196,7 +218,7 @@ def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = Fals
 
 
 def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_fn: str, shuffle: bool = False,
-                                overwrite: bool = False, extractor=None, file_ext: str = 'jpg', id_col='id',
+                                overwrite: bool = False, extractor: Callable = None, file_ext: str = 'jpg', id_col='id',
                                 label_col='label', _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
     paths, y, labels = io.find_files_with_label_csv(data_dir, csv_fn, shuffle=shuffle, file_ext=file_ext, id_col=id_col,
                                                     label_col=label_col, _labels=_labels)
@@ -205,8 +227,45 @@ def data_dir_label_csv_tfrecord(data_dir: str, csv_fn: str, output_fn: str, shuf
     return paths, y, labels
 
 
+def data_dir_re_tfrecord(data_dir: str, pat: str, output_fn: str, shuffle: bool = False, overwrite: bool = False,
+                         extractor: Callable = None, file_ext: str = 'jpg') -> Tuple[List[str], List[int], List[str]]:
+    paths = io.find_files_no_label(data_dir, shuffle, file_ext)
+    labels, y = io.extract_labels_re(pat, paths)
+    files_tfrecord(output_fn, paths, y, overwrite, extractor)
+    return paths, y, labels
+
+
+def data_dir_re_tfrecord_split(data_dir: str, pat: str, train_fn: str, valid_fn: str, valid_pct: float = 0.2,
+                               split_rand_state=777, overwrite: bool = False, extractor: Callable = None,
+                               file_ext: str = 'jpg') -> Tuple[List[str], List[int], List[str], List[int], List[str]]:
+    paths = io.find_files_no_label(data_dir, file_ext=file_ext)
+    labels, y = io.extract_labels_re(pat, paths)
+    return to_tfrecord_split(paths, y, labels, train_fn, valid_fn, valid_pct, split_rand_state, overwrite, extractor)
+
+
 def data_dir_no_label_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False,
-                               overwrite: bool = False, extractor=None, file_ext: str = 'jpg') -> List[str]:
+                               overwrite: bool = False, extractor: Callable = None, file_ext: str = 'jpg') -> List[str]:
+    """
+    Create a TFRecords data file from the contents of a data directory `data_dir`, which contain data files with a given
+    file extension specified in `file_ext`. No labels are given for these data files, i.e., this is an unlabeled test
+    dataset.
+
+    When `extractor` is `None`, each data record is stored in its original encoding, e.g., a JPEG image. The `extractor`
+    can be an arbitrary Python function that transforms an original data record, e.g., from sound to image.
+
+    If the output TFRecords file already exists, it is skipped unless `overwrite` is `True`.
+
+    :param data_dir: Directory containing data files, whose contents are to be put in the output TFRecords files.
+    :param output_fn: Base output file name, such as `data.tfrec`. An ouptut file name is the base file name plus the
+                        shard ID and total number of shards, such as `data.tfrec00000-of-00005`
+    :param shuffle: Whether or not to shuffle the data records. Default: no shuffle.
+    :param overwrite: Whether or not to overwrite, when the output file already exists.
+    :param extractor: A Python function that transforms a data file. Its outputs are added to the output TFRecords.
+                      If `extractor` is `None`, the original contents of the data file is added to the output TFRecords.
+    :param file_ext: Extension of input data files. Default: 'jpg'.
+    :return: list of paths to all input data files.
+
+    """
     paths = io.find_files_no_label(data_dir, shuffle, file_ext)
     files_tfrecord(output_fn, paths, overwrite=overwrite, extractor=extractor)
     return paths
@@ -255,7 +314,7 @@ def tfexample_numpy_image_parser(tfexample: tf.train.Example, h: int, w: int, c:
 
 
 # todo: add dtype as a parameter.
-def tfexample_image_parser(tfexample: tf.train.Example, tfms: List = None, has_label: bool = True):
+def tfexample_image_parser(tfexample: tf.train.Example, tfms: List[Callable] = None, has_label: bool = True):
     """
     Parse a given TFExample containing an encoded image (such as JPEG) and a label. Then apply the given sequence of
     transformations.
@@ -275,7 +334,7 @@ def tfexample_image_parser(tfexample: tf.train.Example, tfms: List = None, has_l
 
     x = tf.image.decode_image(x, channels=3, dtype=tf.float32)
     if tfms is not None:
-        x = core.apply_transforms(x, tfms)
+        x = core.sequential_transforms(x, tfms)
 
     if has_label:
         return x, y
@@ -283,26 +342,8 @@ def tfexample_image_parser(tfexample: tf.train.Example, tfms: List = None, has_l
         return x
 
 
-def get_tfexample_image_parser(h: int, w: int, training: bool = True, flip_vert: bool = False,
-                               normalizer=transform.imagenet_normalize_tf):
-    """
-    Get a image parser function that parses a TFRecord into an image, applying standard transformations for ImageNet.
-    For the training set, standard ImageNet data augmentation is also applied.
-
-    :param h: Height of a data image.
-    :param w: Width of a data image.
-    :param training: Whether this is a training set.
-    :param flip_vert: Whether to perform random vertical flipping in the training input pipeline.
-    :param normalizer: Data normalization function. Default to Tensorflow's ImageNet noramlization function, i.e.,
-    `x = (x-0.5)*2`.
-    :return: A function that parses a TFExample into an image.
-    """
-
-    if training:
-        tfms = transform.get_train_transforms(h, w, flip_vert=flip_vert, normalizer=normalizer)
-    else:
-        tfms = transform.get_eval_transforms(h, w, normalizer=normalizer)
-    return functools.partial(tfexample_image_parser, tfms=tfms)
+def get_tfexample_image_parser(tfms: List[Callable], has_label: bool = True) -> Callable:
+    return functools.partial(tfexample_image_parser, tfms=tfms, has_label=has_label)
 
 
 def tfrecord_fetch_dataset(fn: str) -> tf.data.Dataset:

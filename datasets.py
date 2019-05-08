@@ -7,8 +7,11 @@ __all__ = ['URLs', 'untar_data']
 
 class URLs:
     FASTAI = 'http://files.fast.ai/data/'
+    FASTAI_S3 = 'https://s3.amazonaws.com/fast-ai-'
+    FASTAI_S3_IMAGE = f'{FASTAI_S3}imageclas/'
+
     DVC = f'{FASTAI}dogscats.zip'
-    CIFAR10 = f'{FASTAI}cifar10.tgz'
+    PETS = f'{FASTAI_S3_IMAGE}oxford-iiit-pet.tgz'
 
     TF = 'http://download.tensorflow.org/'
     SPEECH_CMD_001 = f'{TF}data/speech_commands_v0.01.tar.gz'
@@ -31,7 +34,7 @@ class URLs:
 
 def untar_data(url: str, dest: str = '.') -> str:
     if not os.path.isdir(dest):
-        tf.gfile.MkDir(dest)
+        tf.io.gfile.makedirs(dest)
     url_path = urlparse(url).path
     fn = os.path.basename(url_path)
     data_dir = os.path.join(dest, 'datasets')

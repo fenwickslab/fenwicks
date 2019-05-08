@@ -357,12 +357,11 @@ def tfm_fastai(do_flip: bool = True, flip_vert: bool = False, max_rotate: float 
 def get_inception_transforms(h: int, w: int, training: bool, flip_vert: bool = False, center_frac: float = 1.0,
                              normalizer=imagenet_normalize_tf) -> List[Callable]:
     """
-    Get a image parser function that parses a TFRecord into an image, applying standard transformations for ImageNet.
-    For the training set, standard ImageNet data augmentation is also applied.
+    Sequence of transforms as used in Google's InceptionV3 code.
 
-    :param h: Height of a data image.
-    :param w: Width of a data image.
-    :param training: Whether this is a training set.
+    :param h: Target height of a data image, e.g., 299 in Inception models.
+    :param w: Target width of a data image, e.g., 299 in Inception models.
+    :param training: Whether the transforms are applied to a training set.
     :param flip_vert: Whether to perform random vertical flipping in the training input pipeline.
     :param center_frac: Fraction of center crop. Applied to evaluation and not to training.
     :param normalizer: Data normalization function. Default to Tensorflow's ImageNet noramlization function, i.e.,
@@ -373,12 +372,10 @@ def get_inception_transforms(h: int, w: int, training: bool, flip_vert: bool = F
     if training:
         return [distorted_bbox_crop, tfm_set_shape(), tfm_resize(h, w), tfm_random_flip(flip_vert), distort_color,
                 normalizer]
-    else:
-        return [tfm_central_crop(center_frac), tfm_set_shape(), tfm_resize(h, w), normalizer]
+    return [tfm_central_crop(center_frac), tfm_set_shape(), tfm_resize(h, w), normalizer]
 
 
 def get_fastai_transforms(h: int, w: int, training: bool, normalizer=imagenet_normalize_tf) -> List[Callable]:
     if training:
         return [tfm_set_shape(), tfm_resize(h, w), tfm_fastai(), normalizer]
-    else:
-        return [tfm_set_shape(), tfm_resize(h, w), normalizer]
+    return [tfm_set_shape(), tfm_resize(h, w), normalizer]

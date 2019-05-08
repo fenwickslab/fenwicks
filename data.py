@@ -300,7 +300,7 @@ def tfexample_numpy_image_parser(tfexample: tf.train.Example, h: int, w: int, c:
 
 
 # todo: add dtype as a parameter.
-def tfexample_image_parser(tfexample: tf.train.Example, tfms: List = None, has_label: bool = True):
+def tfexample_image_parser(tfexample: tf.train.Example, tfms: List[Callable] = None, has_label: bool = True):
     """
     Parse a given TFExample containing an encoded image (such as JPEG) and a label. Then apply the given sequence of
     transformations.
@@ -328,24 +328,8 @@ def tfexample_image_parser(tfexample: tf.train.Example, tfms: List = None, has_l
         return x
 
 
-def get_tfexample_image_parser(h: int = None, w: int = None, training: bool = True, flip_vert: bool = False,
-                               tfms: List[Callable] = None, normalizer=transform.imagenet_normalize_tf):
-    """
-    Get a image parser function that parses a TFRecord into an image, applying standard transformations for ImageNet.
-    For the training set, standard ImageNet data augmentation is also applied.
-
-    :param h: Height of a data image.
-    :param w: Width of a data image.
-    :param training: Whether this is a training set.
-    :param flip_vert: Whether to perform random vertical flipping in the training input pipeline.
-    :param tfms: Customized transforms. Default: None, in which case Inception transforms are applied.
-    :param normalizer: Data normalization function. Default to Tensorflow's ImageNet noramlization function, i.e.,
-    `x = (x-0.5)*2`.
-    :return: A function that parses a TFExample into an image.
-    """
-
-    tfms = tfms or transform.get_inception_transforms(h, w, training, flip_vert=flip_vert, normalizer=normalizer)
-    return functools.partial(tfexample_image_parser, tfms=tfms)
+def get_tfexample_image_parser(tfms: List[Callable], has_label: bool = True) -> Callable:
+    return functools.partial(tfexample_image_parser, tfms=tfms, has_label=has_label)
 
 
 def tfrecord_fetch_dataset(fn: str) -> tf.data.Dataset:

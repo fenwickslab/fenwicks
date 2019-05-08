@@ -57,6 +57,13 @@ def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10,
     return images_anim(X)
 
 
+def show_input_func(input_func: Callable, n_img: int = 10,
+                    converter: Callable = vision.transform.reverse_imagenet_normalize_tf) -> FuncAnimation:
+    params = {'batch_size': n_img}
+    ds = input_func(params)
+    return show_dataset(ds, n_img=n_img, converter=converter)
+
+
 def anim_gif(anim: FuncAnimation, fps: int = 1, anim_fn: str = '/tmp/anim.gif') -> Image:
     anim.save(anim_fn, writer='imagemagick', fps=fps)
     anim_fn_png = f'{anim_fn}.png'

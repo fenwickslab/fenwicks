@@ -307,7 +307,7 @@ def standard_scaler(x: tf.Tensor, mean, std) -> tf.Tensor:
     return (x - mean) / std
 
 
-def reverse_stardard_scaler(x: tf.Tensor, mean, std) -> tf.Tensor:
+def reverse_standard_scaler(x: tf.Tensor, mean, std) -> tf.Tensor:
     return x * std + mean
 
 
@@ -338,6 +338,10 @@ def tfm_pad_crop(pad_size: int) -> Callable:
 
 def tfm_standard_scaler(mean, std) -> Callable:
     return functools.partial(standard_scaler, mean=mean, std=std)
+
+
+def tfm_reverse_standard_scaler(mean, std) -> Callable:
+    return functools.partial(reverse_standard_scaler, mean=mean, std=std)
 
 
 def tfm_cutout(h: int, w: int) -> Callable:

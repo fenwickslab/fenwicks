@@ -144,6 +144,27 @@ def data_dir_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False, over
     return paths, y, labels
 
 
+def to_tfrecord_split(paths: List[str], y: List[int], labels: List[str], train_fn: str, test_fn: str,
+                      test_pct: float = 0.2, split_rand_state=777, overwrite: bool = False,
+                      extractor: Callable = None) -> Tuple[List[str], List[int], List[str], List[int], List[str]]:
+    n_test = int(len(y) * test_pct) // 8 * 8
+    paths_train, paths_test, y_train, y_test = train_test_split(paths, y, test_size=n_test,
+                                                                random_state=split_rand_state)
+    files_tfrecord(train_fn, paths_train, y_train, overwrite, extractor)
+    files_tfrecord(test_fn, paths_test, y_test, overwrite, extractor)
+    return paths_train, paths_test, y_train, y_test, labels
+
+
+def data_dir_tfrecord_split(data_dir: str, train_fn: str, test_fn: str, test_pct: float = 0.2, split_rand_state=777,
+                            overwrite: bool = False, extractor: Callable = None, file_ext: str = 'jpg',
+                            exclude_dirs: List[str] = None) -> Tuple[
+    List[str], List[int], List[str], List[int], List[str]]:
+    exclude_dirs = exclude_dirs or []
+    labels = io.sub_dirs(data_dir, exclude_dirs)
+    paths, y = io.find_files(data_dir, labels, file_ext=file_ext)
+    return to_tfrecord_split(paths, y, labels, train_fn, test_fn, test_pct, split_rand_state, overwrite, extractor)
+
+
 # todo: add number of cores
 def data_dir_tfrecord_shards(data_dir: str, output_fn: str, shuffle: bool = False, overwrite: bool = False,
                              extractor: Callable = None, file_ext: str = 'jpg', exclude_dirs: List[str] = None,
@@ -217,16 +238,10 @@ def data_dir_re_tfrecord(data_dir: str, pat: str, output_fn: str, shuffle: bool 
 
 def data_dir_re_tfrecord_split(data_dir: str, pat: str, train_fn: str, test_fn: str, test_pct: float = 0.2,
                                split_rand_state=777, overwrite: bool = False, extractor: Callable = None,
-                               file_ext: str = 'jpg') -> \
-        Tuple[List[str], List[int], List[str], List[int], List[str]]:
+                               file_ext: str = 'jpg') -> Tuple[List[str], List[int], List[str], List[int], List[str]]:
     paths = io.find_files_no_label(data_dir, file_ext=file_ext)
     labels, y = io.extract_labels_re(pat, paths)
-    n_test = int(len(y) * test_pct) // 8 * 8
-    paths_train, paths_test, y_train, y_test = train_test_split(paths, y, test_size=n_test,
-                                                                random_state=split_rand_state)
-    files_tfrecord(train_fn, paths_train, y_train, overwrite, extractor)
-    files_tfrecord(test_fn, paths_test, y_test, overwrite, extractor)
-    return paths_train, paths_test, y_train, y_test, labels
+    return to_tfrecord_split(paths, y, labels, train_fn, test_fn, test_pct, split_rand_state, overwrite, extractor)
 
 
 def data_dir_no_label_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False,

@@ -83,7 +83,8 @@ def plot_counts_pie_df(df: pd.DataFrame, col: str, max_items: int = 10, width: i
 
 # todo: merge items beyond max_item into an 'others' class
 def plot_counts_pie(y: List[int], labels: List[str] = None, max_items: int = -1, width: int = 350):
-    labels = labels or np.unique(y)
+    if labels is None:
+        labels = np.unique(y)
 
     if max_items < 0:
         max_items = len(labels)

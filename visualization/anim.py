@@ -10,6 +10,7 @@ from typing import List, Callable, Union
 from IPython.display import Image
 
 from .. import vision
+from .. import core
 
 
 def setup():
@@ -71,14 +72,15 @@ def anim_gif(anim: FuncAnimation, fps: int = 1, anim_fn: str = '/tmp/anim.gif') 
     return Image(anim_fn_png)
 
 
-def show_transform(tfm, img_fn: str, n_frames: int = 5, gif: bool = True, fps: int = 5,
+def show_transform(tfm: Union[Callable, List[Callable]], img_fn: str, n_frames: int = 5, gif: bool = True, fps: int = 5,
                    anim_fn: str = '/tmp/anim.gif') -> Union[Image, FuncAnimation]:
     images = []
 
     img = tf.read_file(img_fn)
     img = tf.io.decode_image(img, channels=3, dtype=tf.float32)
     img.set_shape([None, None, 3])
-    op = tfm(img)
+
+    op = core.sequential_transforms(img, tfm) if isinstance(tfm, list) else tfm(img)
 
     with tf.Session() as sess:
         for i in range(n_frames):

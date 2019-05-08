@@ -52,6 +52,7 @@ def check_rgb(data_dir: str, file_ext: str = 'jpg', fix: bool = True):
             fp = os.path.join(data_dir, fp)
             img = Image.open(fp)
             if img.mode != 'RGB':
-                tf.logging.error(f'{fp} is not an RGB image but of mode: {img.mode}')
+                fix_msg = 'Fixing it now.' if fix else ''
+                tf.logging.error(f'{fp} is not an RGB image but of mode: {img.mode}. {fix_msg}')
                 if fix:
                     img.convert("RGB").save(fp)

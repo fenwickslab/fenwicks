@@ -331,6 +331,7 @@ def tfexample_image_parser(tfexample: tf.train.Example, tfms: List[Callable] = N
         x, y = parsed_example
     else:
         x = parsed_example
+        y = None
 
     x = tf.image.decode_image(x, channels=3, dtype=tf.float32)
     if tfms is not None:

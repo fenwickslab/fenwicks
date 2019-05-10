@@ -95,6 +95,20 @@ def cosine_lr(init_lr: float, total_steps: int) -> Callable:
     return lr_func
 
 
+def warmup_lr(warmup_steps: int, init_lr: float, learning_rate):
+    global_step = tf.train.get_or_create_global_step()
+    global_steps_int = tf.cast(global_step, tf.int32)
+    warmup_steps_int = tf.constant(warmup_steps, dtype=tf.int32)
+
+    global_steps_float = tf.cast(global_steps_int, tf.float32)
+    warmup_steps_float = tf.cast(warmup_steps_int, tf.float32)
+
+    warmup_learning_rate = init_lr * global_steps_float / warmup_steps_float
+
+    is_warmup = tf.cast(global_steps_int < warmup_steps_int, tf.float32)
+    return (1.0 - is_warmup) * learning_rate + is_warmup * warmup_learning_rate
+
+
 def adam_optimizer(lr_func: Callable) -> Callable:
     """
     Adam optimizer with a given learning rate schedule.

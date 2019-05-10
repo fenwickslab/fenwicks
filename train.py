@@ -123,7 +123,7 @@ def adam_optimizer(lr_func: Callable) -> Callable:
     return opt_func
 
 
-def adam_wd_optimizer(lr_func: Callable, wd: float = 0.0, beta_1=0.9, beta_2=0.999, epsilon=1e-6,
+def adam_wd_optimizer(lr_func: Callable, wd: float = 0.0, beta_1=0.9, beta_2=0.999, epsilon=1e-8,
                       exclude_from_weight_decay=None) -> Callable:
     def opt_func():
         lr = lr_func()

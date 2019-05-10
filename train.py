@@ -103,7 +103,7 @@ def one_cycle_lr(init_lr: float, total_steps: int, warmup_steps: int, decay_sche
 
         lr = tf.constant(value=init_lr, shape=[], dtype=tf.float32)
         lr = decay_sched(lr, step - warmup_steps, total_steps - warmup_steps)
-        return warmup_lr_sched(step, warmup_steps, init_lr, lr)
+        return lr if warmup_steps == 0 else warmup_lr_sched(step, warmup_steps, init_lr, lr)
 
     return lr_func
 

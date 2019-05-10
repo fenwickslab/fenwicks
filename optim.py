@@ -58,7 +58,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
                                 trainable=False, initializer=tf.zeros_initializer())
 
             next_m = m * self.beta_1 + grad * (1.0 - self.beta_1)
-            next_v = v * self.beta_2 * v + tf.square(grad) * (1.0 - self.beta_2)
+            next_v = v * self.beta_2 + tf.square(grad) * (1.0 - self.beta_2)
 
             update = next_m / (tf.sqrt(next_v) + self.epsilon)
 

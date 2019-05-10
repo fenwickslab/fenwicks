@@ -42,35 +42,6 @@ def exp_decay_lr(init_lr: float, decay_steps: int, base_lr: float = 0, decay_rat
     return lr_func
 
 
-def triangular_lr(init_lr: float, total_steps: int, warmup_steps: int) -> Callable:
-    """
-    One cycle triangular learning rate schedule.
-
-    :param init_lr: peak learning rate.
-    :param total_steps: total number of training steps.
-    :param warmup_steps: number of steps in the warmup phase, during which the learning rate increases linearly.
-    :return: learning rate schedule function satisfying the above descriptions. The function has one optional parameter:
-             the training step count `step`. `step` defaults to `None`, in which case the function gets or creates
-             Tensorflow's `global_step`.
-    """
-
-    def lr_func(step: tf.Tensor = None) -> tf.Tensor:
-        """
-        Get the learning rate at the current global step.
-        :param step: An optional tensor in place of the global step (used in visualization). Default: None, i.e.,
-                     use global step (used in training).
-        :return: Learning rate tensor.
-        """
-        if step is None:
-            step = tf.train.get_or_create_global_step()
-        step = tf.cast(step, tf.float32)
-        warmup_sched = lambda: step * init_lr / warmup_steps
-        decay_sched = lambda: (total_steps - step) * init_lr / (total_steps - warmup_steps)
-        return tf.cond(tf.less_equal(step, warmup_steps), warmup_sched, decay_sched)
-
-    return lr_func
-
-
 def cosine_lr(init_lr: float, total_steps: int) -> Callable:
     """
     Get Adam optimizer function with one-cycle SGD with Warm Restarts, a.k.a. cosine learning rate decay.
@@ -109,7 +80,24 @@ def linear_decay() -> Callable:
 
 
 def one_cycle_lr(init_lr: float, total_steps: int, warmup_steps: int, decay_sched: Callable) -> Callable:
+    """
+    One cycle learning rate schedule.
+
+    :param init_lr: peak learning rate.
+    :param total_steps: total number of training steps.
+    :param warmup_steps: number of steps in the warmup phase, during which the learning rate increases linearly.
+    :param decay_sched: learning rate decay function.
+    :return: learning rate schedule function satisfying the above descriptions.
+    """
+
     def lr_func(step: tf.Tensor = None) -> tf.Tensor:
+        """
+        Get the learning rate at the current global step.
+        :param step: An optional tensor in place of the global step (used in visualization). Default: None, i.e.,
+                     use global step (used in training).
+        :return: Learning rate tensor.
+        """
+
         if step is None:
             step = tf.train.get_or_create_global_step()
 

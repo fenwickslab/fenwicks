@@ -42,31 +42,6 @@ def exp_decay_lr(init_lr: float, decay_steps: int, base_lr: float = 0, decay_rat
     return lr_func
 
 
-def cosine_lr(init_lr: float, total_steps: int) -> Callable:
-    """
-    Get Adam optimizer function with one-cycle SGD with Warm Restarts, a.k.a. cosine learning rate decay.
-
-    :param init_lr: initial learning rate, also the highest value.
-    :param total_steps: total number of training steps.
-    :return: learning rate schedule function satisfying the above descriptions. The function has one optional parameter:
-             the training step count `step`. `step` defaults to `None`, in which case the function gets or creates
-             Tensorflow's `global_step`.
-    """
-
-    def lr_func(step: tf.Tensor = None) -> tf.Tensor:
-        """
-        Get the learning rate at the current global step.
-        :param step: An optional tensor in place of the global step (used in visualization). Default: None, i.e.,
-                     use global step (used in training).
-        :return: Learning rate tensor.
-        """
-        if step is None:
-            step = tf.train.get_or_create_global_step()
-        return tf.train.cosine_decay_restarts(init_lr, step, total_steps)
-
-    return lr_func
-
-
 def warmup_lr_sched(step: tf.Tensor, warmup_steps: int, init_lr: float, lr) -> tf.Tensor:
     step = tf.cast(step, tf.float32)
     warmup_steps = tf.constant(warmup_steps, dtype=tf.float32)
@@ -106,21 +81,6 @@ def one_cycle_lr(init_lr: float, total_steps: int, warmup_steps: int, decay_sche
         return lr if warmup_steps == 0 else warmup_lr_sched(step, warmup_steps, init_lr, lr)
 
     return lr_func
-
-
-def adam_optimizer(lr_func: Callable) -> Callable:
-    """
-    Adam optimizer with a given learning rate schedule.
-
-    :param lr_func: learning rate schedule function.
-    :return: optimizer function satisfying the above descriptions.
-    """
-
-    def opt_func():
-        lr = lr_func()
-        return tf.train.AdamOptimizer(lr)
-
-    return opt_func
 
 
 def adam_wd_optimizer(lr_func: Callable, wd: float = 0.0, beta_1=0.9, beta_2=0.999, epsilon=1e-8,

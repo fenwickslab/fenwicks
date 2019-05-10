@@ -69,7 +69,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 
             assignments.extend([param.assign(next_param), m.assign(next_m), v.assign(next_v)])
 
-        assignments.append(global_step.assign_add(1))        
+        assignments.append(global_step.assign_add(1))
         return tf.group(*assignments, name=name)
 
     def _do_use_weight_decay(self, param_name):

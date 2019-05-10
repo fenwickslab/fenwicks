@@ -2,6 +2,7 @@ import tensorflow as tf
 import math
 import datetime
 import os
+import functools
 from typing import List, Callable
 
 from .utils.colab import TPU_ADDRESS
@@ -95,18 +96,28 @@ def cosine_lr(init_lr: float, total_steps: int) -> Callable:
     return lr_func
 
 
-def warmup_lr(warmup_steps: int, init_lr: float, learning_rate):
-    global_step = tf.train.get_or_create_global_step()
-    global_steps_int = tf.cast(global_step, tf.int32)
-    warmup_steps_int = tf.constant(warmup_steps, dtype=tf.int32)
+def warmup_lr_sched(step: tf.Tensor, warmup_steps: int, init_lr: float, lr) -> tf.Tensor:
+    step = tf.cast(step, tf.float32)
+    warmup_steps = tf.constant(warmup_steps, dtype=tf.float32)
+    warmup_lr = init_lr * step / warmup_steps
+    is_warmup = tf.cast(step < warmup_steps, tf.float32)
+    return (1.0 - is_warmup) * lr + is_warmup * warmup_lr
 
-    global_steps_float = tf.cast(global_steps_int, tf.float32)
-    warmup_steps_float = tf.cast(warmup_steps_int, tf.float32)
 
-    warmup_learning_rate = init_lr * global_steps_float / warmup_steps_float
+def linear_decay() -> Callable:
+    return functools.partial(tf.train.polynomial_decay, end_learning_rate=0.0, power=1.0, cycle=False)
 
-    is_warmup = tf.cast(global_steps_int < warmup_steps_int, tf.float32)
-    return (1.0 - is_warmup) * learning_rate + is_warmup * warmup_learning_rate
+
+def one_cycle_lr(init_lr: float, total_steps: int, warmup_steps: int, decay_sched: Callable) -> Callable:
+    def lr_func(step: tf.Tensor = None) -> tf.Tensor:
+        if step is None:
+            step = tf.train.get_or_create_global_step()
+
+        lr = tf.constant(value=init_lr, shape=[], dtype=tf.float32)
+        lr = decay_sched(lr, step - warmup_steps, total_steps - warmup_steps)
+        return warmup_lr_sched(step, warmup_steps, init_lr, lr)
+
+    return lr_func
 
 
 def adam_optimizer(lr_func: Callable) -> Callable:
@@ -227,7 +238,7 @@ def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: s
                                        warm_start_from=ws)
 
 
-def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN):
+def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN, use_tpu: bool = True):
     """
     Build a model function for a classification task to be used in a TPUEstimator, based on a given model architecture
     and an optimizer. Both the model architecture and optimizer must be callables, not model or optimizer objects. The
@@ -238,6 +249,7 @@ def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN)
     :param opt_func: Optimization function: a callable that returns an optimizer.
     :param reduction: Whether to average (`tf.losses.Reduction.MEAN`) or sum (`tf.losses.Reduction.SUM`) losses
                       for different training records. Default: average.
+    :param use_tpu: Whether to use TPU. Default: True.
     :return: Model function ready for TPUEstimator.
     """
 
@@ -258,7 +270,8 @@ def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN)
             step = tf.train.get_or_create_global_step()
 
             opt = opt_func()
-            opt = tf.contrib.tpu.CrossShardOptimizer(opt, reduction=reduction)
+            if use_tpu:
+                opt = tf.contrib.tpu.CrossShardOptimizer(opt, reduction=reduction)
 
             var = model.trainable_variables  # this excludes frozen variables
             grads_and_vars = opt.compute_gradients(loss, var_list=var)

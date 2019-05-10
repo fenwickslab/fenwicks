@@ -1,5 +1,23 @@
 import tensorflow as tf
 import re
+from typing import List, Union, Tuple
+
+
+class SGD(tf.train.MomentumOptimizer):
+    def __init__(self, lr: tf.Tensor, mom: float, wd: float):
+        super().__init__(lr, momentum=mom, use_nesterov=True)
+        self.wd = wd
+
+    def compute_gradients(self, loss, var_list=None, **kwargs) -> List[Tuple]:
+        grads_and_vars = super().compute_gradients(loss, var_list=var_list)
+
+        l = len(grads_and_vars)
+        for i in range(l):
+            g, v = grads_and_vars[i]
+            g += v * self.wd
+            grads_and_vars[i] = (g, v)
+
+        return grads_and_vars
 
 
 class AdamWeightDecayOptimizer(tf.train.Optimizer):
@@ -15,8 +33,8 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
     def _apply_dense(self, grad, var):
         pass
 
-    def __init__(self, lr=0.001, wd=0.0, beta_1=0.9, beta_2=0.999, epsilon=1e-6,
-                 exclude_from_weight_decay=None, name="AdamWeightDecayOptimizer"):
+    def __init__(self, lr: Union[float, tf.Tensor] = 0.001, wd: float = 0.0, beta_1: float = 0.9, beta_2: float = 0.999,
+                 epsilon: float = 1e-6, exclude_from_weight_decay: List = None, name: str = "AdamWeightDecayOptimizer"):
         super().__init__(use_locking=False, name=name)
 
         self.lr = lr

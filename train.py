@@ -2,12 +2,13 @@ import tensorflow as tf
 import math
 import datetime
 import os
-from typing import List
+from typing import List, Callable
 
 from .utils.colab import TPU_ADDRESS
+from .optim import SGD, AdamWeightDecayOptimizer
 
 
-def exp_decay_lr(init_lr: float, decay_steps: int, base_lr: float = 0, decay_rate: float = 1 / math.e):
+def exp_decay_lr(init_lr: float, decay_steps: int, base_lr: float = 0, decay_rate: float = 1 / math.e) -> Callable:
     """
     Get exponential learning rate decay schedule function.
 
@@ -27,6 +28,12 @@ def exp_decay_lr(init_lr: float, decay_steps: int, base_lr: float = 0, decay_rat
     """
 
     def lr_func(step: tf.Tensor = None) -> tf.Tensor:
+        """
+        Get the learning rate at the current global step.
+        :param step: An optional tensor in place of the global step (used in visualization). Default: None, i.e.,
+                     use global step (used in training).
+        :return: Learning rate tensor.
+        """
         if step is None:
             step = tf.train.get_or_create_global_step()
         return base_lr + tf.train.exponential_decay(init_lr, step, decay_steps, decay_rate)
@@ -34,7 +41,7 @@ def exp_decay_lr(init_lr: float, decay_steps: int, base_lr: float = 0, decay_rat
     return lr_func
 
 
-def triangular_lr(init_lr: float, total_steps: int, warmup_steps: int):
+def triangular_lr(init_lr: float, total_steps: int, warmup_steps: int) -> Callable:
     """
     One cycle triangular learning rate schedule.
 
@@ -47,6 +54,12 @@ def triangular_lr(init_lr: float, total_steps: int, warmup_steps: int):
     """
 
     def lr_func(step: tf.Tensor = None) -> tf.Tensor:
+        """
+        Get the learning rate at the current global step.
+        :param step: An optional tensor in place of the global step (used in visualization). Default: None, i.e.,
+                     use global step (used in training).
+        :return: Learning rate tensor.
+        """
         if step is None:
             step = tf.train.get_or_create_global_step()
         step = tf.cast(step, tf.float32)
@@ -57,7 +70,7 @@ def triangular_lr(init_lr: float, total_steps: int, warmup_steps: int):
     return lr_func
 
 
-def cosine_lr(init_lr: float, total_steps: int):
+def cosine_lr(init_lr: float, total_steps: int) -> Callable:
     """
     Get Adam optimizer function with one-cycle SGD with Warm Restarts, a.k.a. cosine learning rate decay.
 
@@ -69,6 +82,12 @@ def cosine_lr(init_lr: float, total_steps: int):
     """
 
     def lr_func(step: tf.Tensor = None) -> tf.Tensor:
+        """
+        Get the learning rate at the current global step.
+        :param step: An optional tensor in place of the global step (used in visualization). Default: None, i.e.,
+                     use global step (used in training).
+        :return: Learning rate tensor.
+        """
         if step is None:
             step = tf.train.get_or_create_global_step()
         return tf.train.cosine_decay_restarts(init_lr, step, total_steps)
@@ -76,7 +95,7 @@ def cosine_lr(init_lr: float, total_steps: int):
     return lr_func
 
 
-def adam_optimizer(lr_func):
+def adam_optimizer(lr_func: Callable) -> Callable:
     """
     Adam optimizer with a given learning rate schedule.
 
@@ -91,24 +110,17 @@ def adam_optimizer(lr_func):
     return opt_func
 
 
-class SGD(tf.train.MomentumOptimizer):
-    def __init__(self, lr: tf.Tensor, mom: float, wd: float):
-        super().__init__(lr, momentum=mom, use_nesterov=True)
-        self.wd = wd
+def adam_wd_optimizer(lr_func: Callable, wd: float = 0.0, beta_1=0.9, beta_2=0.999, epsilon=1e-6,
+                      exclude_from_weight_decay=None) -> Callable:
+    def opt_func():
+        lr = lr_func()
+        return AdamWeightDecayOptimizer(lr, wd=wd, beta_1=beta_1, beta_2=beta_2, epsilon=epsilon,
+                                        exclude_from_weight_decay=exclude_from_weight_decay)
 
-    def compute_gradients(self, loss, var_list=None):
-        grads_and_vars = super().compute_gradients(loss, var_list=var_list)
-
-        l = len(grads_and_vars)
-        for i in range(l):
-            g, v = grads_and_vars[i]
-            g += v * self.wd
-            grads_and_vars[i] = (g, v)
-
-        return grads_and_vars
+    return opt_func
 
 
-def sgd_optimizer(lr_func, mom: float = 0.9, wd: float = 0.0):
+def sgd_optimizer(lr_func, mom: float = 0.9, wd: float = 0.0) -> Callable:
     """
     SGD with Nesterov momentum optimizer with a given learning rate schedule.
 

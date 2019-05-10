@@ -34,7 +34,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
         pass
 
     def __init__(self, lr: Union[float, tf.Tensor] = 0.001, wd: float = 0.0, beta_1: float = 0.9, beta_2: float = 0.999,
-                 epsilon: float = 1e-8, exclude_from_weight_decay: List = None, name: str = "AdamWeightDecayOptimizer"):
+                 epsilon: float = 1e-8, exclude_from_wd: List = None, name: str = "AdamWeightDecayOptimizer"):
         super().__init__(use_locking=False, name=name)
 
         self.lr = lr
@@ -42,7 +42,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
         self.beta_1 = beta_1
         self.beta_2 = beta_2
         self.epsilon = epsilon
-        self.exclude_from_weight_decay = exclude_from_weight_decay
+        self.exclude_from_weight_decay = exclude_from_wd
 
     def apply_gradients(self, grads_and_vars, global_step=None, name=None):
         assignments = []
@@ -58,7 +58,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
                                 trainable=False, initializer=tf.zeros_initializer())
 
             next_m = m * self.beta_1 + grad * (1.0 - self.beta_1)
-            next_v = v * self.beta_2 + v + tf.square(grad) * (1.0 - self.beta_2)
+            next_v = v * self.beta_2 * v + tf.square(grad) * (1.0 - self.beta_2)
 
             update = next_m / (tf.sqrt(next_v) + self.epsilon)
 

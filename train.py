@@ -124,11 +124,11 @@ def adam_optimizer(lr_func: Callable) -> Callable:
 
 
 def adam_wd_optimizer(lr_func: Callable, wd: float = 0.0, beta_1=0.9, beta_2=0.999, epsilon=1e-8,
-                      exclude_from_weight_decay=None) -> Callable:
+                      exclude_from_wd=None) -> Callable:
     def opt_func():
         lr = lr_func()
         return AdamWeightDecayOptimizer(lr, wd=wd, beta_1=beta_1, beta_2=beta_2, epsilon=epsilon,
-                                        exclude_from_weight_decay=exclude_from_weight_decay)
+                                        exclude_from_wd=exclude_from_wd)
 
     return opt_func
 

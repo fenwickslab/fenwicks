@@ -118,38 +118,6 @@ def weight_decay_loss(wd: float = 0.0005) -> tf.Tensor:
     return wd * tf.add_n(l2_loss)
 
 
-# fixme
-def inception_v3_lr(n_train, lr: float = 0.165, lr_decay: float = 0.94, lr_decay_epochs: int = 3,
-                    batch_size: float = 1024, use_warmup: bool = False, warmup_epochs: int = 7, cold_epochs: int = 2):
-    init_lr = lr * batch_size / 256
-
-    final_lr = 0.0001 * init_lr
-
-    steps_per_epoch = n_train / batch_size
-    global_step = tf.train.get_or_create_global_step()
-
-    current_epoch = tf.cast((tf.cast(global_step, tf.float32) / steps_per_epoch), tf.int32)
-
-    lr = tf.train.exponential_decay(learning_rate=init_lr, global_step=global_step,
-                                    decay_steps=int(lr_decay_epochs * steps_per_epoch), decay_rate=lr_decay,
-                                    staircase=True)
-
-    if use_warmup:
-        warmup_decay = lr_decay ** ((warmup_epochs + cold_epochs) / lr_decay_epochs)
-        adj_init_lr = init_lr * warmup_decay
-
-        wlr = 0.1 * adj_init_lr
-        wlr_height = tf.cast(0.9 * adj_init_lr / (warmup_epochs + lr_decay_epochs - 1), tf.float32)
-        epoch_offset = tf.cast(cold_epochs - 1, tf.int32)
-        exp_decay_start = (warmup_epochs + cold_epochs + lr_decay_epochs)
-        lin_inc_lr = tf.add(wlr, tf.multiply(tf.cast(tf.subtract(current_epoch, epoch_offset), tf.float32), wlr_height))
-        lr = tf.where(tf.greater_equal(current_epoch, cold_epochs),
-                      (tf.where(tf.greater_equal(current_epoch, exp_decay_start), lr, lin_inc_lr)), wlr)
-
-    lr = tf.maximum(lr, final_lr, name='learning_rate')
-    return lr
-
-
 def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: str = None, ws_vars: List[str] = None,
                       trn_bs: int = 128, val_bs: int = 1, pred_bs: int = 1) -> tf.contrib.tpu.TPUEstimator:
     """

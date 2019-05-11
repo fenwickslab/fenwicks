@@ -2,8 +2,10 @@ import tensorflow as tf
 import math
 import datetime
 import os
+import re
+import collections
 import functools
-from typing import List, Callable
+from typing import List, Callable, Tuple
 
 from .utils.colab import TPU_ADDRESS
 from .optim import SGD, AdamWeightDecayOptimizer
@@ -201,3 +203,43 @@ def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN,
                                                train_op=train_op, eval_metrics=tpu_metrics)
 
     return model_func
+
+
+def get_assignment_map_from_checkpoint(tvars: List, init_checkpoint: str) -> Tuple:
+    """
+    Compute the union of the current variables and checkpoint variables.
+
+    :param tvars: List of trainable variables.
+    :param init_checkpoint: Path to checkpoint file.
+    :return: Assignment map and list of initialized variable names.
+    """
+    initialized_variable_names = {}
+
+    name_to_variable = collections.OrderedDict()
+    for var in tvars:
+        name = var.name
+        m = re.match("^(.*):\\d+$", name)
+        if m is not None:
+            name = m.group(1)
+        name_to_variable[name] = var
+
+    init_vars = tf.train.list_variables(init_checkpoint)
+
+    assignment_map = collections.OrderedDict()
+    for x in init_vars:
+        (name, var) = (x[0], x[1])
+        if name not in name_to_variable:
+            continue
+        assignment_map[name] = name
+        initialized_variable_names[name] = 1
+        initialized_variable_names[name + ":0"] = 1
+
+    return assignment_map, initialized_variable_names
+
+
+def get_scaffold_func(init_checkpoint: str, assignment_map) -> Callable:
+    def tpu_scaffold():
+        tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
+        return tf.train.Scaffold()
+
+    return tpu_scaffold

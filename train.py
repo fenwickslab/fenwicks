@@ -85,11 +85,19 @@ def one_cycle_lr(init_lr: float, total_steps: int, warmup_steps: int, decay_sche
     return lr_func
 
 
-def adam_wd_optimizer(lr_func: Callable, wd: float = 0.0, beta_1=0.9, beta_2=0.999, epsilon=1e-8,
+def adam_optimizer(lr_func: Callable, beta1=0.9, beta2=0.999, epsilon=1e-8) -> Callable:
+    def opt_func():
+        lr = lr_func()
+        return tf.train.AdamOptimizer(lr, beta1=beta1, beta2=beta2, epsilon=epsilon)
+
+    return opt_func
+
+
+def adam_wd_optimizer(lr_func: Callable, wd: float = 0.0, beta1=0.9, beta2=0.999, epsilon=1e-8,
                       exclude_from_wd=None) -> Callable:
     def opt_func():
         lr = lr_func()
-        return AdamWeightDecayOptimizer(lr, wd=wd, beta_1=beta_1, beta_2=beta_2, epsilon=epsilon,
+        return AdamWeightDecayOptimizer(lr, wd=wd, beta1=beta1, beta2=beta2, epsilon=epsilon,
                                         exclude_from_wd=exclude_from_wd)
 
     return opt_func
@@ -121,7 +129,8 @@ def weight_decay_loss(wd: float = 0.0005) -> tf.Tensor:
 
 
 def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: str = None, ws_vars: List[str] = None,
-                      trn_bs: int = 128, val_bs: int = 1, pred_bs: int = 1) -> tf.contrib.tpu.TPUEstimator:
+                      trn_bs: int = 128, val_bs: int = 1, pred_bs: int = 1,
+                      use_tpu: bool = True) -> tf.contrib.tpu.TPUEstimator:
     """
     Create a TPUEstimator object ready for training and evaluation.
 
@@ -133,10 +142,12 @@ def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: s
     :param trn_bs: Batch size for training.
     :param val_bs: Batch size for validation. Default: all validation records in a single batch.
     :param pred_bs: Batch size for prediction. Default: 1.
+    :param use_tpu: Whether to use TPU. Default: True.
     :return: A TPUEstimator object, for training, evaluation and prediction.
     """
 
-    cluster = tf.contrib.cluster_resolver.TPUClusterResolver(TPU_ADDRESS)
+    use_tpu = use_tpu and (TPU_ADDRESS is not None)
+    cluster = tf.contrib.cluster_resolver.TPUClusterResolver(TPU_ADDRESS) if use_tpu else None
 
     tpu_cfg = tf.contrib.tpu.TPUConfig(
         iterations_per_loop=steps_per_epoch,
@@ -151,12 +162,13 @@ def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: s
     ws = None if ws_dir is None else tf.estimator.WarmStartSettings(ckpt_to_initialize_from=ws_dir,
                                                                     vars_to_warm_start=ws_vars)
 
-    return tf.contrib.tpu.TPUEstimator(model_fn=model_func, model_dir=work_dir, train_batch_size=trn_bs,
-                                       eval_batch_size=val_bs, predict_batch_size=pred_bs, config=trn_cfg,
-                                       warm_start_from=ws)
+    return tf.contrib.tpu.TPUEstimator(use_tpu=use_tpu, model_fn=model_func, model_dir=work_dir,
+                                       train_batch_size=trn_bs, eval_batch_size=val_bs, predict_batch_size=pred_bs,
+                                       config=trn_cfg, warm_start_from=ws)
 
 
-def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN, use_tpu: bool = True):
+def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN, use_tpu: bool = True,
+                       scaffold_func: Callable = None) -> Callable:
     """
     Build a model function for a classification task to be used in a TPUEstimator, based on a given model architecture
     and an optimizer. Both the model architecture and optimizer must be callables, not model or optimizer objects. The
@@ -168,6 +180,7 @@ def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN,
     :param reduction: Whether to average (`tf.losses.Reduction.MEAN`) or sum (`tf.losses.Reduction.SUM`) losses
                       for different training records. Default: average.
     :param use_tpu: Whether to use TPU. Default: True.
+    :param scaffold_func: Scaffold function, typically for loading from a checkpoint. Default: None.
     :return: Model function ready for TPUEstimator.
     """
 
@@ -200,7 +213,7 @@ def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN,
         tpu_metrics = (metric_func, [y_pred, labels])
 
         return tf.contrib.tpu.TPUEstimatorSpec(mode=mode, loss=loss, predictions={"y_pred": y_pred},
-                                               train_op=train_op, eval_metrics=tpu_metrics)
+                                               train_op=train_op, scaffold_fn=scaffold_func, eval_metrics=tpu_metrics)
 
     return model_func
 

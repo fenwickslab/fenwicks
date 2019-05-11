@@ -33,14 +33,14 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
     def _apply_dense(self, grad, var):
         pass
 
-    def __init__(self, lr: Union[float, tf.Tensor] = 0.001, wd: float = 0.0, beta_1: float = 0.9, beta_2: float = 0.999,
+    def __init__(self, lr: Union[float, tf.Tensor] = 0.001, wd: float = 0.0, beta1: float = 0.9, beta2: float = 0.999,
                  epsilon: float = 1e-8, exclude_from_wd: List = None, name: str = "AdamWeightDecayOptimizer"):
         super().__init__(use_locking=False, name=name)
 
         self.lr = lr
         self.wd = wd
-        self.beta_1 = beta_1
-        self.beta_2 = beta_2
+        self.beta_1 = beta1
+        self.beta_2 = beta2
         self.epsilon = epsilon
         self.exclude_from_weight_decay = exclude_from_wd
 

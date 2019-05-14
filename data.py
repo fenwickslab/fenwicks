@@ -52,7 +52,7 @@ def numpy_tfrecord(output_fn: str, X, y=None, overwrite: bool = False):
     n = X.shape[0]
     X_reshape = X.reshape(n, -1)
 
-    if overwrite or not tf.gfile.Exists(output_fn):
+    if overwrite or not tf.io.gfile.exists(output_fn):
         with tf.io.TFRecordWriter(output_fn) as record_writer:
             for i in tqdm_notebook(range(n)):
                 example = numpy_tfexample(X_reshape[i]) if y is None else numpy_tfexample(X_reshape[i], y[i])
@@ -93,11 +93,11 @@ def files_tfrecord(output_fn: str, paths: List[str], y: List[int] = None, overwr
                       TFRecord file.
     :return: None.
     """
-    if overwrite or not tf.gfile.Exists(output_fn):
+    if overwrite or not tf.io.gfile.exists(output_fn):
         with tf.io.TFRecordWriter(output_fn) as record_writer:
             for i, path in enumerate(tqdm_notebook(paths)):
                 if extractor is None:
-                    with tf.gfile.GFile(path, 'rb') as f:
+                    with tf.io.gfile.GFile(path, 'rb') as f:
                         img = f.read()
                         example = raw_image_tfexample(img) if y is None else raw_image_tfexample(img, y[i])
                 else:

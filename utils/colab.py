@@ -53,10 +53,10 @@ def mount_google_drive(gdrive_path: str = './gdrive'):
 
 def setup_kaggle_from_gdrive(gdrive_path: str = './gdrive/My Drive/kaggle.json',
                              local_path: str = '/root/.kaggle/kaggle.json'):
-    if not tf.gfile.Exists(local_path):
+    if not tf.io.gfile.exists(local_path):
         mount_google_drive()
         create_clean_dir(os.path.dirname(local_path))
-        tf.gfile.Copy(gdrive_path, local_path)
+        tf.io.gfile.copy(gdrive_path, local_path)
         os.chmod(local_path, 600)
     else:
         tf.logging.info(f'Kaggle already set up. Skipping.')

@@ -7,7 +7,7 @@ import matplotlib.pylab as plt
 from matplotlib import rc
 from matplotlib.animation import FuncAnimation
 from typing import List, Callable, Union
-from IPython.display import Image
+from IPython.display import Image, HTML
 
 from .. import vision
 from .. import core
@@ -41,7 +41,8 @@ def show_image_files(files: List[str], n_img: int = 20) -> FuncAnimation:
 
 
 def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10,
-                 converter: Callable = vision.transform.reverse_imagenet_normalize_tf) -> FuncAnimation:
+                 converter: Callable = vision.transform.reverse_imagenet_normalize_tf,
+                 html5_video: bool = True) -> FuncAnimation:
     X = []
     data_op = ds.make_one_shot_iterator().get_next()
 
@@ -55,20 +56,22 @@ def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10,
             n_img -= len(x)
 
     X = np.clip(np.array(X), 0.0, 1.0)
-    return images_anim(X)
+    anim = images_anim(X)
+    return HTML(anim.to_html5_video()) if html5_video else anim
 
 
 def show_input_func(input_func: Callable, n_img: int = 10,
-                    converter: Callable = vision.transform.reverse_imagenet_normalize_tf) -> FuncAnimation:
+                    converter: Callable = vision.transform.reverse_imagenet_normalize_tf,
+                    html5_video: bool = True) -> FuncAnimation:
     params = {'batch_size': n_img}
     ds = input_func(params)
-    return show_dataset(ds, n_img=n_img, converter=converter)
+    return show_dataset(ds, n_img=n_img, converter=converter, html5_video=html5_video)
 
 
 def anim_gif(anim: FuncAnimation, fps: int = 1, anim_fn: str = '/tmp/anim.gif') -> Image:
     anim.save(anim_fn, writer='imagemagick', fps=fps)
     anim_fn_png = f'{anim_fn}.png'
-    tf.gfile.Copy(anim_fn, anim_fn_png, overwrite=True)
+    tf.io.gfile.copy(anim_fn, anim_fn_png, overwrite=True)
     return Image(anim_fn_png)
 
 

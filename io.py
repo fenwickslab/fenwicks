@@ -21,7 +21,7 @@ def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
     :return: A list of file names. Note that these are base file names, not full paths.
     """
     file_pattern: str = os.path.join(data_dir, f'*.{file_ext}')
-    matching_files: List[str] = tf.gfile.Glob(file_pattern)
+    matching_files: List[str] = tf.io.gfile.glob(file_pattern)
     return matching_files
 
 
@@ -108,8 +108,8 @@ def create_clean_dir(path: str):
     :param path: Path to the directory to be created or cleaned.
     :return: None
     """
-    if tf.gfile.Exists(path):
-        tf.gfile.DeleteRecursively(path)
+    if tf.io.gfile.exists(path):
+        tf.io.gfile.rmtree(path)
     tf.io.gfile.makedirs(path)
 
 
@@ -124,7 +124,7 @@ def file_size(fn: str) -> int:
 
 
 def download(url: str, fn: str, overwrite: bool = False):
-    if overwrite or not tf.gfile.Exists(fn):
+    if overwrite or not tf.io.gfile.exists(fn):
         urllib.request.urlretrieve(url, fn)
     else:
         tf.logging.info(f'Destination file exists. Skipping.')
@@ -148,7 +148,7 @@ def unzip(fn, dest_dir: str = '.', overwrite: bool = False):
 
     is_one_file: bool = isinstance(fn, str)
 
-    if overwrite or not tf.gfile.Exists(dest_dir):
+    if overwrite or not tf.io.gfile.exists(dest_dir):
         tf.io.gfile.makedirs(dest_dir)
 
         if is_one_file:
@@ -177,15 +177,15 @@ def sub_dirs(data_dir: str, exclude_dirs: List[str] = None) -> List[str]:
     """
 
     exclude_dirs = exclude_dirs or []
-    return [path for path in tf.gfile.ListDirectory(data_dir)
-            if tf.gfile.IsDirectory(os.path.join(data_dir, path)) and path not in exclude_dirs]
+    return [path for path in tf.io.gfile.listdir(data_dir)
+            if tf.io.gfile.isdir(os.path.join(data_dir, path)) and path not in exclude_dirs]
 
 
 def merge_dirs(source_dirs: List[str], dest_dir: str):
-    if not tf.gfile.Exists(dest_dir):
+    if not tf.io.gfile.exists(dest_dir):
         tf.io.gfile.makedirs(dest_dir)
         for d in source_dirs:
-            files = tf.gfile.ListDirectory(d)
+            files = tf.io.gfile.listdir(d)
             for fn in files:
                 old_fn = os.path.join(d, fn)
                 new_fn = os.path.join(dest_dir, fn)
@@ -228,7 +228,7 @@ def upload_to_gcs(local_path: str, gcs_path: str):
     :param gcs_path: path to the GCS file. Need to be the full file name.
     :return: None.
     """
-    if not tf.gfile.Exists(gcs_path):
-        tf.gfile.Copy(local_path, gcs_path)
+    if not tf.io.gfile.exists(gcs_path):
+        tf.io.gfile.copy(local_path, gcs_path)
     else:
         tf.logging.info('Output file already exists. Skipping.')

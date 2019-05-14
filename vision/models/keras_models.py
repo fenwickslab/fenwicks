@@ -25,7 +25,7 @@ def get_ws_vars(ws_ckpt_fn: str) -> List[str]:
 
 def keras_model_weights(model_class, model_dir: str, include_top: bool = False, overwrite: bool = False) -> Tuple[
     str, List[str]]:
-    if overwrite or (not tf.gfile.Exists(model_dir)):
+    if overwrite or (not tf.io.gfile.exists(model_dir)):
         create_clean_dir(model_dir)
         model = model_class(include_top=include_top)
         # Here we use the simplest SGD optimizer to avoid creating new variables

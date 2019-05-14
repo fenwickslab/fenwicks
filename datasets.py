@@ -38,6 +38,6 @@ def untar_data(url: str, dest: str = '.') -> str:
     url_path = urlparse(url).path
     fn = os.path.basename(url_path)
     data_dir = os.path.join(dest, 'datasets')
-    if not tf.gfile.Exists(os.path.join(data_dir, fn)):
+    if not tf.io.gfile.exists(os.path.join(data_dir, fn)):
         tf.keras.utils.get_file(fn, origin=url, extract=True, cache_dir=dest)
     return data_dir

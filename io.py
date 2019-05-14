@@ -20,8 +20,8 @@ def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
     :param file_ext: Extensions of files to enumerate. Default: 'jpg'.
     :return: A list of file names. Note that these are base file names, not full paths.
     """
-    file_pattern = os.path.join(data_dir, f'*.{file_ext}')
-    matching_files = tf.gfile.Glob(file_pattern)
+    file_pattern: str = os.path.join(data_dir, f'*.{file_ext}')
+    matching_files: List[str] = tf.gfile.Glob(file_pattern)
     return matching_files
 
 
@@ -37,8 +37,8 @@ def find_files(data_dir: str, labels: List[str], shuffle: bool = False, file_ext
     :param file_ext: File extension. ONly find files with this extension.
     :return: Two lists: one for file paths and the other for their corresponding labels represented as indexes.
     """
-    filepaths = []
-    filelabels = []
+    filepaths: List[str] = []
+    filelabels: List[int] = []
 
     for i, label in enumerate(labels):
         matching_files = enum_files(os.path.join(data_dir, label), file_ext)
@@ -53,7 +53,7 @@ def find_files(data_dir: str, labels: List[str], shuffle: bool = False, file_ext
 
 def find_files_with_label_csv(data_dir: str, csv_fn: str, shuffle: bool = False, file_ext: str = 'jpg', id_col='id',
                               label_col='label', _labels: List[str] = None) -> Tuple[List[str], List[int], List[str]]:
-    train_labels = pd.read_csv(csv_fn)
+    train_labels: pd.DataFrame = pd.read_csv(csv_fn)
     labels = _labels or sorted(train_labels[label_col].unique())
     key_id = dict([(label, idx) for idx, label in enumerate(labels)])
 
@@ -79,7 +79,7 @@ def find_files_no_label(data_dir: str, shuffle: bool = False, file_ext: str = 'j
     :param file_ext: File extension.
     :return: List of file paths.
     """
-    filepaths = enum_files(data_dir, file_ext)
+    filepaths: List[str] = enum_files(data_dir, file_ext)
     if shuffle:
         random.shuffle(filepaths)
     return filepaths
@@ -146,17 +146,17 @@ def unzip(fn, dest_dir: str = '.', overwrite: bool = False):
     except ImportError:
         raise ImportError('libarchive not installed. Run !apt install libarchive-dev and then !pip install libarchive.')
 
-    is_one_file = isinstance(fn, str)
+    is_one_file: bool = isinstance(fn, str)
 
     if overwrite or not tf.gfile.Exists(dest_dir):
         tf.io.gfile.makedirs(dest_dir)
 
         if is_one_file:
-            files = [os.path.abspath(fn)]
+            files: List[str] = [os.path.abspath(fn)]
         else:
-            files = list(map(os.path.abspath, fn))
+            files: List[str] = list(map(os.path.abspath, fn))
 
-        cur_dir = os.getcwd()
+        cur_dir: str = os.getcwd()
         os.chdir(dest_dir)
         for fn in files:
             tf.logging.info(f'Decompressing: {fn}')
@@ -200,20 +200,22 @@ def get_model_dir(bucket: str, model: str) -> str:
     :param model: Name of the pre-trained model.
     :return: GCS path to store the pre-trained model.
     """
-    return os.path.join(os.path.join(bucket, 'model'), model)
+    return os.path.join(bucket, 'model', model)
 
 
-def get_gcs_dirs(bucket: str, project: str) -> Tuple[str, str]:
+def get_project_dirs(root_dir: str, project: str) -> Tuple[str, str]:
     """
     Get recommended directories for storing datasets (data_dir) and intermediate files generated during training
     (work_dir).
 
-    :param bucket: Google Cloud Storage bucket.
+    :param root_dir: Root directory, which is often the Google Cloud Storage bucket when using TPUs.
     :param project: Name of the project.
     :return: Data directory for storaing datasets, and work directory for storing intermediate files.
     """
-    data_dir = os.path.join(os.path.join(bucket, 'data'), project)
-    work_dir = os.path.join(os.path.join(bucket, 'work'), project)
+    data_dir: str = os.path.join(root_dir, 'data', project)
+    work_dir: str = os.path.join(root_dir, 'work', project)
+    create_clean_dir(data_dir)
+    create_clean_dir(work_dir)
     return data_dir, work_dir
 
 

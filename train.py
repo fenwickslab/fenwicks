@@ -129,8 +129,8 @@ def weight_decay_loss(wd: float = 0.0005) -> tf.Tensor:
 
 
 def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: str = None, ws_vars: List[str] = None,
-                      trn_bs: int = 128, val_bs: int = 1, pred_bs: int = 1,
-                      use_tpu: bool = True) -> tf.contrib.tpu.TPUEstimator:
+                      trn_bs: int = 128, val_bs: int = 1, pred_bs: int = 1, use_tpu: bool = True,
+                      use_time_in_work_dir: bool = True) -> tf.contrib.tpu.TPUEstimator:
     """
     Create a TPUEstimator object ready for training and evaluation.
 
@@ -143,6 +143,7 @@ def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: s
     :param val_bs: Batch size for validation. Default: all validation records in a single batch.
     :param pred_bs: Batch size for prediction. Default: 1.
     :param use_tpu: Whether to use TPU. Default: True.
+    :param use_time_in_work_dir: Whether to use a subdirectory of `work_dir` using current time. Default: True.
     :return: A TPUEstimator object, for training, evaluation and prediction.
     """
 
@@ -153,9 +154,10 @@ def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: s
         iterations_per_loop=steps_per_epoch,
         per_host_input_for_training=tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2)
 
-    now = datetime.datetime.now()
-    time_str = f'{now.year}-{now.month:02d}-{now.day:02d}-{now.hour:02d}:{now.minute:02d}:{now.second:02d}'
-    work_dir = os.path.join(work_dir, time_str)
+    if use_time_in_work_dir:
+        now = datetime.datetime.now()
+        time_str = f'{now.year}-{now.month:02d}-{now.day:02d}-{now.hour:02d}:{now.minute:02d}:{now.second:02d}'
+        work_dir = os.path.join(work_dir, time_str)
 
     trn_cfg = tf.contrib.tpu.RunConfig(cluster=cluster, model_dir=work_dir, tpu_config=tpu_cfg)
 

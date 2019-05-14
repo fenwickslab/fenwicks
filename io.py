@@ -214,8 +214,8 @@ def get_project_dirs(root_dir: str, project: str) -> Tuple[str, str]:
     """
     data_dir: str = os.path.join(root_dir, 'data', project)
     work_dir: str = os.path.join(root_dir, 'work', project)
-    create_clean_dir(data_dir)
-    create_clean_dir(work_dir)
+    tf.io.gfile.makedirs(data_dir)
+    tf.io.gfile.makedirs(work_dir)
     return data_dir, work_dir
 
 

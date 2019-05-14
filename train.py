@@ -184,6 +184,8 @@ def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN,
     :return: Model function ready for TPUEstimator.
     """
 
+    use_tpu = use_tpu and (TPU_ADDRESS is not None)
+
     def model_func(features, labels, mode, params):
         phase = 1 if mode == tf.estimator.ModeKeys.TRAIN else 0
         tf.keras.backend.set_learning_phase(phase)

@@ -17,33 +17,35 @@ def setup():
     rc('animation', html='jshtml')
 
 
-def images_anim(images: Union[np.ndarray, List]) -> FuncAnimation:
+def images_anim(images: Union[np.ndarray, List], html5_video: bool = False, h_inch: float = 3, w_inch: float = 3) -> \
+        Union[str, FuncAnimation]:
     def animate(i):
         ax.imshow(images[i])
 
     fig, ax = plt.subplots()
     plt.close()
     fig.tight_layout()
-    fig.set_size_inches(3, 3)
+    fig.set_size_inches(w_inch, h_inch)
     fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
     ax.axis('off')
-    return FuncAnimation(fig, animate, frames=len(images), interval=1000)
+    anim = FuncAnimation(fig, animate, frames=len(images), interval=1000)
+    return HTML(anim.to_html5_video()) if html5_video else anim
 
 
-def show_image_files(files: List[str], n_img: int = 20, html5_video: bool = True) -> FuncAnimation:
+def show_image_files(files: List[str], n_img: int = 20, html5_video: bool = True, h_inch: float = 3,
+                     w_inch: float = 3) -> Union[str, FuncAnimation]:
     n_img = min(n_img, len(files))
     X = []
     files = random.sample(files, n_img)
     for fn in files:
         x = plt.imread(fn)
         X.append(x)
-    anim = images_anim(X)
-    return HTML(anim.to_html5_video()) if html5_video else anim
+    return images_anim(X, h_inch=h_inch, w_inch=w_inch, html5_video=html5_video)
 
 
 def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10,
                  converter: Callable = vision.transform.reverse_imagenet_normalize_tf,
-                 html5_video: bool = True) -> FuncAnimation:
+                 html5_video: bool = True, h_inch: float = 3, w_inch: float = 3) -> Union[str, FuncAnimation]:
     X = []
     data_op = ds.make_one_shot_iterator().get_next()
 
@@ -57,16 +59,15 @@ def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10,
             n_img -= len(x)
 
     X = np.clip(np.array(X), 0.0, 1.0)
-    anim = images_anim(X)
-    return HTML(anim.to_html5_video()) if html5_video else anim
+    return images_anim(X, h_inch=h_inch, w_inch=w_inch, html5_video=html5_video)
 
 
 def show_input_func(input_func: Callable, n_img: int = 10,
                     converter: Callable = vision.transform.reverse_imagenet_normalize_tf,
-                    html5_video: bool = True) -> FuncAnimation:
+                    html5_video: bool = True, h_inch: float = 3, w_inch: float = 3) -> Union[str, FuncAnimation]:
     params = {'batch_size': n_img}
     ds = input_func(params)
-    return show_dataset(ds, n_img=n_img, converter=converter, html5_video=html5_video)
+    return show_dataset(ds, n_img=n_img, converter=converter, html5_video=html5_video, h_inch=h_inch, w_inch=w_inch)
 
 
 def anim_gif(anim: FuncAnimation, fps: int = 1, anim_fn: str = '/tmp/anim.gif') -> Image:

@@ -30,14 +30,15 @@ def images_anim(images: Union[np.ndarray, List]) -> FuncAnimation:
     return FuncAnimation(fig, animate, frames=len(images), interval=1000)
 
 
-def show_image_files(files: List[str], n_img: int = 20) -> FuncAnimation:
+def show_image_files(files: List[str], n_img: int = 20, html5_video: bool = True) -> FuncAnimation:
     n_img = min(n_img, len(files))
     X = []
     files = random.sample(files, n_img)
     for fn in files:
         x = plt.imread(fn)
         X.append(x)
-    return images_anim(X)
+    anim = images_anim(X)
+    return HTML(anim.to_html5_video()) if html5_video else anim
 
 
 def show_dataset(ds: tf.data.Dataset, n_batch: int = 1, n_img: int = 10,

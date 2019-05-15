@@ -397,7 +397,7 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = Tru
     :return: a `tf.data` dataset satisfying the above descriptions.
     """
     if streaming:
-        # under construction
+        # fixme
         dataset = tpu_datasets.StreamingFilesDataset(file_pattern, filetype='tfrecord', batch_transfer_size=batch_size)
     else:
         dataset = tf.data.Dataset.list_files(file_pattern)

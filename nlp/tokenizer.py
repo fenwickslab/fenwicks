@@ -2,6 +2,7 @@ import collections
 import unicodedata
 
 import tensorflow as tf
+import tensorflow_hub as hub
 
 TextFeat = collections.namedtuple('TextFeat', ['input_ids', 'input_mask'])
 
@@ -178,3 +179,12 @@ class FullTokenizer:
 
     def convert_ids_to_tokens(self, ids):
         return convert_by_vocab(self.inv_vocab, ids)
+
+
+def bert_tokenizer(hub_module):
+    with tf.Graph().as_default():
+        bert_module = hub.Module(hub_module)
+        tokenization_info = bert_module(signature="tokenization_info", as_dict=True)
+        with tf.Session() as sess:
+            vocab_file, do_lower_case = sess.run([tokenization_info["vocab_file"], tokenization_info["do_lower_case"]])
+    return FullTokenizer(vocab_file=vocab_file, do_lower_case=do_lower_case)

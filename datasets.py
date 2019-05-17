@@ -31,6 +31,9 @@ class URLs:
     KAGGLE_BONE_AGE = f'{KAGGLE_DATASETS_DOWNLOAD}kmader/rsna-bone-age'
     KAGGLE_PNEUMONIA = f'{KAGGLE_DATASETS_DOWNLOAD}paultimothymooney/chest-xray-pneumonia'
 
+    GLUE = 'https://firebasestorage.googleapis.com/v0/b/mtl-sentence-representations.appspot.com/o/data'
+    GLUE_COLA = f'{GLUE}%2FCoLA.zip?alt=media&token=46d5e637-3411-4188-bc44-5809b5bfb5f4'
+
 
 def untar_data(url: str, dest: str = '.') -> str:
     if not os.path.isdir(dest):

@@ -6,6 +6,8 @@ from . import train
 from . import vision
 from . import core
 
+from .nlp import tokenizer
+
 from .utils import colab as colab_utils
 
 from .vision.models import keras_models

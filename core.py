@@ -55,3 +55,24 @@ def shuffle_lists(list1: List, list2: List) -> Tuple[List, List]:
     random.shuffle(c)
     list1, list2 = zip(*c)
     return list(list1), list(list2)
+
+
+def get_shape_list(x: tf.Tensor) -> List:
+    shape = x.shape.as_list()
+
+    non_static_indexes = []
+    for (index, dim) in enumerate(shape):
+        if dim is None:
+            non_static_indexes.append(index)
+
+    if not non_static_indexes:
+        return shape
+
+    dyn_shape = tf.shape(x)
+    for index in non_static_indexes:
+        shape[index] = dyn_shape[index]
+    return shape
+
+
+def reshape_to_matrix(x: tf.Tensor) -> tf.Tensor:
+    return x if x.shape.ndims == 2 else tf.reshape(x, [-1, (x.shape[-1])])

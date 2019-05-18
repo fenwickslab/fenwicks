@@ -2,6 +2,7 @@ import math
 import tensorflow as tf
 import numpy as np
 from . import core
+from . import functional as F
 from typing import Union, Callable
 
 
@@ -177,9 +178,47 @@ class FastAiHead(Sequential):
         self.add(Classifier(n_classes, kernel_initializer=PYTORCH_PARAMS['kernel_initializer']))
 
 
-def check_model(build_nn: Callable, h: int, w: int):
+def check_model(build_nn: Callable, h: int, w: int) -> tf.Tensor:
     model = build_nn()
     shape = [1, h, w, 3]
     test_input = tf.random.uniform(shape, minval=0, maxval=1)
     test_output = model(test_input)
     return test_output
+
+
+def attention(src: tf.Tensor, dest: tf.Tensor, mask: tf.Tensor = None, n_heads: int = 1, c: int = 512,
+              query_act: Callable = None, key_act: Callable = None, value_act: Callable = None,
+              dropout_prob: float = 0.0, initializer_range: float = 0.02, return_2d: bool = False, bs: int = None,
+              src_len: int = None, dest_len: int = None) -> tf.Tensor:
+    def qkv(x, act, name: str, seq_len):
+        x = tf.layers.dense(x, n_heads * c, activation=act, name=name,
+                            kernel_initializer=tf.truncated_normal_initializer(stddev=initializer_range))
+        return tf.transpose(tf.reshape(x, [bs, seq_len, n_heads, c]), [0, 2, 1, 3])
+
+    from_shape = core.get_shape_list(src)
+    to_shape = core.get_shape_list(dest)
+
+    if len(from_shape) == 3:
+        bs, src_len, dest_len = from_shape[0], from_shape[1], to_shape[1]
+
+    from_tensor_2d = core.reshape_to_matrix(src)  # [B*F, src_c]
+    to_tensor_2d = core.reshape_to_matrix(dest)  # [B*T, dest_c]
+
+    query = qkv(from_tensor_2d, query_act, 'query', src_len)
+    key = qkv(to_tensor_2d, key_act, 'key', dest_len)
+    value = qkv(to_tensor_2d, value_act, 'value', dest_len)
+
+    attention_scores = tf.matmul(query, key, transpose_b=True) / math.sqrt(float(c))  # [B, N, F, T]
+
+    if mask is not None:  # `mask`: [B, F, T]
+        mask = tf.expand_dims(mask, axis=[1])  # [B, 1, F, T]
+        attention_scores += (1.0 - tf.cast(mask, tf.float32)) * -10000.0
+
+    attention_probs = tf.nn.softmax(attention_scores)  # [B, N, F, T]
+    attention_probs = F.dropout(attention_probs, dropout_prob)
+
+    context = tf.matmul(attention_probs, value)  # [B, N, F, c]
+    context = tf.transpose(context, [0, 2, 1, 3])  # [B, F, N, c]
+
+    ret_shape = [bs * src_len, n_heads * c] if return_2d else [bs, src_len, n_heads * c]
+    return tf.reshape(context, ret_shape)

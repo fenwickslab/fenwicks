@@ -76,3 +76,10 @@ def get_shape_list(x: tf.Tensor) -> List:
 
 def reshape_to_matrix(x: tf.Tensor) -> tf.Tensor:
     return x if x.shape.ndims == 2 else tf.reshape(x, [-1, (x.shape[-1])])
+
+
+def reshape_from_matrix(output_tensor, orig_shape_list):
+    if len(orig_shape_list) == 2:
+        return output_tensor
+    output_shape = get_shape_list(output_tensor)
+    return tf.reshape(output_tensor, orig_shape_list[0:-1] + [(output_shape[-1])])

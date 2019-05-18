@@ -1,9 +1,11 @@
 import math
 import tensorflow as tf
 import numpy as np
+
+from core import reshape_from_matrix
 from . import core
 from . import functional as F
-from typing import Union, Callable
+from typing import Union, Callable, List
 
 
 class Parallel(tf.keras.layers.Layer):
@@ -222,3 +224,55 @@ def attention(src: tf.Tensor, dest: tf.Tensor, mask: tf.Tensor = None, n_heads: 
 
     ret_shape = [bs * src_len, n_heads * c] if return_2d else [bs, src_len, n_heads * c]
     return tf.reshape(context, ret_shape)
+
+
+def layer_norm(input_tensor, name=None):
+    return tf.contrib.layers.layer_norm(
+        inputs=input_tensor, begin_norm_axis=-1, begin_params_axis=-1, scope=name)
+
+
+def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, num_hidden_layers=12, n_heads: int = 12,
+                ff_c: int = 3072, ff_act: Callable = F.gelu, hidden_dropout_prob: float = 0.1,
+                attn_dropout_prob: float = 0.1, initializer_range: float = 0.02,
+                return_all_layers: bool = False) -> Union[List[tf.Tensor], tf.Tensor]:
+    attn_c = c // n_heads
+    input_shape = core.get_shape_list(x)  # [bs, seq_len, c]
+    bs, seq_len = input_shape[0], input_shape[1]
+
+    x_2d = core.reshape_to_matrix(x)
+
+    all_layer_outputs = []
+    for layer_idx in range(num_hidden_layers):
+        with tf.variable_scope(f"layer_{layer_idx}"):
+            with tf.variable_scope("attention"):
+                with tf.variable_scope("self"):
+                    attn_h = attention(src=x_2d, dest=x_2d, mask=attn_mask, n_heads=n_heads, c=attn_c,
+                                       dropout_prob=attn_dropout_prob, initializer_range=initializer_range,
+                                       return_2d=True, bs=bs, src_len=seq_len, dest_len=seq_len)
+
+                with tf.variable_scope("output"):
+                    attn_h = tf.layers.dense(attn_h, c, kernel_initializer=tf.truncated_normal_initializer(
+                        stddev=initializer_range))
+                    attn_h = F.dropout(attn_h, hidden_dropout_prob)
+                    attn_h = layer_norm(attn_h + x_2d)
+
+            with tf.variable_scope("intermediate"):
+                ff_h = tf.layers.dense(attn_h, ff_c, activation=ff_act,
+                                       kernel_initializer=tf.truncated_normal_initializer(stddev=initializer_range))
+
+            with tf.variable_scope("output"):
+                h = tf.layers.dense(ff_h, c, kernel_initializer=tf.truncated_normal_initializer(
+                    stddev=initializer_range))
+                h = F.dropout(h, hidden_dropout_prob)
+                h = layer_norm(h + attn_h)
+                x_2d = h
+                all_layer_outputs.append(h)
+
+    if return_all_layers:
+        final_outputs = []
+        for h in all_layer_outputs:
+            final_output = reshape_from_matrix(h, input_shape)
+            final_outputs.append(final_output)
+        return final_outputs
+    else:
+        return reshape_from_matrix(x_2d, input_shape)

@@ -1,4 +1,6 @@
 import math
+import functools
+
 import tensorflow as tf
 import numpy as np
 
@@ -189,11 +191,10 @@ def check_model(build_nn: Callable, h: int, w: int) -> tf.Tensor:
 
 
 def attention(src: tf.Tensor, dest: tf.Tensor, mask: tf.Tensor = None, n_heads: int = 1, c: int = 512,
-              query_act: Callable = None, key_act: Callable = None, value_act: Callable = None,
               dropout_prob: float = 0.0, initializer_range: float = 0.02, return_2d: bool = False, bs: int = None,
               src_len: int = None, dest_len: int = None) -> tf.Tensor:
-    def qkv(x, act, name: str, seq_len):
-        x = tf.layers.dense(x, n_heads * c, activation=act, name=name,
+    def qkv(x, name: str, seq_len):
+        x = tf.layers.dense(x, n_heads * c, name=name,
                             kernel_initializer=tf.truncated_normal_initializer(stddev=initializer_range))
         return tf.transpose(tf.reshape(x, [bs, seq_len, n_heads, c]), [0, 2, 1, 3])
 
@@ -206,9 +207,9 @@ def attention(src: tf.Tensor, dest: tf.Tensor, mask: tf.Tensor = None, n_heads: 
     from_tensor_2d = core.reshape_to_matrix(src)  # [B*F, src_c]
     to_tensor_2d = core.reshape_to_matrix(dest)  # [B*T, dest_c]
 
-    query = qkv(from_tensor_2d, query_act, 'query', src_len)
-    key = qkv(to_tensor_2d, key_act, 'key', dest_len)
-    value = qkv(to_tensor_2d, value_act, 'value', dest_len)
+    query = qkv(from_tensor_2d, 'query', src_len)
+    key = qkv(to_tensor_2d, 'key', dest_len)
+    value = qkv(to_tensor_2d, 'value', dest_len)
 
     attention_scores = tf.matmul(query, key, transpose_b=True) / math.sqrt(float(c))  # [B, N, F, T]
 
@@ -268,11 +269,5 @@ def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, num_hid
                 x_2d = h
                 all_layer_outputs.append(h)
 
-    if return_all_layers:
-        final_outputs = []
-        for h in all_layer_outputs:
-            final_output = reshape_from_matrix(h, input_shape)
-            final_outputs.append(final_output)
-        return final_outputs
-    else:
-        return reshape_from_matrix(x_2d, input_shape)
+    reshape_func = functools.partial(core.reshape_from_matrix, orig_shape_list=input_shape)
+    return list(map(reshape_func, all_layer_outputs)) if return_all_layers else reshape_func(x_2d)

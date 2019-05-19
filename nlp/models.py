@@ -1,6 +1,7 @@
 import collections
 import functools
 import copy
+import json
 import tensorflow as tf
 from typing import Callable, Union, List, Tuple
 
@@ -50,7 +51,7 @@ def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, num_hid
     return list(map(reshape_func, all_layer_outputs)) if return_all_layers else reshape_func(x_2d)
 
 
-def word_emb(x: tf.Tensor, vocab_size: int, c: int = 128, initializer_range: float = 0.02) -> Tuple[
+def word_emb(x: tf.Tensor, vocab_size: int, c: int = 768, initializer_range: float = 0.02) -> Tuple[
     tf.Tensor, tf.Variable]:
     if x.shape.ndims == 2:
         x = tf.expand_dims(x, axis=[-1])  # todo: change input_shape instead of reshape
@@ -95,7 +96,6 @@ def create_attention_mask(src: tf.Tensor, dest_mask: tf.Tensor):
     return tf.ones(shape=[bs, src_len, 1], dtype=tf.float32) * dest_mask  # [bs, src_len, dest_len]
 
 
-# todo: named tuple with default
 class BertConfig:
     def __init__(self, vocab_size, hidden_size=768, num_hidden_layers=12, num_attention_heads=12,
                  intermediate_size=3072, hidden_dropout_prob=0.1, attention_probs_dropout_prob=0.1,
@@ -110,6 +110,19 @@ class BertConfig:
         self.max_position_embeddings = max_position_embeddings
         self.type_vocab_size = type_vocab_size
         self.initializer_range = initializer_range
+
+    @classmethod
+    def from_dict(cls, json_object):
+        config = BertConfig(vocab_size=None)
+        for key, value in json_object.items:
+            config.__dict__[key] = value
+        return config
+
+    @classmethod
+    def from_json_file(cls, json_file):
+        with tf.io.gfile.GFile(json_file, "r") as reader:
+            text = reader.read()
+        return cls.from_dict(json.loads(text))
 
 
 class BertModel:

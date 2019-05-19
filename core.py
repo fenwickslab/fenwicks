@@ -83,3 +83,21 @@ def reshape_from_matrix(output_tensor, orig_shape_list):
         return output_tensor
     output_shape = get_shape_list(output_tensor)
     return tf.reshape(output_tensor, orig_shape_list[0:-1] + [(output_shape[-1])])
+
+
+def flatten_recursive(item) -> List:
+    output = []
+    if isinstance(item, list):
+        output.extend(item)
+    elif isinstance(item, tuple):
+        output.extend(list(item))
+    elif isinstance(item, dict):
+        for _, v in item.items():
+            output.append(v)
+    else:
+        return [item]
+
+    flat_output = []
+    for x in output:
+        flat_output.extend(flatten_recursive(x))
+    return flat_output

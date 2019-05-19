@@ -1,3 +1,4 @@
+import collections
 import functools
 import copy
 import tensorflow as tf
@@ -158,3 +159,65 @@ class BertModel:
                 self.pooled_output = tf.layers.dense(first_token, config.hidden_size, activation=tf.tanh,
                                                      kernel_initializer=tf.truncated_normal_initializer(
                                                          stddev=config.initializer_range))
+
+
+def unreachable_ops(graph, outputs):
+    outputs = core.flatten_recursive(outputs)
+    output_to_op = collections.defaultdict(list)
+    op_to_all = collections.defaultdict(list)
+    assign_out_to_in = collections.defaultdict(list)
+
+    for op in graph.get_operations():
+        for x in op.inputs:
+            op_to_all[op.name].append(x.name)
+        for y in op.outputs:
+            output_to_op[y.name].append(op.name)
+            op_to_all[op.name].append(y.name)
+        if str(op.type) == "Assign":
+            for y in op.outputs:
+                for x in op.inputs:
+                    assign_out_to_in[y.name].append(x.name)
+
+    assign_groups = collections.defaultdict(list)
+    for out_name in assign_out_to_in.keys():
+        name_group = assign_out_to_in[out_name]
+        for n1 in name_group:
+            assign_groups[n1].append(out_name)
+            for n2 in name_group:
+                if n1 != n2:
+                    assign_groups[n1].append(n2)
+
+    seen_tensors = {}
+    stack = [x.name for x in outputs]
+    while stack:
+        name = stack.pop()
+        if name in seen_tensors:
+            continue
+        seen_tensors[name] = True
+
+        if name in output_to_op:
+            for op_name in output_to_op[name]:
+                if op_name in op_to_all:
+                    for input_name in op_to_all[op_name]:
+                        if input_name not in stack:
+                            stack.append(input_name)
+
+        expanded_names = []
+        if name in assign_groups:
+            for assign_name in assign_groups[name]:
+                expanded_names.append(assign_name)
+
+        for expanded_name in expanded_names:
+            if expanded_name not in stack:
+                stack.append(expanded_name)
+
+    results = []
+    for op in graph.get_operations():
+        is_unreachable = False
+        all_names = [x.name for x in op.inputs] + [x.name for x in op.outputs]
+        for name in all_names:
+            if name not in seen_tensors:
+                is_unreachable = True
+        if is_unreachable:
+            results.append(op)
+    return results

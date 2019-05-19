@@ -100,7 +100,7 @@ def plot_counts_pie(y: List[int], labels: List[str] = None, max_items: int = -1,
     plot_pie_df(pie_df, width=width)
 
 
-def plot_heat_map(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, ytitle: str = None):
+def plot_heatmap(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, ytitle: str = None):
     trace = {"x": xs, "y": ys, "z": zs,
              "autocolorscale": False,
              "colorscale": [
@@ -116,8 +116,6 @@ def plot_heat_map(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, yt
              }
     layout = {"autosize": False,
               "height": h, "width": w,
-              "xaxis": {"title": "Predicted value"},
-              "yaxis": {"title": "True Value"},
               "margin": go.layout.Margin(l=100, r=20, b=40, t=20),
               }
 
@@ -133,4 +131,4 @@ def plot_heat_map(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, yt
 
 
 def plot_confusion_mat(xs, ys, zs, h: int = 350, w: int = 550):
-    plot_heat_map(xs, ys, zs, h, w, 'Predicted value', 'True Value')
+    plot_heatmap(xs, ys, zs, h, w, 'Predicted value', 'True Value')

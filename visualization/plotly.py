@@ -100,7 +100,7 @@ def plot_counts_pie(y: List[int], labels: List[str] = None, max_items: int = -1,
     plot_pie_df(pie_df, width=width)
 
 
-def plot_confusion_mat(xs, ys, zs, h: int = 350, w: int = 550):
+def plot_heat_map(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, ytitle: str = None):
     trace = {"x": xs, "y": ys, "z": zs,
              "autocolorscale": False,
              "colorscale": [
@@ -121,6 +121,16 @@ def plot_confusion_mat(xs, ys, zs, h: int = 350, w: int = 550):
               "margin": go.layout.Margin(l=100, r=20, b=40, t=20),
               }
 
+    if xtitle:
+        layout['xaxis'] = {'title': xtitle}
+
+    if ytitle:
+        layout['yaxis'] = {'title': ytitle}
+
     data = [go.Heatmap(**trace)]
     fig = go.Figure(data=data, layout=layout)
     plotly.offline.iplot(fig)
+
+
+def plot_confusion_mat(xs, ys, zs, h: int = 350, w: int = 550):
+    plot_heat_map(xs, ys, zs, h, w, 'Predicted value', 'True Value')

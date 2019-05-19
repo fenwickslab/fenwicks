@@ -222,12 +222,12 @@ def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN,
     return model_func
 
 
-def get_assignment_map_from_checkpoint(tvars: List, init_checkpoint: str) -> Tuple:
+def get_assignment_map_from_checkpoint(tvars: List, ckpg: str) -> Tuple:
     """
     Compute the union of the current variables and checkpoint variables.
 
     :param tvars: List of trainable variables.
-    :param init_checkpoint: Path to checkpoint file.
+    :param ckpg: Path to checkpoint file.
     :return: Assignment map and list of initialized variable names.
     """
     initialized_variable_names = {}
@@ -240,7 +240,7 @@ def get_assignment_map_from_checkpoint(tvars: List, init_checkpoint: str) -> Tup
             name = m.group(1)
         name_to_variable[name] = var
 
-    init_vars = tf.train.list_variables(init_checkpoint)
+    init_vars = tf.train.list_variables(ckpg)
 
     assignment_map = collections.OrderedDict()
     for x in init_vars:

@@ -7,6 +7,8 @@ from . import vision
 from . import core
 
 from .nlp import tokenizer
+from .nlp import models as nlp_models
+from .nlp import preprocess as nlp_preprocess
 
 from .utils import colab as colab_utils
 

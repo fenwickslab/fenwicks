@@ -94,7 +94,8 @@ def create_attention_mask(src: tf.Tensor, dest_mask: tf.Tensor):
     return tf.ones(shape=[bs, src_len, 1], dtype=tf.float32) * dest_mask  # [bs, src_len, dest_len]
 
 
-class BertConfig(object):
+# todo: named tuple with default
+class BertConfig:
     def __init__(self, vocab_size, hidden_size=768, num_hidden_layers=12, num_attention_heads=12,
                  intermediate_size=3072, hidden_dropout_prob=0.1, attention_probs_dropout_prob=0.1,
                  max_position_embeddings=512, type_vocab_size=16, initializer_range=0.02):
@@ -153,7 +154,7 @@ class BertModel:
             self.sequence_output = self.all_encoder_layers[-1]  # [batch_size, seq_length, hidden_size].
 
             with tf.variable_scope("pooler"):
-                first_token = tf.squeeze(self.sequence_output[:, 0, :], axis=1)
+                first_token = tf.squeeze(self.sequence_output[:, 0:1, :], axis=1)
                 self.pooled_output = tf.layers.dense(first_token, config.hidden_size, activation=tf.tanh,
                                                      kernel_initializer=tf.truncated_normal_initializer(
                                                          stddev=config.initializer_range))

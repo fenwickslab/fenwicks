@@ -2,52 +2,35 @@ from tensorflow.python.keras.layers import Conv2D, Activation, concatenate, Inpu
 from tensorflow.python.keras.models import Model
 
 
-def squeezenet_fire_module(input, input_channel_small=16, input_channel_large=64):
+def fire_module(x, c_small=16, c_large=64):
     channel_axis = 3
+    x = Conv2D(c_small, (1, 1), padding="valid", activation='relu')(x)
+    h1 = Conv2D(c_large, (1, 1), padding="valid", activation='relu')(x)
+    h2 = Conv2D(c_large, (3, 3), padding="same", activation='relu')(x)
+    return concatenate([h1, h2], axis=channel_axis)
 
-    input = Conv2D(input_channel_small, (1, 1), padding="valid")(input)
-    input = Activation("relu")(input)
 
-    input_branch_1 = Conv2D(input_channel_large, (1, 1), padding="valid")(input)
-    input_branch_1 = Activation("relu")(input_branch_1)
-
-    input_branch_2 = Conv2D(input_channel_large, (3, 3), padding="same")(input)
-    input_branch_2 = Activation("relu")(input_branch_2)
-
-    input = concatenate([input_branch_1, input_branch_2], axis=channel_axis)
-
-    return input
+def fire_blk(h, c_small, c_large, max_pool):
+    h = fire_module(h, c_small, c_large)
+    h = fire_module(h, c_small, c_large)
+    return MaxPool2D(pool_size=(3, 3), strides=(2, 2))(h) if max_pool else h
 
 
 def SqueezeNet(input_shape=(224, 224, 3)):
     image_input = Input(shape=input_shape)
 
-    network = Conv2D(64, (3, 3), strides=(2, 2), padding="valid")(image_input)
-    network = Activation("relu")(network)
-    network = MaxPool2D(pool_size=(3, 3), strides=(2, 2))(network)
+    h = Conv2D(64, (3, 3), strides=(2, 2), padding="valid", activation='relu')(image_input)
+    h = MaxPool2D(pool_size=(3, 3), strides=(2, 2))(h)
 
-    network = squeezenet_fire_module(input=network, input_channel_small=16, input_channel_large=64)
-    network = squeezenet_fire_module(input=network, input_channel_small=16, input_channel_large=64)
-    network = MaxPool2D(pool_size=(3, 3), strides=(2, 2))(network)
+    h = fire_blk(h, 16, 64, True)
+    h = fire_blk(h, 32, 128, True)
+    h = fire_blk(h, 48, 192, False)
+    h = fire_blk(h, 64, 256, False)
 
-    network = squeezenet_fire_module(input=network, input_channel_small=32, input_channel_large=128)
-    network = squeezenet_fire_module(input=network, input_channel_small=32, input_channel_large=128)
-    network = MaxPool2D(pool_size=(3, 3), strides=(2, 2))(network)
+    # h = Dropout(0.5)(h)
 
-    network = squeezenet_fire_module(input=network, input_channel_small=48, input_channel_large=192)
-    network = squeezenet_fire_module(input=network, input_channel_small=48, input_channel_large=192)
-    network = squeezenet_fire_module(input=network, input_channel_small=64, input_channel_large=256)
-    network = squeezenet_fire_module(input=network, input_channel_small=64, input_channel_large=256)
+    h = Conv2D(1000, kernel_size=(1, 1), padding="valid", name="last_conv", activation='relu')(h)
+    h = GlobalAvgPool2D()(h)
+    h = Activation("softmax", name="output")(h)
 
-    # Remove layers like Dropout and BatchNormalization, they are only needed in training
-    # network = Dropout(0.5)(network)
-
-    network = Conv2D(1000, kernel_size=(1, 1), padding="valid", name="last_conv")(network)
-    network = Activation("relu")(network)
-
-    network = GlobalAvgPool2D()(network)
-    network = Activation("softmax", name="output")(network)
-
-    model = Model(inputs=image_input, outputs=network)
-
-    return model
+    return Model(inputs=image_input, outputs=h)

@@ -1,6 +1,8 @@
 import librosa
 import numpy as np
 
+__all__ = ['read_logmelspectrogram', 'gen_synth_silence']
+
 
 def read_logmelspectrogram(filepath: str, sr: int = 16000, len_sec: int = 1, n_components: int = 40, n_fft: int = 400,
                            hop_length: int = 160) -> np.ndarray:

@@ -4,8 +4,10 @@ import nltk
 from bs4 import BeautifulSoup
 import tensorflow as tf
 
+__all__ = ['tsv_lines']
 
-def text_to_words(raw_text):
+
+def html_to_words(raw_text):
     txt = BeautifulSoup(raw_text, 'lxml').get_text()
     letters_only = re.sub("[^a-zA-Z]", " ", txt)
     words = letters_only.lower().split()

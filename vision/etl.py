@@ -9,6 +9,8 @@ from tqdm import tqdm_notebook
 
 from .. import data
 
+__all__ = ['compute_image_mean_std', 'array2img', 'check_rgb', 'gray2rgb']
+
 
 def compute_image_mean_std(fn_data: str, n_data: int, batch_size: int = 1) -> Tuple[float, float, int, int]:
     ds = data.tfrecord_ds(fn_data, data.tfexample_image_parser, batch_size=batch_size, training=False)

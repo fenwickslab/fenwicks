@@ -51,9 +51,3 @@ class PytorchToKeras:
 
             self.kModel.layers[target_layer].set_weights(
                 [source_layer.weight.data.numpy().transpose(transpose_dims), source_layer.bias.data.numpy()])
-
-    def save_model(self, output_file):
-        self.kModel.save(output_file)
-
-    def save_weights(self, output_file):
-        self.kModel.save_weights(output_file)

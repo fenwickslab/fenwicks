@@ -5,7 +5,7 @@ import functools
 from ...io import get_model_dir, create_clean_dir
 from ..transform import imagenet_normalize_tf, imagenet_normalize_caffe, imagenet_normalize_pytorch
 
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 from collections import namedtuple
 from keras_applications import vgg16, vgg19, resnet, resnet50, resnext, resnet_v2, inception_resnet_v2, inception_v3, \
     xception, mobilenet, mobilenet_v2, nasnet, densenet
@@ -23,14 +23,18 @@ def get_ws_vars(ws_ckpt_fn: str) -> List[str]:
     return ws_vars
 
 
-def keras_model_weights(model_class, model_dir: str, include_top: bool = False, overwrite: bool = False) -> Tuple[
-    str, List[str]]:
+def keras_ckpt(model, model_dir: str):
+    # Here we use the simplest SGD optimizer to avoid creating new variables
+    model.compile(tf.train.GradientDescentOptimizer(0.1), 'categorical_crossentropy')
+    tf.keras.estimator.model_to_estimator(keras_model=model, model_dir=model_dir)
+
+
+def keras_model_weights(model_class: Callable, model_dir: str, include_top: bool = False, overwrite: bool = False) -> \
+        Tuple[str, List[str]]:
     if overwrite or (not tf.io.gfile.exists(model_dir)):
         create_clean_dir(model_dir)
         model = model_class(include_top=include_top)
-        # Here we use the simplest SGD optimizer to avoid creating new variables
-        model.compile(tf.train.GradientDescentOptimizer(0.1), 'categorical_crossentropy')
-        tf.keras.estimator.model_to_estimator(keras_model=model, model_dir=model_dir)
+        keras_ckpt(model, model_dir)
 
     ws_dir = os.path.join(model_dir, 'keras')
     ws_ckpt_fn = os.path.join(ws_dir, 'keras_model.ckpt')

@@ -7,7 +7,7 @@ import tensorflow as tf
 import tensorflow_hub as hub
 from typing import Callable, Union, List, Tuple
 
-from . import tokenizer
+from nlp import tokenizer
 
 from .. import layers
 from .. import core

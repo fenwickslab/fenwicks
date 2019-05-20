@@ -5,7 +5,7 @@ import os
 import re
 import collections
 import functools
-from typing import List, Callable, Tuple
+from typing import List, Callable, Tuple, Dict
 
 from .utils.colab import TPU_ADDRESS
 from .optim import SGD, AdamWeightDecayOptimizer
@@ -103,7 +103,7 @@ def adam_wd_optimizer(lr_func: Callable, wd: float = 0.0, beta1=0.9, beta2=0.999
     return opt_func
 
 
-def sgd_optimizer(lr_func, mom: float = 0.9, wd: float = 0.0) -> Callable:
+def sgd_optimizer(lr_func: Callable, mom: float = 0.9, wd: float = 0.0) -> Callable:
     """
     SGD with Nesterov momentum optimizer with a given learning rate schedule.
 
@@ -169,8 +169,8 @@ def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: s
                                        config=trn_cfg, warm_start_from=ws)
 
 
-def get_clf_model_func(model_arch, opt_func, reduction=tf.losses.Reduction.MEAN, use_tpu: bool = True,
-                       scaffold_func: Callable = None) -> Callable:
+def get_clf_model_func(model_arch: Callable, opt_func: Callable, reduction: str = tf.losses.Reduction.MEAN,
+                       use_tpu: bool = True, scaffold_func: Callable = None) -> Callable:
     """
     Build a model function for a classification task to be used in a TPUEstimator, based on a given model architecture
     and an optimizer. Both the model architecture and optimizer must be callables, not model or optimizer objects. The
@@ -254,7 +254,7 @@ def get_assignment_map_from_checkpoint(tvars: List, ckpg: str) -> Tuple:
     return assignment_map, initialized_variable_names
 
 
-def get_scaffold_func(init_checkpoint: str, assignment_map) -> Callable:
+def get_scaffold_func(init_checkpoint: str, assignment_map: Dict) -> Callable:
     def tpu_scaffold():
         tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
         return tf.train.Scaffold()

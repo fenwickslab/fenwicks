@@ -7,11 +7,11 @@ import tensorflow as tf
 import tensorflow_hub as hub
 from typing import Callable, Union, List, Tuple
 
-from nlp import tokenizer
+from .. import tokenizer
 
-from .. import layers
-from .. import core
-from .. import functional as F
+from ... import layers
+from ... import core
+from ... import functional as F
 
 
 def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, num_hidden_layers=12, n_heads: int = 12,

@@ -4,7 +4,7 @@ import threading
 import functools
 import itertools
 
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Union
 from tqdm import tqdm_notebook
 from sklearn.model_selection import train_test_split
 
@@ -419,14 +419,14 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = Tru
     return dataset
 
 
-def numpy_ds(x, y, batch_size: int, training: bool = True, shuffle_buf_sz: int = 50000, n_folds: int = 1,
-             val_fold_idx: int = 0) -> tf.data.Dataset:
+def numpy_ds(xs: Union[np.ndarray, List], ys: Union[np.ndarray, List], batch_size: int, training: bool = True,
+             shuffle_buf_sz: int = 50000, n_folds: int = 1, val_fold_idx: int = 0) -> tf.data.Dataset:
     """
     Create a `tf.data` input pipeline from numpy arrays `x` and `y`. Optionally partitions the data into training and
     validation sets according to k-fold cross validation requirements.
 
-    :param x: Data attributes, such as images.
-    :param y: Data labels.
+    :param xs: Data attributes, such as images.
+    :param ys: Data labels.
     :param batch_size: Size of a data batch.
     :param training: Whether this is a training dataset, in which case the dataset is randomly shuffled and repeated.
     :param shuffle_buf_sz: Shuffle buffer size, for shuffling a training dataset. Default: 50k records.
@@ -434,7 +434,7 @@ def numpy_ds(x, y, batch_size: int, training: bool = True, shuffle_buf_sz: int =
     :param val_fold_idx: Fold ID for validation set, in cross validation. Ignored when `n_folds` is 1.
     :return: a `tf.data` dataset satisfying the above descriptions.
     """
-    dataset = tf.data.Dataset.from_tensor_slices((x, y))
+    dataset = tf.data.Dataset.from_tensor_slices((xs, ys))
 
     if n_folds > 1:
         dataset = crossval_ds(dataset, n_folds, val_fold_idx, training)

@@ -1,6 +1,6 @@
 import collections
 import unicodedata
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import tensorflow as tf
 
@@ -173,3 +173,24 @@ class BertTokenizer:
 
     def ids_to_tokens(self, ids: List[int]) -> List[str]:
         return core.convert_by_dict(self.inv_vocab, ids)
+
+    def process_sentence(self, text: str, max_seq_len: int) -> Tuple[List[int], List[int]]:
+        tokens_a = self.tokenize(text)
+
+        if len(tokens_a) > max_seq_len - 2:
+            tokens_a = tokens_a[0: max_seq_len - 2]
+
+        tokens = ["[CLS]"]
+        for token in tokens_a:
+            tokens.append(token)
+        tokens.append("[SEP]")
+
+        input_ids = self.tokens_to_ids(tokens)
+        input_mask = [1] * len(input_ids)
+
+        if len(input_ids) < max_seq_len:
+            pad_len = max_seq_len - len(input_ids)
+            input_ids.extend([0] * pad_len)
+            input_mask.extend([0] * pad_len)
+
+        return input_ids, input_mask

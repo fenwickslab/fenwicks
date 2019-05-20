@@ -2,6 +2,7 @@ import collections
 import functools
 import copy
 import json
+import os
 import tensorflow as tf
 import tensorflow_hub as hub
 from typing import Callable, Union, List, Tuple
@@ -253,3 +254,11 @@ def get_bert_tokenizer(bert_model: str = 'uncased_L-12_H-768_A-12') -> tokenizer
     vocab_fn = download_bert_vocab(bert_model)
     uncased = bert_model.startswith('uncased')
     return tokenizer.BertTokenizer(vocab_fn=vocab_fn, do_lower_case=uncased)
+
+
+def get_bert_model(bert_model: str = 'uncased_L-12_H-768_A-12'):
+    bert_ckpt_dir = f'gs://cloud-tpu-checkpoints/bert/{bert_model}'
+
+    config_fn = os.path.join(bert_ckpt_dir, 'bert_config.json')
+    ckpt_fn = os.path.join(bert_ckpt_dir, 'bert_model.ckpt')
+    return config_fn, ckpt_fn

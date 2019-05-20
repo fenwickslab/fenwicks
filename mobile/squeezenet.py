@@ -1,5 +1,5 @@
-from keras.layers import Conv2D, Activation, concatenate, Input, MaxPool2D, GlobalAvgPool2D
-from keras.models import Model
+from tensorflow.python.keras.layers import Conv2D, Activation, concatenate, Input, MaxPool2D, GlobalAvgPool2D
+from tensorflow.python.keras.models import Model
 
 
 def squeezenet_fire_module(input, input_channel_small=16, input_channel_large=64):

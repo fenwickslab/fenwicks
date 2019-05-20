@@ -3,7 +3,10 @@ import functools
 import copy
 import json
 import tensorflow as tf
+import tensorflow_hub as hub
 from typing import Callable, Union, List, Tuple
+
+from . import tokenizer
 
 from .. import layers
 from .. import core
@@ -234,3 +237,19 @@ def unreachable_ops(graph, outputs):
         if is_unreachable:
             results.append(op)
     return results
+
+
+def download_bert_vocab(bert_model: str = 'uncased_L-12_H-768_A-12') -> str:
+    bert_model_hub = f'https://tfhub.dev/google/bert_{bert_model}/1'
+    with tf.Graph().as_default():
+        bert_module = hub.Module(bert_model_hub)
+        tokenization_info = bert_module(signature="tokenization_info", as_dict=True)
+        with tf.Session() as sess:
+            vocab_file = sess.run(tokenization_info["vocab_file"])
+    return vocab_file
+
+
+def get_bert_tokenizer(bert_model: str = 'uncased_L-12_H-768_A-12') -> tokenizer.BertTokenizer:
+    vocab_fn = download_bert_vocab(bert_model)
+    uncased = bert_model.startswith('uncased')
+    return tokenizer.BertTokenizer(vocab_fn=vocab_fn, do_lower_case=uncased)

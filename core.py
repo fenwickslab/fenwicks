@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import random
 import functools
-from typing import List, Callable, Tuple
+from typing import List, Callable, Tuple, Dict
 
 
 def sequential_transforms(x: tf.Tensor, tfms: List[Callable]) -> tf.Tensor:
@@ -101,3 +101,11 @@ def flatten_recursive(item) -> List:
     for x in output:
         flat_output.extend(flatten_recursive(x))
     return flat_output
+
+
+def inverse_dict(d: Dict) -> Dict:
+    return {v: k for k, v in d.items()}
+
+
+def convert_by_dict(d: Dict, items: List) -> List:
+    return list(map(lambda x: d[x], items))

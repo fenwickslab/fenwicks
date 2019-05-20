@@ -1,8 +1,10 @@
 import collections
 import unicodedata
+from typing import List, Dict
 
 import tensorflow as tf
-import tensorflow_hub as hub
+
+from .. import core
 
 TextFeat = collections.namedtuple('TextFeat', ['input_ids', 'input_mask'])
 
@@ -11,10 +13,10 @@ def to_unicode(text):
     return text if isinstance(text, str) else text.decode("utf-8", "ignore")
 
 
-def load_vocab(vocab_file):
+def load_vocab(vocab_fn: str) -> Dict:
     vocab = collections.OrderedDict()
     index = 0
-    with tf.io.gfile.GFile(vocab_file) as reader:
+    with tf.io.gfile.GFile(vocab_fn) as reader:
         while True:
             token = to_unicode(reader.readline())
             if not token:
@@ -23,13 +25,6 @@ def load_vocab(vocab_file):
             vocab[token] = index
             index += 1
     return vocab
-
-
-def convert_by_vocab(vocab, items):
-    output = []
-    for item in items:
-        output.append(vocab[item])
-    return output
 
 
 def whitespace_tokenize(text):
@@ -159,32 +154,22 @@ class WordpieceTokenizer:
         return output_tokens
 
 
-class FullTokenizer:
-    def __init__(self, vocab_file, do_lower_case=True):
-        self.vocab = load_vocab(vocab_file)
-        self.inv_vocab = {v: k for k, v in self.vocab.items()}
+class BertTokenizer:
+    def __init__(self, vocab_fn: str, do_lower_case: bool = True):
+        self.vocab = load_vocab(vocab_fn)
+        self.inv_vocab = core.inverse_dict(self.vocab)
         self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
         self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
 
-    def tokenize(self, text):
+    def tokenize(self, text: str) -> List[str]:
         split_tokens = []
         for token in self.basic_tokenizer.tokenize(text):
             for sub_token in self.wordpiece_tokenizer.tokenize(token):
                 split_tokens.append(sub_token)
-
         return split_tokens
 
-    def convert_tokens_to_ids(self, tokens):
-        return convert_by_vocab(self.vocab, tokens)
+    def tokens_to_ids(self, tokens: List[str]) -> List[int]:
+        return core.convert_by_dict(self.vocab, tokens)
 
-    def convert_ids_to_tokens(self, ids):
-        return convert_by_vocab(self.inv_vocab, ids)
-
-
-def bert_tokenizer(hub_module):
-    with tf.Graph().as_default():
-        bert_module = hub.Module(hub_module)
-        tokenization_info = bert_module(signature="tokenization_info", as_dict=True)
-        with tf.Session() as sess:
-            vocab_file, do_lower_case = sess.run([tokenization_info["vocab_file"], tokenization_info["do_lower_case"]])
-    return FullTokenizer(vocab_file=vocab_file, do_lower_case=do_lower_case)
+    def ids_to_tokens(self, ids: List[int]) -> List[str]:
+        return core.convert_by_dict(self.inv_vocab, ids)

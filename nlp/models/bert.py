@@ -1,17 +1,12 @@
+from ...imports import *
+
 import collections
-import functools
 import copy
 import json
-import os
-import tensorflow as tf
-import tensorflow_hub as hub
-from typing import Callable, Union, List, Tuple
 
 from .. import tokenizer
 
 from ... import layers
-from ... import core
-from ... import functional as F
 
 
 def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, num_hidden_layers=12, n_heads: int = 12,
@@ -243,6 +238,7 @@ def unreachable_ops(graph, outputs):
 def download_bert_vocab(bert_model: str = 'uncased_L-12_H-768_A-12') -> str:
     bert_model_hub = f'https://tfhub.dev/google/bert_{bert_model}/1'
     with tf.Graph().as_default():
+        import tensorflow_hub as hub
         bert_module = hub.Module(bert_model_hub)
         tokenization_info = bert_module(signature="tokenization_info", as_dict=True)
         with tf.Session() as sess:

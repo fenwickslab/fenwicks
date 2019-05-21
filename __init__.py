@@ -23,7 +23,3 @@ from .layers import Sequential
 
 from .mobile import android
 from .mobile import pytorch_keras
-
-from absl import logging
-
-logging.set_verbosity(logging.FATAL)

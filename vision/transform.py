@@ -1,9 +1,5 @@
-import tensorflow as tf
-import functools
+from ..imports import *
 
-from typing import List, Callable
-
-from .. import core
 from .affine import affine_transform
 
 

@@ -1,15 +1,9 @@
-import tensorflow as tf
-import pandas as pd
-import random
-import os
-import re
+from .imports import *
+
 import urllib.request
 
-from typing import List, Tuple
 from tqdm import tqdm_notebook
 from sklearn.preprocessing import LabelEncoder
-
-from . import core
 
 
 def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:

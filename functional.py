@@ -1,5 +1,4 @@
-import tensorflow as tf
-import numpy as np
+from .imports import *
 
 
 def gelu(x: tf.Tensor) -> tf.Tensor:

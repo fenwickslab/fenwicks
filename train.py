@@ -1,11 +1,7 @@
-import tensorflow as tf
-import math
+from .imports import *
+
 import datetime
-import os
-import re
 import collections
-import functools
-from typing import List, Callable, Tuple, Dict
 
 from .utils.colab import TPU_ADDRESS
 from .optim import SGD, AdamWeightDecayOptimizer

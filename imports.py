@@ -7,7 +7,7 @@ import re
 import math
 import random
 
-from typing import List, Callable, Union, Dict
+from typing import List, Callable, Union, Dict, Tuple
 
 from . import core
 from . import functional as F

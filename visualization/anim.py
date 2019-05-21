@@ -1,16 +1,12 @@
-import tensorflow as tf
-import numpy as np
+from ..imports import *
 
-import random
 import matplotlib.pylab as plt
 
 from matplotlib import rc
 from matplotlib.animation import FuncAnimation
-from typing import List, Callable, Union
 from IPython.display import Image, HTML
 
 from .. import vision
-from .. import core
 
 
 def setup():

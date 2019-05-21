@@ -1,14 +1,12 @@
-import tensorflow as tf
-import pandas as pd
+from ..imports import *
+
 import plotly.plotly
 import plotly.graph_objs as go
-import numpy as np
 import cufflinks as cf
 import operator
 import IPython
 
 from IPython.display import display
-from typing import List, Callable
 from collections import Counter
 
 

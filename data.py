@@ -1,14 +1,11 @@
-import tensorflow as tf
-import numpy as np
+from .imports import *
+
 import threading
-import functools
 import itertools
 
-from typing import List, Tuple, Callable, Union
 from tqdm import tqdm_notebook
 from sklearn.model_selection import train_test_split
 
-from . import core
 from . import io
 
 from tensorflow.contrib.tpu.python.tpu import datasets as tpu_datasets

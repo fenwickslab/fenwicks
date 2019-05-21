@@ -109,3 +109,7 @@ def inverse_dict(d: Dict) -> Dict:
 
 def convert_by_dict(d: Dict, items: List) -> List:
     return list(map(lambda x: d[x], items))
+
+
+def get_node_names() -> List[str]:
+    return [n.name for n in tf.get_default_graph().as_graph_def().node]

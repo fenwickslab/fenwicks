@@ -1,8 +1,8 @@
-import re
+from ..imports import *
+
 import csv
 import nltk
 from bs4 import BeautifulSoup
-import tensorflow as tf
 
 __all__ = ['tsv_lines']
 
@@ -17,7 +17,7 @@ def html_to_words(raw_text):
 
 
 def tsv_lines(input_file, quotechar=None):
-    with tf.io.gfile.GFile(input_file) as f:
+    with gfile.GFile(input_file) as f:
         reader = csv.reader(f, delimiter="\t", quotechar=quotechar)
         lines = []
         for line in reader:

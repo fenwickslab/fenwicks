@@ -1,5 +1,4 @@
-import tensorflow as tf
-import os
+from .imports import *
 from urllib.parse import urlparse
 
 __all__ = ['URLs', 'untar_data']
@@ -37,10 +36,10 @@ class URLs:
 
 def untar_data(url: str, dest: str = '.') -> str:
     if not os.path.isdir(dest):
-        tf.io.gfile.makedirs(dest)
+        gfile.makedirs(dest)
     url_path = urlparse(url).path
     fn = os.path.basename(url_path)
     data_dir = os.path.join(dest, 'datasets')
-    if not tf.io.gfile.exists(os.path.join(data_dir, fn)):
+    if not gfile.exists(os.path.join(data_dir, fn)):
         tf.keras.utils.get_file(fn, origin=url, extract=True, cache_dir=dest)
     return data_dir

@@ -19,3 +19,6 @@ from .visualization import plotly as plt
 from .visualization import anim
 
 from .layers import Sequential
+
+from .mobile import android
+from .mobile import pytorch_keras

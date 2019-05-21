@@ -46,7 +46,8 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 
     def compute_gradients(self, loss, var_list=None, **kwargs) -> Union[List[Tuple], Iterator[Tuple]]:
         grads = tf.gradients(loss, var_list)
-        grads, _ = tf.clip_by_global_norm(grads, clip_norm=self.clip_norm)
+        if self.clip_norm is not None:
+            grads, _ = tf.clip_by_global_norm(grads, clip_norm=self.clip_norm)
         return zip(grads, var_list)
 
     def apply_gradients(self, grads_and_vars, global_step=None, name=None):

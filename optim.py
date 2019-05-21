@@ -1,6 +1,4 @@
-import tensorflow as tf
-import re
-from typing import List, Union, Tuple
+from .imports import *
 
 
 class SGD(tf.train.MomentumOptimizer):
@@ -33,8 +31,9 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
     def _apply_dense(self, grad, var):
         pass
 
-    def __init__(self, lr: Union[float, tf.Tensor] = 0.001, wd: float = 0.0, beta1: float = 0.9, beta2: float = 0.999,
-                 epsilon: float = 1e-8, exclude_from_wd: List = None, name: str = "AdamWeightDecayOptimizer"):
+    def __init__(self, lr: Union[float, tf.Tensor] = 0.001, wd: float = None, beta1: float = 0.9, beta2: float = 0.999,
+                 epsilon: float = 1e-8, exclude_from_wd: List = None, clip_norm: float = None,
+                 name: str = "AdamWeightDecayOptimizer"):
         super().__init__(use_locking=False, name=name)
 
         self.lr = lr
@@ -43,10 +42,16 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
         self.beta_2 = beta2
         self.epsilon = epsilon
         self.exclude_from_weight_decay = exclude_from_wd
+        self.clip_norm = clip_norm
+
+    def compute_gradients(self, loss, var_list=None, **kwargs) -> Union[List[Tuple], Iterator[Tuple]]:
+        grads = tf.gradients(loss, var_list)
+        grads, _ = tf.clip_by_global_norm(grads, clip_norm=self.clip_norm)
+        return zip(grads, var_list)
 
     def apply_gradients(self, grads_and_vars, global_step=None, name=None):
         assignments = []
-        for (grad, param) in grads_and_vars:
+        for grad, param in grads_and_vars:
             if grad is None or param is None:
                 continue
 
@@ -62,7 +67,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
 
             update = next_m / (tf.sqrt(next_v) + self.epsilon)
 
-            if self._do_use_weight_decay(param_name):
+            if self._do_use_wd(param_name):
                 update += self.wd * param
 
             next_param = param - self.lr * update
@@ -72,7 +77,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
         assignments.append(global_step.assign_add(1))
         return tf.group(*assignments, name=name)
 
-    def _do_use_weight_decay(self, param_name):
+    def _do_use_wd(self, param_name):
         if not self.wd:
             return False
         if self.exclude_from_weight_decay:
@@ -82,7 +87,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
         return True
 
     @staticmethod
-    def _get_variable_name(param_name):
+    def _get_variable_name(param_name: str) -> str:
         m = re.match("^(.*):\\d+$", param_name)
         if m is not None:
             param_name = m.group(1)

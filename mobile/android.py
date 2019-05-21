@@ -1,10 +1,10 @@
 from ..imports import *
 
 
-def freeze_graph(model_dir, output_node_names):
+def freeze_graph(model_dir: str, output_node_names: str, output_dir: str):
     checkpoint = tf.train.get_checkpoint_state(model_dir)
     input_checkpoint = checkpoint.model_checkpoint_path
-    output_graph = os.path.join(input_checkpoint, "frozen_model.pb")
+    output_graph = os.path.join(output_dir, "frozen_model.pb")
 
     with tf.Session(graph=tf.Graph()) as sess:
         saver = tf.train.import_meta_graph(input_checkpoint + '.meta', clear_devices=True)

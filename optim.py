@@ -34,14 +34,19 @@ class Adam(tf.train.AdamOptimizer):
         self.exclude_from_wd = exclude_from_wd
         self.clip_norm = clip_norm
 
-    def compute_gradients(self, loss: tf.Tensor, var_list: List[tf.Tensor] = None, **kwargs) -> List[
-        Tuple[tf.Tensor, tf.Tensor]]:
+    def compute_gradients(self, loss: tf.Tensor, var_list: List[tf.Tensor] = None, **kwargs) -> Union[
+        List[Tuple], Iterator[Tuple]]:
 
         grads_and_vars = super().compute_gradients(loss, var_list)
+        if not self.clip_norm and not self.wd:
+            return grads_and_vars
 
         gs, vs = zip(*grads_and_vars)
         if self.clip_norm is not None:
             gs, _ = tf.clip_by_global_norm(gs, clip_norm=self.clip_norm)
+
+        if not self.wd:
+            return zip(gs, vs)
 
         grads_and_vars = []
         for g, v in zip(gs, vs):
@@ -52,8 +57,6 @@ class Adam(tf.train.AdamOptimizer):
         return grads_and_vars
 
     def _do_use_wd(self, param_name: str) -> bool:
-        if not self.wd:
-            return False
         if self.exclude_from_wd:
             for r in self.exclude_from_wd:
                 if re.search(r, param_name) is not None:

@@ -18,3 +18,13 @@ def freeze_graph(model_dir: str, output_node_names: str, output_fn: str, overwri
             f.write(output_graph_def.SerializeToString())
 
     return output_graph_def
+
+
+def load_graph(pb_fn: str) -> tf.Graph:
+    with gfile.GFile(pb_fn, "rb") as f:
+        graph_def = tf.GraphDef()
+        graph_def.ParseFromString(f.read())
+
+    with tf.Graph().as_default() as graph:
+        tf.import_graph_def(graph_def, name="prefix")
+    return graph

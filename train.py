@@ -4,7 +4,7 @@ import datetime
 import collections
 
 from .utils.colab import TPU_ADDRESS
-from .optim import SGD, AdamWeightDecayOptimizer
+from .optim import SGD, Adam
 
 
 def exp_decay_lr(init_lr: float, decay_steps: int, base_lr: float = 0, decay_rate: float = 1 / math.e) -> Callable:
@@ -93,8 +93,8 @@ def adam_wd_optimizer(lr_func: Callable, wd: float = 0.0, beta1=0.9, beta2=0.999
                       exclude_from_wd=None) -> Callable:
     def opt_func():
         lr = lr_func()
-        return AdamWeightDecayOptimizer(lr, wd=wd, beta1=beta1, beta2=beta2, epsilon=epsilon,
-                                        exclude_from_wd=exclude_from_wd)
+        return Adam(lr, wd=wd, beta1=beta1, beta2=beta2, epsilon=epsilon,
+                    exclude_from_wd=exclude_from_wd)
 
     return opt_func
 

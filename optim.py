@@ -36,12 +36,15 @@ class Adam(tf.train.AdamOptimizer):
 
     def compute_gradients(self, loss: tf.Tensor, var_list: List[tf.Tensor] = None, **kwargs) -> List[
         Tuple[tf.Tensor, tf.Tensor]]:
-        grads = tf.gradients(loss, var_list)
+
+        grads_and_vars = super().compute_gradients(loss, var_list)
+
+        gs, vs = zip(*grads_and_vars)
         if self.clip_norm is not None:
-            grads, _ = tf.clip_by_global_norm(grads, clip_norm=self.clip_norm)
+            gs, _ = tf.clip_by_global_norm(gs, clip_norm=self.clip_norm)
 
         grads_and_vars = []
-        for g, v in zip(grads, var_list):
+        for g, v in zip(gs, vs):
             if self._do_use_wd(get_variable_name(v.name)):
                 v *= self.wd
             grads_and_vars.append((g, v))

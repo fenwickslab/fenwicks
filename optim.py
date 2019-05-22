@@ -13,7 +13,8 @@ class SGD(tf.train.MomentumOptimizer):
         super().__init__(lr, momentum=mom, use_nesterov=True)
         self.wd = wd
 
-    def compute_gradients(self, loss, var_list=None, **kwargs) -> List[Tuple]:
+    def compute_gradients(self, loss: tf.Tensor, var_list: List[tf.Tensor] = None, **kwargs) -> List[
+        Tuple[tf.Tensor, tf.Tensor]]:
         grads_and_vars = super().compute_gradients(loss, var_list=var_list)
 
         l = len(grads_and_vars)
@@ -29,11 +30,12 @@ class Adam(tf.train.AdamOptimizer):
     def __init__(self, lr: Union[float, tf.Tensor] = 0.001, wd: float = None, beta1: float = 0.9, beta2: float = 0.999,
                  epsilon: float = 1e-8, exclude_from_wd: List[str] = None, clip_norm: float = None):
         super().__init__(learning_rate=lr, beta1=beta1, beta2=beta2, epsilon=epsilon)
-        self.wd = 1 - wd * lr
+        self.wd = 1 - wd * lr if wd else None
         self.exclude_from_wd = exclude_from_wd
         self.clip_norm = clip_norm
 
-    def compute_gradients(self, loss, var_list=None, **kwargs) -> List[Tuple]:
+    def compute_gradients(self, loss: tf.Tensor, var_list: List[tf.Tensor] = None, **kwargs) -> List[
+        Tuple[tf.Tensor, tf.Tensor]]:
         grads = tf.gradients(loss, var_list)
         if self.clip_norm is not None:
             grads, _ = tf.clip_by_global_norm(grads, clip_norm=self.clip_norm)
@@ -46,7 +48,7 @@ class Adam(tf.train.AdamOptimizer):
 
         return grads_and_vars
 
-    def _do_use_wd(self, param_name):
+    def _do_use_wd(self, param_name: str) -> bool:
         if not self.wd:
             return False
         if self.exclude_from_wd:

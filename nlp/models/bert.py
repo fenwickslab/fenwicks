@@ -50,8 +50,8 @@ def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, num_hid
     return list(map(reshape_func, all_layer_outputs)) if return_all_layers else reshape_func(x_2d)
 
 
-def word_emb(x: tf.Tensor, vocab_size: int, c: int = 768, initializer_range: float = 0.02) -> Tuple[
-    tf.Tensor, tf.Variable]:
+def word_emb(x: tf.Tensor, vocab_size: int, c: int = 768, initializer_range: float = 0.02, one_hot: bool = False) -> \
+        Tuple[tf.Tensor, tf.Variable]:
     if x.shape.ndims == 2:
         x = tf.expand_dims(x, axis=[-1])  # todo: change input_shape instead of reshape
     input_shape = core.get_shape_list(x)
@@ -60,7 +60,12 @@ def word_emb(x: tf.Tensor, vocab_size: int, c: int = 768, initializer_range: flo
     embedding_table = tf.get_variable(name="word_embeddings", shape=[vocab_size, c],
                                       initializer=tf.truncated_normal_initializer(stddev=initializer_range))
 
-    x = tf.gather(embedding_table, x_flat)
+    if one_hot:
+        one_hot_input_ids = tf.one_hot(x_flat, depth=vocab_size)
+        x = tf.matmul(one_hot_input_ids, embedding_table)
+    else:
+        x = tf.gather(embedding_table, x_flat)
+
     x = tf.reshape(x, input_shape[0:-1] + [input_shape[-1] * c])
     return x, embedding_table
 
@@ -126,7 +131,7 @@ class BertConfig:
 
 class BertModel:
     def __init__(self, config, is_training: bool, input_ids: tf.Tensor, input_mask: tf.Tensor = None,
-                 token_type_ids: tf.Tensor = None, scope: str = None):
+                 token_type_ids: tf.Tensor = None, use_one_hot_embeddings: bool = False, scope: str = None):
         config = copy.deepcopy(config)
         if not is_training:
             config.hidden_dropout_prob = 0.0

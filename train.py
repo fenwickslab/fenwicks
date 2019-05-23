@@ -81,14 +81,6 @@ def one_cycle_lr(init_lr: float, total_steps: int, warmup_steps: int, decay_sche
     return lr_func
 
 
-# def adam_optimizer(lr_func: Callable, beta1=0.9, beta2=0.999, epsilon=1e-8) -> Callable:
-#     def opt_func():
-#         lr = lr_func()
-#         return tf.train.AdamOptimizer(lr, beta1=beta1, beta2=beta2, epsilon=epsilon)
-#
-#     return opt_func
-
-
 def adam_optimizer(lr_func: Callable, wd: float = None, beta1=0.9, beta2=0.999, epsilon=1e-8,
                    exclude_from_wd: List[int] = None, clip_norm: float = None) -> Callable:
     def opt_func():

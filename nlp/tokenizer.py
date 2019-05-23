@@ -24,12 +24,12 @@ def load_vocab(vocab_fn: str) -> Dict:
     return vocab
 
 
-def whitespace_tokenize(txt):
+def whitespace_tokenize(txt: str):
     txt = txt.strip()
     return txt.split() if txt else []
 
 
-def strip_accents(txt):
+def strip_accents(txt: str):
     txt = unicodedata.normalize("NFD", txt)
     output = []
     for char in txt:
@@ -38,21 +38,21 @@ def strip_accents(txt):
     return "".join(output)
 
 
-def is_whitespace(char):
+def is_whitespace(char: str):
     if char == " " or char == "\t" or char == "\n" or char == "\r":
         return True
     cat = unicodedata.category(char)
     return cat == "Zs"
 
 
-def is_control(char):
+def is_control(char: str):
     if char == "\t" or char == "\n" or char == "\r":
         return False
     cat = unicodedata.category(char)
     return cat in ("Cc", "Cf")
 
 
-def is_punctuation(char):
+def is_punctuation(char: str):
     cp = ord(char)
     if 33 <= cp <= 47 or 58 <= cp <= 64 or 91 <= cp <= 96 or 123 <= cp <= 126:
         return True
@@ -60,7 +60,7 @@ def is_punctuation(char):
     return cat.startswith("P")
 
 
-def split_on_punc(txt):
+def split_on_punc(txt: str):
     chars = list(txt)
     start_new_word = True
     output = []
@@ -78,7 +78,7 @@ def split_on_punc(txt):
     return ["".join(x) for x in output]
 
 
-def clean_text(txt):
+def clean_text(txt: str):
     output = []
     for char in txt:
         cp = ord(char)
@@ -92,8 +92,8 @@ class BasicTokenizer:
     def __init__(self, do_lower_case=True):
         self.do_lower_case = do_lower_case
 
-    def tokenize(self, txt):
-        txt = txt.to_unicode(txt)
+    def tokenize(self, txt: str):
+        txt = text.to_unicode(txt)
         txt = clean_text(txt)
         orig_tokens = whitespace_tokenize(txt)
 
@@ -109,13 +109,13 @@ class BasicTokenizer:
 
 
 class WordpieceTokenizer:
-    def __init__(self, vocab, unk_token="[UNK]", max_input_chars_per_word=200):
+    def __init__(self, vocab, unk_token: str = "[UNK]", max_input_chars_per_word: int = 200):
         self.vocab = vocab
         self.unk_token = unk_token
         self.max_input_chars_per_word = max_input_chars_per_word
 
-    def tokenize(self, txt):
-        txt = txt.to_unicode(txt)
+    def tokenize(self, txt: str):
+        txt = text.to_unicode(txt)
 
         output_tokens = []
         for token in whitespace_tokenize(txt):

@@ -157,7 +157,7 @@ def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: s
 
 
 def get_clf_model_func(model_arch: Callable, opt_func: Callable, reduction: str = tf.losses.Reduction.MEAN,
-                       use_tpu: bool = True, scaffold_func: Callable = None) -> Callable:
+                       use_tpu: bool = True, init_ckpt: str = None) -> Callable:
     """
     Build a model function for a classification task to be used in a TPUEstimator, based on a given model architecture
     and an optimizer. Both the model architecture and optimizer must be callables, not model or optimizer objects. The
@@ -169,7 +169,7 @@ def get_clf_model_func(model_arch: Callable, opt_func: Callable, reduction: str 
     :param reduction: Whether to average (`tf.losses.Reduction.MEAN`) or sum (`tf.losses.Reduction.SUM`) losses
                       for different training records. Default: average.
     :param use_tpu: Whether to use TPU. Default: True.
-    :param scaffold_func: Scaffold function, typically for loading from a checkpoint. Default: None.
+    :param init_ckpt: Path to a pre-trained checkpoint. Default: None.
     :return: Model function ready for TPUEstimator.
     """
 
@@ -203,13 +203,26 @@ def get_clf_model_func(model_arch: Callable, opt_func: Callable, reduction: str 
         metric_func = lambda y_pred, labels: {'accuracy': tf.metrics.accuracy(y_pred, labels)}
         tpu_metrics = (metric_func, [y_pred, labels])
 
+        scaffold_func = None
+        if init_ckpt:
+            tvars = tf.trainable_variables()
+            assignment_map = ckpt_assignment_map(tvars, init_ckpt)
+            if use_tpu:
+                def tpu_scaffold():
+                    tf.train.init_from_checkpoint(init_ckpt, assignment_map)
+                    return tf.train.Scaffold()
+
+                scaffold_func = tpu_scaffold
+            else:
+                tf.train.init_from_checkpoint(init_ckpt, assignment_map)
+
         return tf.contrib.tpu.TPUEstimatorSpec(mode=mode, loss=loss, predictions={"y_pred": y_pred},
                                                train_op=train_op, scaffold_fn=scaffold_func, eval_metrics=tpu_metrics)
 
     return model_func
 
 
-def get_assignment_map_from_checkpoint(tvars: List, ckpg: str) -> Tuple:
+def ckpt_assignment_map(tvars: List, ckpg: str) -> Dict:
     """
     Compute the union of the current variables and checkpoint variables.
 
@@ -238,12 +251,4 @@ def get_assignment_map_from_checkpoint(tvars: List, ckpg: str) -> Tuple:
         initialized_variable_names[name] = 1
         initialized_variable_names[name + ":0"] = 1
 
-    return assignment_map, initialized_variable_names
-
-
-def get_scaffold_func(init_checkpoint: str, assignment_map: Dict) -> Callable:
-    def tpu_scaffold():
-        tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
-        return tf.train.Scaffold()
-
-    return tpu_scaffold
+    return assignment_map

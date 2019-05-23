@@ -5,12 +5,9 @@ from typing import List, Dict, Tuple
 import tensorflow as tf
 
 from .. import core
+from . import text
 
 TextFeat = collections.namedtuple('TextFeat', ['input_ids', 'input_mask'])
-
-
-def to_unicode(text):
-    return text if isinstance(text, str) else text.decode("utf-8", "ignore")
 
 
 def load_vocab(vocab_fn: str) -> Dict:
@@ -18,7 +15,7 @@ def load_vocab(vocab_fn: str) -> Dict:
     index = 0
     with tf.io.gfile.GFile(vocab_fn) as reader:
         while True:
-            token = to_unicode(reader.readline())
+            token = text.to_unicode(reader.readline())
             if not token:
                 break
             token = token.strip()
@@ -96,7 +93,7 @@ class BasicTokenizer:
         self.do_lower_case = do_lower_case
 
     def tokenize(self, text):
-        text = to_unicode(text)
+        text = text.to_unicode(text)
         text = clean_text(text)
         orig_tokens = whitespace_tokenize(text)
 
@@ -118,7 +115,7 @@ class WordpieceTokenizer:
         self.max_input_chars_per_word = max_input_chars_per_word
 
     def tokenize(self, text):
-        text = to_unicode(text)
+        text = text.to_unicode(text)
 
         output_tokens = []
         for token in whitespace_tokenize(text):

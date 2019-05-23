@@ -23,3 +23,7 @@ def tsv_lines(input_file, quotechar=None):
         for line in reader:
             lines.append(line)
         return lines
+
+
+def to_unicode(text):
+    return text if isinstance(text, str) else text.decode("utf-8", "ignore")

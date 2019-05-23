@@ -24,15 +24,15 @@ def load_vocab(vocab_fn: str) -> Dict:
     return vocab
 
 
-def whitespace_tokenize(text):
-    text = text.strip()
-    return text.split() if text else []
+def whitespace_tokenize(txt):
+    txt = txt.strip()
+    return txt.split() if txt else []
 
 
-def strip_accents(text):
-    text = unicodedata.normalize("NFD", text)
+def strip_accents(txt):
+    txt = unicodedata.normalize("NFD", txt)
     output = []
-    for char in text:
+    for char in txt:
         if unicodedata.category(char) != "Mn":
             output.append(char)
     return "".join(output)
@@ -60,8 +60,8 @@ def is_punctuation(char):
     return cat.startswith("P")
 
 
-def split_on_punc(text):
-    chars = list(text)
+def split_on_punc(txt):
+    chars = list(txt)
     start_new_word = True
     output = []
 
@@ -78,9 +78,9 @@ def split_on_punc(text):
     return ["".join(x) for x in output]
 
 
-def clean_text(text):
+def clean_text(txt):
     output = []
-    for char in text:
+    for char in txt:
         cp = ord(char)
         if cp == 0 or cp == 0xfffd or is_control(char):
             continue
@@ -92,10 +92,10 @@ class BasicTokenizer:
     def __init__(self, do_lower_case=True):
         self.do_lower_case = do_lower_case
 
-    def tokenize(self, text):
-        text = text.to_unicode(text)
-        text = clean_text(text)
-        orig_tokens = whitespace_tokenize(text)
+    def tokenize(self, txt):
+        txt = txt.to_unicode(txt)
+        txt = clean_text(txt)
+        orig_tokens = whitespace_tokenize(txt)
 
         split_tokens = []
         for token in orig_tokens:
@@ -114,11 +114,11 @@ class WordpieceTokenizer:
         self.unk_token = unk_token
         self.max_input_chars_per_word = max_input_chars_per_word
 
-    def tokenize(self, text):
-        text = text.to_unicode(text)
+    def tokenize(self, txt):
+        txt = txt.to_unicode(txt)
 
         output_tokens = []
-        for token in whitespace_tokenize(text):
+        for token in whitespace_tokenize(txt):
             chars = list(token)
             if len(chars) > self.max_input_chars_per_word:
                 output_tokens.append(self.unk_token)
@@ -158,9 +158,9 @@ class BertTokenizer:
         self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
         self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
 
-    def tokenize(self, text: str) -> List[str]:
+    def tokenize(self, txt: str) -> List[str]:
         split_tokens = []
-        for token in self.basic_tokenizer.tokenize(text):
+        for token in self.basic_tokenizer.tokenize(txt):
             for sub_token in self.wordpiece_tokenizer.tokenize(token):
                 split_tokens.append(sub_token)
         return split_tokens
@@ -171,8 +171,8 @@ class BertTokenizer:
     def ids_to_tokens(self, ids: List[int]) -> List[str]:
         return core.convert_by_dict(self.inv_vocab, ids)
 
-    def process_sentence(self, text: str, max_seq_len: int) -> Tuple[List[int], List[int]]:
-        tokens_a = self.tokenize(text)
+    def process_sentence(self, txt: str, max_seq_len: int) -> Tuple[List[int], List[int]]:
+        tokens_a = self.tokenize(txt)
 
         if len(tokens_a) > max_seq_len - 2:
             tokens_a = tokens_a[0: max_seq_len - 2]

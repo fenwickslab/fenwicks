@@ -131,7 +131,7 @@ class BertConfig:
 
 class BertModel:
     def __init__(self, config, is_training: bool, input_ids: tf.Tensor, input_mask: tf.Tensor = None,
-                 token_type_ids: tf.Tensor = None, use_one_hot_embeddings: bool = False, scope: str = None):
+                 token_type_ids: tf.Tensor = None, one_hot_in_word_emb: bool = False, scope: str = None):
         config = copy.deepcopy(config)
         if not is_training:
             config.hidden_dropout_prob = 0.0
@@ -150,7 +150,8 @@ class BertModel:
             with tf.variable_scope("embeddings"):
                 self.embedding_output, self.embedding_table = word_emb(input_ids, vocab_size=config.vocab_size,
                                                                        c=config.hidden_size,
-                                                                       initializer_range=config.initializer_range)
+                                                                       initializer_range=config.initializer_range,
+                                                                       one_hot=one_hot_in_word_emb)
 
                 self.embedding_output = token_type_pos_emb(self.embedding_output, token_type_ids=token_type_ids,
                                                            token_type_vocab_size=config.type_vocab_size,

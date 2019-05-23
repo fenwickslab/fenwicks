@@ -101,9 +101,10 @@ def create_attention_mask(src: tf.Tensor, dest_mask: tf.Tensor):
 
 
 class BertConfig:
-    def __init__(self, vocab_size, hidden_size=768, num_hidden_layers=12, num_attention_heads=12,
-                 intermediate_size=3072, hidden_dropout_prob=0.1, attention_probs_dropout_prob=0.1,
-                 max_position_embeddings=512, type_vocab_size=16, initializer_range=0.02):
+    def __init__(self, vocab_size: int, hidden_size: int = 768, num_hidden_layers: int = 12,
+                 num_attention_heads: int = 12, intermediate_size: int = 3072, hidden_dropout_prob: float = 0.1,
+                 attention_probs_dropout_prob: float = 0.1, max_position_embeddings: int = 512,
+                 type_vocab_size: int = 16, initializer_range: float = 0.02):
         self.vocab_size = vocab_size
         self.hidden_size = hidden_size
         self.num_hidden_layers = num_hidden_layers
@@ -117,7 +118,7 @@ class BertConfig:
 
     @classmethod
     def from_dict(cls, json_object):
-        config = BertConfig(vocab_size=None)
+        config = BertConfig(0)
         for key, value in json_object.items:
             config.__dict__[key] = value
         return config
@@ -129,54 +130,61 @@ class BertConfig:
         return cls.from_dict(json.loads(text))
 
 
-class BertModel:
-    def __init__(self, config, is_training: bool, input_ids: tf.Tensor, input_mask: tf.Tensor = None,
-                 token_type_ids: tf.Tensor = None, one_hot_in_word_emb: bool = False, scope: str = None):
-        config = copy.deepcopy(config)
-        if not is_training:
+class BertModel(tf.keras.Model):
+    def __init__(self, config: BertConfig, one_hot_in_word_emb: bool = False):
+        super().__init__()
+        self.config = copy.deepcopy(config)
+        self.one_hot_in_word_emb = one_hot_in_word_emb
+
+    def call(self, x: List[tf.Tensor], *args, **kw_args) -> tf.Tensor:
+        config = self.config
+        if tf.keras.backend.learning_phase() == 0:
             config.hidden_dropout_prob = 0.0
             config.attention_probs_dropout_prob = 0.0
 
+        input_ids = x[0]
+        input_mask = x[1]
+
         input_shape = core.get_shape_list(input_ids)
         batch_size, seq_length = input_shape[0], input_shape[1]
-
-        if input_mask is None:
-            input_mask = tf.ones(shape=[batch_size, seq_length], dtype=tf.int32)
+        token_type_ids = x[2] if len(x) > 2 else tf.ones(shape=[batch_size, seq_length], dtype=tf.int32)
 
         if token_type_ids is None:
             token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
 
-        with tf.variable_scope(scope, default_name="bert"):
+        with tf.variable_scope("bert"):
             with tf.variable_scope("embeddings"):
-                self.embedding_output, self.embedding_table = word_emb(input_ids, vocab_size=config.vocab_size,
-                                                                       c=config.hidden_size,
-                                                                       initializer_range=config.initializer_range,
-                                                                       one_hot=one_hot_in_word_emb)
+                embedding_output, embedding_table = word_emb(input_ids, vocab_size=config.vocab_size,
+                                                             c=config.hidden_size,
+                                                             initializer_range=config.initializer_range,
+                                                             one_hot=self.one_hot_in_word_emb)
 
-                self.embedding_output = token_type_pos_emb(self.embedding_output, token_type_ids=token_type_ids,
-                                                           token_type_vocab_size=config.type_vocab_size,
-                                                           initializer_range=config.initializer_range,
-                                                           max_seq_len=config.max_position_embeddings,
-                                                           dropout_prob=config.hidden_dropout_prob)
+                embedding_output = token_type_pos_emb(embedding_output, token_type_ids=token_type_ids,
+                                                      token_type_vocab_size=config.type_vocab_size,
+                                                      initializer_range=config.initializer_range,
+                                                      max_seq_len=config.max_position_embeddings,
+                                                      dropout_prob=config.hidden_dropout_prob)
 
             with tf.variable_scope("encoder"):
                 attn_mask = create_attention_mask(input_ids, input_mask)  # [batch_size, seq_length, seq_length]
 
-                self.all_encoder_layers = transformer(self.embedding_output, attn_mask=attn_mask, c=config.hidden_size,
-                                                      num_hidden_layers=config.num_hidden_layers,
-                                                      n_heads=config.num_attention_heads, ff_c=config.intermediate_size,
-                                                      ff_act=F.gelu,
-                                                      hidden_dropout_prob=config.hidden_dropout_prob,
-                                                      attn_dropout_prob=config.attention_probs_dropout_prob,
-                                                      initializer_range=config.initializer_range,
-                                                      return_all_layers=True)
-            self.sequence_output = self.all_encoder_layers[-1]  # [batch_size, seq_length, hidden_size].
+                all_encoder_layers = transformer(embedding_output, attn_mask=attn_mask, c=config.hidden_size,
+                                                 num_hidden_layers=config.num_hidden_layers,
+                                                 n_heads=config.num_attention_heads, ff_c=config.intermediate_size,
+                                                 ff_act=F.gelu,
+                                                 hidden_dropout_prob=config.hidden_dropout_prob,
+                                                 attn_dropout_prob=config.attention_probs_dropout_prob,
+                                                 initializer_range=config.initializer_range,
+                                                 return_all_layers=True)
+            sequence_output = all_encoder_layers[-1]  # [batch_size, seq_length, hidden_size].
 
             with tf.variable_scope("pooler"):
-                first_token = tf.squeeze(self.sequence_output[:, 0:1, :], axis=1)
-                self.pooled_output = tf.layers.dense(first_token, config.hidden_size, activation=tf.tanh,
-                                                     kernel_initializer=tf.truncated_normal_initializer(
-                                                         stddev=config.initializer_range))
+                first_token = tf.squeeze(sequence_output[:, 0:1, :], axis=1)
+                pooled_output = tf.layers.dense(first_token, config.hidden_size, activation=tf.tanh,
+                                                kernel_initializer=tf.truncated_normal_initializer(
+                                                    stddev=config.initializer_range))
+
+        return pooled_output
 
 
 def unreachable_ops(graph, outputs):

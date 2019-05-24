@@ -92,7 +92,7 @@ class BasicTokenizer:
     def __init__(self, do_lower_case=True):
         self.do_lower_case = do_lower_case
 
-    def tokenize(self, txt: str):
+    def tokenize(self, txt: str) -> List[str]:
         txt = text.to_unicode(txt)
         txt = clean_text(txt)
         orig_tokens = whitespace_tokenize(txt)
@@ -114,7 +114,7 @@ class WordpieceTokenizer:
         self.unk_token = unk_token
         self.max_input_chars_per_word = max_input_chars_per_word
 
-    def tokenize(self, txt: str):
+    def tokenize(self, txt: str) -> List[str]:
         txt = text.to_unicode(txt)
 
         output_tokens = []

@@ -15,10 +15,17 @@ def get_pixel_value(img: tf.Tensor, x, y) -> tf.Tensor:
     return tf.gather_nd(img, indices)
 
 
-def bilinear_sampler(img: tf.Tensor, x, y) -> tf.Tensor:
+def reflect(x, max_x):
+    x = tf.abs(x)
+    x = max_x - tf.abs(max_x - x)
+    return x
+
+
+def bilinear_sampler(img: tf.Tensor, x, y, do_reflect: bool = False) -> tf.Tensor:
     img_shape = tf.shape(img)
     H = img_shape[1]
     W = img_shape[2]
+
     max_y = tf.cast(H - 1, tf.int32)
     max_x = tf.cast(W - 1, tf.int32)
     zero = tf.zeros([], dtype=tf.int32)
@@ -34,6 +41,12 @@ def bilinear_sampler(img: tf.Tensor, x, y) -> tf.Tensor:
     x1 = x0 + 1
     y0 = tf.cast(tf.floor(y), tf.int32)
     y1 = y0 + 1
+
+    if do_reflect:
+        x0 = reflect(x0, max_x)
+        x1 = reflect(x1, max_x)
+        y0 = reflect(y0, max_y)
+        y1 = reflect(y1, max_y)
 
     # clip to range [0, H-1/W-1] to not violate img boundaries
     x0 = tf.clip_by_value(x0, zero, max_x)
@@ -103,7 +116,7 @@ def affine_grid_generator(H: int, W: int, tfm_mat) -> tf.Tensor:
     return batch_grids
 
 
-def affine_transform(X: tf.Tensor, tfm_mat, out_dims=None) -> tf.Tensor:
+def affine_transform(X: tf.Tensor, tfm_mat, out_dims=None, do_reflect: bool = False) -> tf.Tensor:
     X_shape = tf.shape(X)
     B = X_shape[0]
     H = X_shape[1]
@@ -116,4 +129,4 @@ def affine_transform(X: tf.Tensor, tfm_mat, out_dims=None) -> tf.Tensor:
     x_s = batch_grids[:, 0, :, :]
     y_s = batch_grids[:, 1, :, :]
 
-    return bilinear_sampler(X, x_s, y_s)
+    return bilinear_sampler(X, x_s, y_s, do_reflect)

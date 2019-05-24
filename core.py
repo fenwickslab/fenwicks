@@ -61,7 +61,7 @@ def get_shape_list(x: tf.Tensor) -> List:
     shape = x.shape.as_list()
 
     non_static_indexes = []
-    for (index, dim) in enumerate(shape):
+    for index, dim in enumerate(shape):
         if dim is None:
             non_static_indexes.append(index)
 

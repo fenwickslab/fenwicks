@@ -77,7 +77,7 @@ def random_rotate_90(x: tf.Tensor) -> tf.Tensor:
 def apply_affine_mat(x: tf.Tensor, mat: tf.Tensor, do_reflect: bool = False) -> tf.Tensor:
     mat = tf.reshape(mat, [-1])[:6]
     x = tf.expand_dims(x, 0)
-    x = affine_transform(x, mat, do_reflect)
+    x = affine_transform(x, mat, do_reflect=do_reflect)
     x = tf.clip_by_value(x, 0.0, 1.0)
     x = tf.squeeze(x, [0])
     return x

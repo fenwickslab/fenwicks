@@ -80,7 +80,6 @@ def bilinear_sampler(img: tf.Tensor, x, y, do_reflect: bool = False) -> tf.Tenso
 
     # compute output
     out = tf.add_n([wa * Ia, wb * Ib, wc * Ic, wd * Id])
-
     return out
 
 

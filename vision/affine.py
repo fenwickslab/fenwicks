@@ -22,7 +22,6 @@ def reflect(x, max_x):
 
 
 def bilinear_sampler(img: tf.Tensor, x, y, do_reflect: bool = True) -> tf.Tensor:
-    print(do_reflect)
     img_shape = tf.shape(img)
     H = img_shape[1]
     W = img_shape[2]
@@ -31,7 +30,6 @@ def bilinear_sampler(img: tf.Tensor, x, y, do_reflect: bool = True) -> tf.Tensor
     max_x = tf.cast(W - 1, tf.int32)
     zero = tf.zeros([], dtype=tf.int32)
 
-    # rescale x and y to [0, W-1/H-1]
     x = tf.cast(x, tf.float32)
     y = tf.cast(y, tf.float32)
     x = 0.5 * ((x + 1.0) * tf.cast(max_x - 1, tf.float32))
@@ -54,7 +52,6 @@ def bilinear_sampler(img: tf.Tensor, x, y, do_reflect: bool = True) -> tf.Tensor
         y0r = tf.clip_by_value(y0, zero, max_y)
         y1r = tf.clip_by_value(y1, zero, max_y)
 
-    # get pixel value at corner coords
     Ia = get_pixel_value(img, x0r, y0r)
     Ib = get_pixel_value(img, x0r, y1r)
     Ic = get_pixel_value(img, x1r, y0r)
@@ -71,7 +68,6 @@ def bilinear_sampler(img: tf.Tensor, x, y, do_reflect: bool = True) -> tf.Tensor
         y0 = tf.cast(y0r, tf.float32)
         y1 = tf.cast(y1r, tf.float32)
 
-    # calculate deltas
     wa = (x1 - x) * (y1 - y)
     wb = (x1 - x) * (y - y0)
     wc = (x - x0) * (y1 - y)
@@ -83,9 +79,7 @@ def bilinear_sampler(img: tf.Tensor, x, y, do_reflect: bool = True) -> tf.Tensor
     wc = tf.expand_dims(wc, axis=3)
     wd = tf.expand_dims(wd, axis=3)
 
-    # compute output
-    out = tf.add_n([wa * Ia, wb * Ib, wc * Ic, wd * Id])
-    return out
+    return tf.add_n([wa * Ia, wb * Ib, wc * Ic, wd * Id])
 
 
 def affine_grid_generator(H: int, W: int, tfm_mat) -> tf.Tensor:

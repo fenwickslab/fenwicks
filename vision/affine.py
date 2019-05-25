@@ -22,6 +22,7 @@ def reflect(x, max_x):
 
 
 def bilinear_sampler(img: tf.Tensor, x, y, do_reflect: bool = False) -> tf.Tensor:
+    print(do_reflect)
     img_shape = tf.shape(img)
     H = img_shape[1]
     W = img_shape[2]
@@ -43,28 +44,32 @@ def bilinear_sampler(img: tf.Tensor, x, y, do_reflect: bool = False) -> tf.Tenso
     y1 = y0 + 1
 
     if do_reflect:
-        x0 = reflect(x0, max_x)
-        x1 = reflect(x1, max_x)
-        y0 = reflect(y0, max_y)
-        y1 = reflect(y1, max_y)
-
-    # clip to range [0, H-1/W-1] to not violate img boundaries
-    x0 = tf.clip_by_value(x0, zero, max_x)
-    x1 = tf.clip_by_value(x1, zero, max_x)
-    y0 = tf.clip_by_value(y0, zero, max_y)
-    y1 = tf.clip_by_value(y1, zero, max_y)
+        x0r = reflect(x0, max_x)
+        x1r = reflect(x1, max_x)
+        y0r = reflect(y0, max_y)
+        y1r = reflect(y1, max_y)
+    else:
+        x0r = tf.clip_by_value(x0, zero, max_x)
+        x1r = tf.clip_by_value(x1, zero, max_x)
+        y0r = tf.clip_by_value(y0, zero, max_y)
+        y1r = tf.clip_by_value(y1, zero, max_y)
 
     # get pixel value at corner coords
-    Ia = get_pixel_value(img, x0, y0)
-    Ib = get_pixel_value(img, x0, y1)
-    Ic = get_pixel_value(img, x1, y0)
-    Id = get_pixel_value(img, x1, y1)
+    Ia = get_pixel_value(img, x0r, y0r)
+    Ib = get_pixel_value(img, x0r, y1r)
+    Ic = get_pixel_value(img, x1r, y0r)
+    Id = get_pixel_value(img, x1r, y1r)
 
-    # recast as float for delta calculation
-    x0 = tf.cast(x0, tf.float32)
-    x1 = tf.cast(x1, tf.float32)
-    y0 = tf.cast(y0, tf.float32)
-    y1 = tf.cast(y1, tf.float32)
+    if do_reflect:
+        x0 = tf.cast(x0, tf.float32)
+        x1 = tf.cast(x1, tf.float32)
+        y0 = tf.cast(y0, tf.float32)
+        y1 = tf.cast(y1, tf.float32)
+    else:
+        x0 = tf.cast(x0r, tf.float32)
+        x1 = tf.cast(x1r, tf.float32)
+        y0 = tf.cast(y0r, tf.float32)
+        y1 = tf.cast(y1r, tf.float32)
 
     # calculate deltas
     wa = (x1 - x) * (y1 - y)

@@ -2,16 +2,17 @@ from .imports import *
 
 
 class Parallel(tf.keras.layers.Layer):
-    def __init__(self):
+    def __init__(self, do_add: bool = False):
         super().__init__()
         self.fw_layers = []
+        self.do_add = do_add
 
     def add(self, layer: tf.keras.layers.Layer):
         self.fw_layers.append(layer)
 
     def call(self, x: tf.Tensor, *args, **kw_args) -> tf.Tensor:
         outputs = core.parallel_transforms(x, self.fw_layers)
-        return tf.keras.layers.concatenate(outputs)
+        return tf.keras.layers.add(outputs) if self.do_add else tf.keras.layers.concatenate(outputs)
 
 
 # todo: SequentialLayer
@@ -57,13 +58,26 @@ class GlobalPools2D(Parallel):
         self.add(tf.keras.layers.GlobalAveragePooling2D())
 
 
+class BNRelu(Sequential):
+    def __init__(self, bn_mom: float = 0.99, bn_eps: float = 0.001, bn_before_relu: bool = True):
+        super().__init__()
+        bn = tf.keras.layers.BatchNormalization(momentum=bn_mom, epsilon=bn_eps)
+        relu = tf.keras.layers.Activation('relu')
+        if bn_before_relu:
+            self.add(bn)
+            self.add(relu)
+        else:
+            self.add(relu)
+            self.add(bn)
+
+
 class DenseBN(Sequential):
     """
     A Dense layer followed by BatchNormalization, ReLU activation, and optionally Dropout.
     """
 
-    def __init__(self, c: int, kernel_initializer='glorot_uniform', bn_mom=0.99,
-                 bn_eps=0.001, drop_rate: float = 0.0, bn_before_relu=True):
+    def __init__(self, c: int, kernel_initializer: Union[str, Callable] = 'glorot_uniform', bn_mom: float = 0.99,
+                 bn_eps: float = 0.001, drop_rate: float = 0.0, bn_before_relu: bool = True):
         """
         :param c: number of neurons in the Dense layer.
         :param kernel_initializer: initialization method for the Dense layer.
@@ -98,8 +112,9 @@ class ConvBN(Sequential):
     A Conv2D followed by BatchNormalization and ReLU activation.
     """
 
-    def __init__(self, c: int, kernel_size=3, strides=(1, 1), kernel_initializer='glorot_uniform', bn_mom=0.99,
-                 bn_eps=0.001):
+    def __init__(self, c: int, kernel_size: int = 3, strides: Union[int, Tuple[int, int]] = (1, 1),
+                 kernel_initializer: Union[str, Callable] = 'glorot_uniform', bn_mom: float = 0.99,
+                 bn_eps: float = 0.001):
         super().__init__()
         self.add(tf.keras.layers.Conv2D(filters=c, kernel_size=kernel_size, strides=strides,
                                         kernel_initializer=kernel_initializer, padding='same', use_bias=False))
@@ -112,8 +127,9 @@ class ConvBlk(Sequential):
     A block of `ConvBN` layers, followed by a pooling layer.
     """
 
-    def __init__(self, c, pool=None, convs=1, kernel_size=3, kernel_initializer='glorot_uniform', bn_mom=0.99,
-                 bn_eps=0.001):
+    def __init__(self, c: int, pool: Callable = None, convs: int = 1, kernel_size: int = 3,
+                 kernel_initializer: Union[str, Callable] = 'glorot_uniform', bn_mom: float = 0.99,
+                 bn_eps: float = 0.001):
         super().__init__()
         for i in range(convs):
             self.add(
@@ -126,8 +142,9 @@ class ConvResBlk(ConvBlk):
     A `ConvBlk` with additional residual `ConvBN` layers.
     """
 
-    def __init__(self, c, pool=None, convs=1, res_convs=2, kernel_size=3, kernel_initializer='glorot_uniform',
-                 bn_mom=0.99, bn_eps=0.001):
+    def __init__(self, c: int, pool: Callable = None, convs: int = 1, res_convs: int = 2, kernel_size: int = 3,
+                 kernel_initializer: Union[str, Callable] = 'glorot_uniform', bn_mom: float = 0.99,
+                 bn_eps: float = 0.001):
         super().__init__(c, pool=pool, convs=convs, kernel_size=kernel_size, kernel_initializer=kernel_initializer,
                          bn_mom=bn_mom, bn_eps=bn_eps)
         self.res = []

@@ -83,27 +83,27 @@ def apply_affine_mat(x: tf.Tensor, mat: tf.Tensor, do_reflect: bool = False) -> 
     return x
 
 
-def apply_affine_mats(x: tf.Tensor, mats: List[tf.Tensor], ps: List[float]) -> tf.Tensor:
+def apply_affine_mats(x: tf.Tensor, mats: List[tf.Tensor], ps: List[float], do_reflect: bool = False) -> tf.Tensor:
     m = tf.convert_to_tensor([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]])
 
     for mat, p in zip(mats, ps):
         m = core.random_matmul(m, mat, p)
 
-    return apply_affine_mat(x, m)
+    return apply_affine_mat(x, m, do_reflect)
 
 
-def random_rotate_matrix(max_deg: float = 10) -> tf.Tensor:
+def random_rotate_mat(max_deg: float = 10) -> tf.Tensor:
     deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
     rad = core.deg2rad(deg)
     return tf.convert_to_tensor([[tf.cos(rad), -tf.sin(rad), 0], [tf.sin(rad), tf.cos(rad), 0], [0, 0, 1]])
 
 
-def random_rotate(x: tf.Tensor, max_rot_deg: float = 10) -> tf.Tensor:
-    mat = random_rotate_matrix(max_rot_deg)
-    return apply_affine_mat(x, mat)
+def random_rotate(x: tf.Tensor, max_rot_deg: float = 10, do_reflect: bool = False) -> tf.Tensor:
+    mat = random_rotate_mat(max_rot_deg)
+    return apply_affine_mat(x, mat, do_reflect)
 
 
-def random_zoom_matrix(max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5) -> tf.Tensor:
+def random_zoom_mat(max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5) -> tf.Tensor:
     scale = tf.random_uniform(shape=[], minval=1.0, maxval=max_zoom, dtype=tf.float32)
     s = 1 - 1 / scale
     col_c = s * (2 * col_pct - 1)
@@ -111,34 +111,35 @@ def random_zoom_matrix(max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: flo
     return tf.convert_to_tensor([[1 / scale, 0, col_c], [0, 1 / scale, row_c], [0, 0, 1]])
 
 
-def random_zoom(x: tf.Tensor, max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5) -> tf.Tensor:
-    mat = random_zoom_matrix(max_zoom, row_pct, col_pct)
-    return apply_affine_mat(x, mat)
+def random_zoom(x: tf.Tensor, max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5,
+                do_reflect: bool = False) -> tf.Tensor:
+    mat = random_zoom_mat(max_zoom, row_pct, col_pct)
+    return apply_affine_mat(x, mat, do_reflect)
 
 
-def random_shear_matrix(max_shear_deg: float = 10) -> tf.Tensor:
+def random_shear_mat(max_shear_deg: float = 10) -> tf.Tensor:
     deg = tf.random_uniform(shape=[], minval=-max_shear_deg, maxval=max_shear_deg, dtype=tf.float32)
     rad = core.deg2rad(deg)
     return tf.convert_to_tensor([[1, -tf.sin(rad), 0], [0, tf.cos(rad), 0], [0, 0, 1]])
 
 
-def random_shear(x: tf.Tensor, max_shear_deg: float = 10) -> tf.Tensor:
-    mat = random_shear_matrix(max_shear_deg)
-    return apply_affine_mat(x, mat)
+def random_shear(x: tf.Tensor, max_shear_deg: float = 10, do_reflect: bool = False) -> tf.Tensor:
+    mat = random_shear_mat(max_shear_deg)
+    return apply_affine_mat(x, mat, do_reflect)
 
 
-def random_shift_matrix(wrg: float = 0.1, hrg: float = 0.1) -> tf.Tensor:
+def random_shift_mat(wrg: float = 0.1, hrg: float = 0.1) -> tf.Tensor:
     tx = tf.random_uniform(shape=[], minval=-hrg, maxval=hrg, dtype=tf.float32)
     ty = tf.random_uniform(shape=[], minval=-wrg, maxval=wrg, dtype=tf.float32)
     return tf.convert_to_tensor([[1, 0, tx], [0, 1, ty], [0, 0, 1]])
 
 
-def random_shift(x: tf.Tensor, wrg: float = 0.1, hrg: float = 0.1) -> tf.Tensor:
-    mat = random_shift_matrix(wrg, hrg)
-    return apply_affine_mat(x, mat)
+def random_shift(x: tf.Tensor, wrg: float = 0.1, hrg: float = 0.1, do_reflect: bool = False) -> tf.Tensor:
+    mat = random_shift_mat(wrg, hrg)
+    return apply_affine_mat(x, mat, do_reflect)
 
 
-def random_dihedral_matrix() -> tf.Tensor:
+def random_dihedral_mat() -> tf.Tensor:
     k = tf.random_uniform(shape=[], minval=0, maxval=8, dtype=tf.int32)
     x = tf.bitwise.bitwise_and(k, 1) * -2 + 1
     y = tf.bitwise.bitwise_and(k, 2) * -2 + 1
@@ -150,9 +151,9 @@ def flip_matrix() -> tf.Tensor:
     return tf.convert_to_tensor([[-1, 0, 0.], [0, 1, 0], [0, 0, 1.]])
 
 
-def random_dihedral(x: tf.Tensor) -> tf.Tensor:
-    mat = random_dihedral_matrix()
-    return apply_affine_mat(x, mat)
+def random_dihedral(x: tf.Tensor, do_reflect: bool = False) -> tf.Tensor:
+    mat = random_dihedral_mat()
+    return apply_affine_mat(x, mat, do_reflect)
 
 
 def random_affine_combo(x: tf.Tensor,
@@ -160,18 +161,19 @@ def random_affine_combo(x: tf.Tensor,
                         max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5, p_zoom=0.75,  # zoom
                         max_shear_deg: float = 10, p_shear: float = 0.0,  # shear
                         wrg: float = 0.1, hrg: float = 0.1, p_shift=0.0,  # shift
+                        do_reflect: bool = False,
                         ) -> tf.Tensor:
-    mats = [random_rotate_matrix(max_rot_deg),
-            random_zoom_matrix(max_zoom, row_pct, col_pct),
-            random_shear_matrix(max_shear_deg),
-            random_shift_matrix(wrg, hrg),
+    mats = [random_rotate_mat(max_rot_deg),
+            random_zoom_mat(max_zoom, row_pct, col_pct),
+            random_shear_mat(max_shear_deg),
+            random_shift_mat(wrg, hrg),
             ]
     ps = [p_rot,
           p_zoom,
           p_shear,
           p_shift,
           ]
-    return apply_affine_mats(x, mats, ps)
+    return apply_affine_mats(x, mats, ps, do_reflect)
 
 
 def random_lighting(x: tf.Tensor, max_lighting: float = 0.2) -> tf.Tensor:
@@ -202,18 +204,18 @@ def fastai_transforms(x: tf.Tensor,
 
     if do_flip:
         if flip_vert:
-            mats.append(random_dihedral_matrix())
+            mats.append(random_dihedral_mat())
             ps.append(1.0)
         else:
             mats.append(flip_matrix())
             ps.append(0.5)
 
     if max_rotate:
-        mats.append(random_rotate_matrix(max_rotate))
+        mats.append(random_rotate_mat(max_rotate))
         ps.append(p_affine)
 
     if max_zoom > 1:
-        mats.append(random_zoom_matrix(max_zoom))
+        mats.append(random_zoom_mat(max_zoom))
         ps.append(p_affine)
 
     x = apply_affine_mats(x, mats, ps)

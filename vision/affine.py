@@ -21,7 +21,7 @@ def reflect(x, max_x):
     return x
 
 
-def bilinear_sampler(img: tf.Tensor, x, y, do_reflect: bool = False) -> tf.Tensor:
+def bilinear_sampler(img: tf.Tensor, x, y, do_reflect: bool = True) -> tf.Tensor:
     print(do_reflect)
     img_shape = tf.shape(img)
     H = img_shape[1]
@@ -120,7 +120,7 @@ def affine_grid_generator(H: int, W: int, tfm_mat) -> tf.Tensor:
     return batch_grids
 
 
-def affine_transform(X: tf.Tensor, tfm_mat, out_dims=None, do_reflect: bool = False) -> tf.Tensor:
+def affine_transform(X: tf.Tensor, tfm_mat, out_dims=None, do_reflect: bool = True) -> tf.Tensor:
     X_shape = tf.shape(X)
     B = X_shape[0]
     H = X_shape[1]

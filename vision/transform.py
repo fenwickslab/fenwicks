@@ -84,7 +84,9 @@ def apply_affine_mat(x: tf.Tensor, mat: tf.Tensor, do_reflect: bool = True) -> t
 
 
 def apply_affine_mats(x: tf.Tensor, mats: List[tf.Tensor], ps: List[float], do_reflect: bool = True) -> tf.Tensor:
-    m = tf.convert_to_tensor([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]])
+    m = tf.convert_to_tensor([[1., 0., 0.],
+                              [0., 1., 0.],
+                              [0., 0., 1.]])
 
     for mat, p in zip(mats, ps):
         m = core.random_matmul(m, mat, p)
@@ -95,7 +97,9 @@ def apply_affine_mats(x: tf.Tensor, mats: List[tf.Tensor], ps: List[float], do_r
 def random_rotate_mat(max_deg: float = 10) -> tf.Tensor:
     deg = tf.random_uniform(shape=[], minval=-max_deg, maxval=max_deg, dtype=tf.float32)
     rad = core.deg2rad(deg)
-    return tf.convert_to_tensor([[tf.cos(rad), -tf.sin(rad), 0], [tf.sin(rad), tf.cos(rad), 0], [0, 0, 1]])
+    return tf.convert_to_tensor([[tf.cos(rad), -tf.sin(rad), 0],
+                                 [tf.sin(rad), tf.cos(rad), 0],
+                                 [0, 0, 1]])
 
 
 def random_rotate(x: tf.Tensor, max_rot_deg: float = 10, do_reflect: bool = True) -> tf.Tensor:
@@ -108,11 +112,13 @@ def random_zoom_mat(max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float 
     s = 1 - 1 / scale
     col_c = s * (2 * col_pct - 1)
     row_c = s * (2 * row_pct - 1)
-    return tf.convert_to_tensor([[1 / scale, 0, col_c], [0, 1 / scale, row_c], [0, 0, 1]])
+    return tf.convert_to_tensor([[1 / scale, 0, col_c],
+                                 [0, 1 / scale, row_c],
+                                 [0, 0, 1]])
 
 
 def random_zoom(x: tf.Tensor, max_zoom: float = 1.1, row_pct: float = 0.5, col_pct: float = 0.5,
-                do_reflect: bool = False) -> tf.Tensor:
+                do_reflect: bool = True) -> tf.Tensor:
     mat = random_zoom_mat(max_zoom, row_pct, col_pct)
     return apply_affine_mat(x, mat, do_reflect)
 
@@ -120,7 +126,9 @@ def random_zoom(x: tf.Tensor, max_zoom: float = 1.1, row_pct: float = 0.5, col_p
 def random_shear_mat(max_shear_deg: float = 10) -> tf.Tensor:
     deg = tf.random_uniform(shape=[], minval=-max_shear_deg, maxval=max_shear_deg, dtype=tf.float32)
     rad = core.deg2rad(deg)
-    return tf.convert_to_tensor([[1, -tf.sin(rad), 0], [0, tf.cos(rad), 0], [0, 0, 1]])
+    return tf.convert_to_tensor([[1, -tf.sin(rad), 0],
+                                 [0, tf.cos(rad), 0],
+                                 [0, 0, 1]])
 
 
 def random_shear(x: tf.Tensor, max_shear_deg: float = 10, do_reflect: bool = True) -> tf.Tensor:
@@ -131,7 +139,9 @@ def random_shear(x: tf.Tensor, max_shear_deg: float = 10, do_reflect: bool = Tru
 def random_shift_mat(wrg: float = 0.1, hrg: float = 0.1) -> tf.Tensor:
     tx = tf.random_uniform(shape=[], minval=-hrg, maxval=hrg, dtype=tf.float32)
     ty = tf.random_uniform(shape=[], minval=-wrg, maxval=wrg, dtype=tf.float32)
-    return tf.convert_to_tensor([[1, 0, tx], [0, 1, ty], [0, 0, 1]])
+    return tf.convert_to_tensor([[1, 0, tx],
+                                 [0, 1, ty],
+                                 [0, 0, 1]])
 
 
 def random_shift(x: tf.Tensor, wrg: float = 0.1, hrg: float = 0.1, do_reflect: bool = True) -> tf.Tensor:
@@ -143,17 +153,23 @@ def random_dihedral_mat() -> tf.Tensor:
     k = tf.random_uniform(shape=[], minval=0, maxval=8, dtype=tf.int32)
     x = tf.bitwise.bitwise_and(k, 1) * -2 + 1
     y = tf.bitwise.bitwise_and(k, 2) * -2 + 1
-    return tf.cond(tf.bitwise.bitwise_and(k, 4) > 0, lambda: tf.convert_to_tensor([[0, x, 0.], [y, 0, 0], [0, 0, 1.]]),
-                   lambda: tf.convert_to_tensor([[x, 0, 0.], [0, y, 0], [0, 0, 1.]]))
-
-
-def flip_matrix() -> tf.Tensor:
-    return tf.convert_to_tensor([[-1, 0, 0.], [0, 1, 0], [0, 0, 1.]])
+    return tf.cond(tf.bitwise.bitwise_and(k, 4) > 0, lambda: tf.convert_to_tensor([[0, x, 0.],
+                                                                                   [y, 0, 0],
+                                                                                   [0, 0, 1.]]),
+                   lambda: tf.convert_to_tensor([[x, 0, 0.],
+                                                 [0, y, 0],
+                                                 [0, 0, 1.]]))
 
 
 def random_dihedral(x: tf.Tensor, do_reflect: bool = True) -> tf.Tensor:
     mat = random_dihedral_mat()
     return apply_affine_mat(x, mat, do_reflect)
+
+
+def flip_mat() -> tf.Tensor:
+    return tf.convert_to_tensor([[-1, 0, 0.],
+                                 [0, 1, 0],
+                                 [0, 0, 1.]])
 
 
 def random_affine_combo(x: tf.Tensor,
@@ -207,7 +223,7 @@ def fastai_transforms(x: tf.Tensor,
             mats.append(random_dihedral_mat())
             ps.append(1.0)
         else:
-            mats.append(flip_matrix())
+            mats.append(flip_mat())
             ps.append(0.5)
 
     if max_rotate:

@@ -117,15 +117,15 @@ class BertConfig:
         self.initializer_range = initializer_range
 
     @classmethod
-    def from_dict(cls, json_object):
+    def from_dict(cls, d: Dict):
         config = BertConfig(0)
-        for key, value in json_object.items:
+        for key, value in d.items():
             config.__dict__[key] = value
         return config
 
     @classmethod
-    def from_json_file(cls, json_file):
-        with tf.io.gfile.GFile(json_file, "r") as reader:
+    def from_json_file(cls, cfg_fn: str):
+        with gfile.GFile(cfg_fn, "r") as reader:
             text = reader.read()
         return cls.from_dict(json.loads(text))
 
@@ -266,7 +266,7 @@ def get_bert_tokenizer(bert_model: str = 'uncased_L-12_H-768_A-12') -> tokenizer
     return tokenizer.BertTokenizer(vocab_fn=vocab_fn, do_lower_case=uncased)
 
 
-def get_bert_model(bert_model: str = 'uncased_L-12_H-768_A-12'):
+def get_bert_model_files(bert_model: str = 'uncased_L-12_H-768_A-12') -> Tuple[str, str]:
     bert_ckpt_dir = f'gs://cloud-tpu-checkpoints/bert/{bert_model}'
 
     config_fn = os.path.join(bert_ckpt_dir, 'bert_config.json')

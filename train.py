@@ -68,7 +68,7 @@ def one_cycle_lr(init_lr: float, total_steps: int, warmup_steps: int, decay_sche
         Get the learning rate at the current global step.
         :param step: An optional tensor in place of the global step (used in visualization). Default: None, i.e.,
                      use global step (used in training).
-        :return: Learning rate tensor.
+        :return: learning rate tensor.
         """
 
         if step is None:
@@ -83,6 +83,19 @@ def one_cycle_lr(init_lr: float, total_steps: int, warmup_steps: int, decay_sche
 
 def adam_optimizer(lr_func: Callable, wd: float = None, beta1=0.9, beta2=0.999, epsilon=1e-8,
                    exclude_from_wd: List[int] = None, clip_norm: float = None) -> Callable:
+    """
+    Adam optimizer with the correct weight decay implementation, i.e., AdamW. The weight decay factor is multiplied with
+    the learning rate before applied. This ensures that weight decay follows the same schedule as the learning rate.
+
+    :param lr_func: learning rate schedule function.
+    :param wd: weight decay factor. Default: no weight decay.
+    :param beta1: momentum for gradient. Default: 0.9.
+    :param beta2: momentum for squared gradient. Default: 0.999.
+    :param epsilon: a very small number. Default: 1e-8.
+    :param exclude_from_wd: list of variables on which no weight decay is applied. Default: None.
+    :param clip_norm: gradient norm clipping. Default: no clipping.
+    :return: Adam optimizer function.
+    """
     def opt_func():
         return Adam(lr_func(), wd=wd, beta1=beta1, beta2=beta2, epsilon=epsilon, exclude_from_wd=exclude_from_wd,
                     clip_norm=clip_norm)
@@ -95,9 +108,9 @@ def sgd_optimizer(lr_func: Callable, mom: float = 0.9, wd: float = 0.0) -> Calla
     SGD with Nesterov momentum optimizer with a given learning rate schedule.
 
     :param lr_func: learning rate schedule function.
-    :param mom: momentum for SGD. Default: 0.9
+    :param mom: momentum for gradient. Default: 0.9.
     :param wd: weight decay factor. Default: no weight decay.
-    :return: optimizer function satisfying the above descriptions.
+    :return: SGD optimizer function.
     """
 
     def opt_func():
@@ -107,31 +120,23 @@ def sgd_optimizer(lr_func: Callable, mom: float = 0.9, wd: float = 0.0) -> Calla
     return opt_func
 
 
-def weight_decay_loss(wd: float = 0.0005) -> tf.Tensor:
-    l2_loss = []
-    for v in tf.trainable_variables():
-        if 'BatchNorm' not in v.name and 'weights' in v.name:
-            l2_loss.append(tf.nn.l2_loss(v))
-    return wd * tf.add_n(l2_loss)
-
-
 def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: str = None, ws_vars: List[str] = None,
                       trn_bs: int = 128, val_bs: int = 1, pred_bs: int = 1, use_tpu: bool = True,
                       use_time_in_work_dir: bool = True) -> tf.contrib.tpu.TPUEstimator:
     """
     Create a TPUEstimator object ready for training and evaluation.
 
-    :param steps_per_epoch: Number of training steps for each epoch.
-    :param model_func: Model function for TPUEstimator. Can be built with `get_clf_model_func'.
-    :param work_dir: Directory for storing intermediate files (such as checkpoints) generated during training.
-    :param ws_dir: Directory containing warm start files, usually a pre-trained model checkpoint.
-    :param ws_vars: List of warm start variables, usually from a pre-trained model.
-    :param trn_bs: Batch size for training.
-    :param val_bs: Batch size for validation. Default: all validation records in a single batch.
-    :param pred_bs: Batch size for prediction. Default: 1.
-    :param use_tpu: Whether to use TPU. Default: True.
-    :param use_time_in_work_dir: Whether to use a subdirectory of `work_dir` using current time. Default: True.
-    :return: A TPUEstimator object, for training, evaluation and prediction.
+    :param steps_per_epoch: number of training steps for each epoch.
+    :param model_func: model function for TPUEstimator. Can be built with `get_clf_model_func'.
+    :param work_dir: directory for storing intermediate files (such as checkpoints) generated during training.
+    :param ws_dir: directory containing warm start files, usually a pre-trained model checkpoint.
+    :param ws_vars: list of warm start variables, usually from a pre-trained model.
+    :param trn_bs: batch size for training.
+    :param val_bs: batch size for validation. Default: all validation records in a single batch.
+    :param pred_bs: batch size for prediction. Default: 1.
+    :param use_tpu: whether to use TPU. Default: True.
+    :param use_time_in_work_dir: whether to use a subdirectory of `work_dir` using current time. Default: True.
+    :return: a TPUEstimator object, for training, evaluation and prediction.
     """
 
     use_tpu = use_tpu and (TPU_ADDRESS is not None)
@@ -157,7 +162,7 @@ def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: s
 
 
 def get_clf_model_func(model_arch: Callable, opt_func: Callable, reduction: str = tf.losses.Reduction.MEAN,
-                       use_tpu: bool = True, init_ckpt: str = None) -> Callable:
+                       use_tpu: bool = True, ckpt_fn: str = None) -> Callable:
     """
     Build a model function for a classification task to be used in a TPUEstimator, based on a given model architecture
     and an optimizer. Both the model architecture and optimizer must be callables, not model or optimizer objects. The
@@ -169,7 +174,7 @@ def get_clf_model_func(model_arch: Callable, opt_func: Callable, reduction: str 
     :param reduction: Whether to average (`tf.losses.Reduction.MEAN`) or sum (`tf.losses.Reduction.SUM`) losses
                       for different training records. Default: average.
     :param use_tpu: Whether to use TPU. Default: True.
-    :param init_ckpt: Path to a pre-trained checkpoint. Default: None.
+    :param ckpt_fn: Path to a pre-trained checkpoint. Default: None.
     :return: Model function ready for TPUEstimator.
     """
 
@@ -204,17 +209,17 @@ def get_clf_model_func(model_arch: Callable, opt_func: Callable, reduction: str 
         tpu_metrics = (metric_func, [y_pred, labels])
 
         scaffold_func = None
-        if init_ckpt:
+        if ckpt_fn:
             tvars = tf.trainable_variables()
-            assignment_map = ckpt_assignment_map(tvars, init_ckpt)
+            assignment_map = ckpt_assignment_map(tvars, ckpt_fn)
             if use_tpu:
                 def tpu_scaffold():
-                    tf.train.init_from_checkpoint(init_ckpt, assignment_map)
+                    tf.train.init_from_checkpoint(ckpt_fn, assignment_map)
                     return tf.train.Scaffold()
 
                 scaffold_func = tpu_scaffold
             else:
-                tf.train.init_from_checkpoint(init_ckpt, assignment_map)
+                tf.train.init_from_checkpoint(ckpt_fn, assignment_map)
 
         return tf.contrib.tpu.TPUEstimatorSpec(mode=mode, loss=loss, predictions={"y_pred": y_pred},
                                                train_op=train_op, scaffold_fn=scaffold_func, eval_metrics=tpu_metrics)
@@ -222,12 +227,12 @@ def get_clf_model_func(model_arch: Callable, opt_func: Callable, reduction: str 
     return model_func
 
 
-def ckpt_assignment_map(tvars: List, ckpg: str) -> Dict:
+def ckpt_assignment_map(tvars: List, ckpt_fn: str) -> Dict:
     """
     Compute the union of the current variables and checkpoint variables.
 
     :param tvars: List of trainable variables.
-    :param ckpg: Path to checkpoint file.
+    :param ckpt_fn: Path to checkpoint file.
     :return: Assignment map and list of initialized variable names.
     """
     initialized_variable_names = {}
@@ -240,7 +245,7 @@ def ckpt_assignment_map(tvars: List, ckpg: str) -> Dict:
             name = m.group(1)
         name_to_variable[name] = var
 
-    init_vars = tf.train.list_variables(ckpg)
+    init_vars = tf.train.list_variables(ckpt_fn)
 
     assignment_map = collections.OrderedDict()
     for x in init_vars:

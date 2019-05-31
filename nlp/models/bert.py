@@ -2,7 +2,6 @@ from ...imports import *
 
 import collections
 import copy
-import json
 
 from .. import tokenizer
 
@@ -236,21 +235,11 @@ def get_tokenizer(model_name: str = 'uncased_L-12_H-768_A-12') -> tokenizer.Bert
     return tokenizer.BertTokenizer(vocab_fn=vocab_fn, do_lower_case=uncased)
 
 
-def cfg_from_json(cfg_fn: str) -> BertConfig:
-    with gfile.GFile(cfg_fn, "r") as reader:
-        text = reader.read()
-    d = json.loads(text)
-    cfg = BertConfig()
-    for key, value in d.items():
-        cfg.__dict__[key] = value
-    return cfg
-
-
 def get_bert_model(model_name: str = 'uncased_L-12_H-768_A-12') -> Tuple[BertConfig, str, tokenizer.BertTokenizer]:
     ckpt_dir = f'gs://cloud-tpu-checkpoints/bert/{model_name}'
     cfg_fn = os.path.join(ckpt_dir, 'bert_config.json')
     ckpt_fn = os.path.join(ckpt_dir, 'bert_model.ckpt')
 
-    cfg = cfg_from_json(cfg_fn)
+    cfg = core.from_json(BertConfig, cfg_fn)
     tokenizer = get_tokenizer(model_name)
     return cfg, ckpt_fn, tokenizer

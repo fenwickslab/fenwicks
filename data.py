@@ -416,11 +416,11 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = Tru
     return dataset
 
 
-def numpy_ds(xs: Union[np.ndarray, List], ys: Union[np.ndarray, List], batch_size: int, training: bool = True,
+def numpy_ds(xs: Union[np.ndarray, Dict, List], ys: Union[np.ndarray, List], batch_size: int, training: bool = True,
              shuffle_buf_sz: int = 50000, n_folds: int = 1, val_fold_idx: int = 0) -> tf.data.Dataset:
     """
-    Create a `tf.data` input pipeline from numpy arrays `x` and `y`. Optionally partitions the data into training and
-    validation sets according to k-fold cross validation requirements.
+    Create a `tf.data` input pipeline from Python objects, which can be numpy arrays, lists or dictionaries. Optionally
+    partitions the data into training and validation sets according to k-fold cross validation requirements.
 
     :param xs: Data attributes, such as images.
     :param ys: Data labels.

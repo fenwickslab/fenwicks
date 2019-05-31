@@ -7,6 +7,7 @@ from . import vision
 from . import core
 
 from .utils import colab as colab_utils
+from .utils import jupyter as jupyter_utils
 
 from .vision.models import keras_models
 from .vision import transform

@@ -93,7 +93,7 @@ def create_attention_mask(src: tf.Tensor, dest_mask: tf.Tensor):
 
 
 class BertConfig:
-    def __init__(self, vocab_size: int, hidden_size: int = 768, num_hidden_layers: int = 12,
+    def __init__(self, vocab_size: int = 0, hidden_size: int = 768, num_hidden_layers: int = 12,
                  num_attention_heads: int = 12, intermediate_size: int = 3072, hidden_dropout_prob: float = 0.1,
                  attention_probs_dropout_prob: float = 0.1, max_position_embeddings: int = 512,
                  type_vocab_size: int = 16):
@@ -107,19 +107,6 @@ class BertConfig:
         self.max_position_embeddings = max_position_embeddings
         self.type_vocab_size = type_vocab_size
 
-    @classmethod
-    def from_dict(cls, d: Dict):
-        config = BertConfig(0)
-        for key, value in d.items():
-            config.__dict__[key] = value
-        return config
-
-    @classmethod
-    def from_json_file(cls, cfg_fn: str):
-        with gfile.GFile(cfg_fn, "r") as reader:
-            text = reader.read()
-        return cls.from_dict(json.loads(text))
-
 
 class BertModel(tf.keras.Model):
     def __init__(self, config: BertConfig, one_hot_in_word_emb: bool = False):
@@ -127,14 +114,14 @@ class BertModel(tf.keras.Model):
         self.config = copy.deepcopy(config)
         self.one_hot_in_word_emb = one_hot_in_word_emb
 
-    def call(self, x: List[tf.Tensor], *args, **kw_args) -> tf.Tensor:
+    def call(self, x: Dict[str, tf.Tensor], *args, **kw_args) -> tf.Tensor:
         config = self.config
         if tf.keras.backend.learning_phase() == 0:
             config.hidden_dropout_prob = 0.0
             config.attention_probs_dropout_prob = 0.0
 
-        input_ids = x[0]
-        input_mask = x[1]
+        input_ids = x['token_ids']
+        input_mask = x['masks']
 
         input_shape = core.get_shape_list(input_ids)
         batch_size, seq_length = input_shape[0], input_shape[1]
@@ -239,8 +226,8 @@ def download_bert_vocab(bert_model: str = 'uncased_L-12_H-768_A-12') -> str:
         bert_module = hub.Module(bert_model_hub)
         tokenization_info = bert_module(signature="tokenization_info", as_dict=True)
         with tf.Session() as sess:
-            vocab_file = sess.run(tokenization_info["vocab_file"])
-    return vocab_file
+            vocab_fn = sess.run(tokenization_info["vocab_file"])
+    return vocab_fn
 
 
 def get_bert_tokenizer(bert_model: str = 'uncased_L-12_H-768_A-12') -> tokenizer.BertTokenizer:
@@ -249,9 +236,22 @@ def get_bert_tokenizer(bert_model: str = 'uncased_L-12_H-768_A-12') -> tokenizer
     return tokenizer.BertTokenizer(vocab_fn=vocab_fn, do_lower_case=uncased)
 
 
-def get_bert_model_files(bert_model: str = 'uncased_L-12_H-768_A-12') -> Tuple[str, str]:
+def bert_cfg_from_json(cfg_fn: str) -> BertConfig:
+    with gfile.GFile(cfg_fn, "r") as reader:
+        text = reader.read()
+    d = json.loads(text)
+    cfg = BertConfig()
+    for key, value in d.items():
+        cfg.__dict__[key] = value
+    return cfg
+
+
+def get_bert_model(bert_model: str = 'uncased_L-12_H-768_A-12') -> Tuple[BertConfig, str, tokenizer.BertTokenizer]:
     bert_ckpt_dir = f'gs://cloud-tpu-checkpoints/bert/{bert_model}'
 
-    config_fn = os.path.join(bert_ckpt_dir, 'bert_config.json')
+    cfg_fn = os.path.join(bert_ckpt_dir, 'bert_config.json')
     ckpt_fn = os.path.join(bert_ckpt_dir, 'bert_model.ckpt')
-    return config_fn, ckpt_fn
+
+    cfg = bert_cfg_from_json(cfg_fn)
+    tokenizer = get_bert_tokenizer(bert_model)
+    return cfg, ckpt_fn, tokenizer

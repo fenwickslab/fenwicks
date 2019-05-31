@@ -11,8 +11,7 @@ from ... import layers
 
 def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, num_hidden_layers=12, n_heads: int = 12,
                 ff_c: int = 3072, ff_act: Callable = F.gelu, hidden_dropout_prob: float = 0.1,
-                attn_dropout_prob: float = 0.1, initializer_range: float = 0.02,
-                return_all_layers: bool = False) -> Union[List[tf.Tensor], tf.Tensor]:
+                attn_dropout_prob: float = 0.1, return_all_layers: bool = False) -> Union[List[tf.Tensor], tf.Tensor]:
     input_shape = core.get_shape_list(x)  # [bs, seq_len, c]
     x_2d = core.reshape_to_matrix(x)
 
@@ -25,22 +24,19 @@ def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, num_hid
             with tf.variable_scope("attention"):
                 with tf.variable_scope("self"):
                     attn_h = layers.attention(src=x_2d, dest=x_2d, mask=attn_mask, n_heads=n_heads, c=attn_c,
-                                              dropout_prob=attn_dropout_prob, initializer_range=initializer_range,
-                                              return_2d=True, bs=bs, src_len=seq_len, dest_len=seq_len)
+                                              dropout_prob=attn_dropout_prob, return_2d=True, bs=bs, src_len=seq_len,
+                                              dest_len=seq_len)
 
                 with tf.variable_scope("output"):
-                    attn_h = tf.layers.dense(attn_h, c, kernel_initializer=tf.truncated_normal_initializer(
-                        stddev=initializer_range))
+                    attn_h = tf.layers.dense(attn_h, c)
                     attn_h = F.dropout(attn_h, hidden_dropout_prob)
                     attn_h = layers.layer_norm(attn_h + x_2d)
 
             with tf.variable_scope("intermediate"):
-                ff_h = tf.layers.dense(attn_h, ff_c, activation=ff_act,
-                                       kernel_initializer=tf.truncated_normal_initializer(stddev=initializer_range))
+                ff_h = tf.layers.dense(attn_h, ff_c, activation=ff_act)
 
             with tf.variable_scope("output"):
-                h = tf.layers.dense(ff_h, c, kernel_initializer=tf.truncated_normal_initializer(
-                    stddev=initializer_range))
+                h = tf.layers.dense(ff_h, c)
                 h = F.dropout(h, hidden_dropout_prob)
                 h = layers.layer_norm(h + attn_h)
                 x_2d = h
@@ -50,15 +46,13 @@ def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, num_hid
     return list(map(reshape_func, all_layer_outputs)) if return_all_layers else reshape_func(x_2d)
 
 
-def word_emb(x: tf.Tensor, vocab_size: int, c: int = 768, initializer_range: float = 0.02, one_hot: bool = False) -> \
-        Tuple[tf.Tensor, tf.Variable]:
+def word_emb(x: tf.Tensor, vocab_size: int, c: int = 768, one_hot: bool = False) -> tf.Tensor:
     if x.shape.ndims == 2:
         x = tf.expand_dims(x, axis=[-1])  # todo: change input_shape instead of reshape
     input_shape = core.get_shape_list(x)
     x_flat = tf.reshape(x, [-1])
 
-    embedding_table = tf.get_variable(name="word_embeddings", shape=[vocab_size, c],
-                                      initializer=tf.truncated_normal_initializer(stddev=initializer_range))
+    embedding_table = tf.get_variable(name="word_embeddings", shape=[vocab_size, c])
 
     if one_hot:
         one_hot_input_ids = tf.one_hot(x_flat, depth=vocab_size)
@@ -67,24 +61,22 @@ def word_emb(x: tf.Tensor, vocab_size: int, c: int = 768, initializer_range: flo
         x = tf.gather(embedding_table, x_flat)
 
     x = tf.reshape(x, input_shape[0:-1] + [input_shape[-1] * c])
-    return x, embedding_table
+    return x
 
 
-def token_type_pos_emb(x: tf.Tensor, token_type_ids: tf.Tensor, token_type_vocab_size: int = 16,
-                       initializer_range: float = 0.02, max_seq_len: int = 512, dropout_prob: float = 0.1):
+def token_type_pos_emb(x: tf.Tensor, token_type_ids: tf.Tensor, token_type_vocab_size: int = 16, max_seq_len: int = 512,
+                       dropout_prob: float = 0.1):
     input_shape = core.get_shape_list(x)
     bs, seq_len, c = input_shape[0], input_shape[1], input_shape[2]
 
-    token_type_table = tf.get_variable(name="token_type_embeddings", shape=[token_type_vocab_size, c],
-                                       initializer=tf.truncated_normal_initializer(stddev=initializer_range))
+    token_type_table = tf.get_variable(name="token_type_embeddings", shape=[token_type_vocab_size, c])
     flat_token_type_ids = tf.reshape(token_type_ids, [-1])
     one_hot_ids = tf.one_hot(flat_token_type_ids, depth=token_type_vocab_size)
     token_type_emb = tf.matmul(one_hot_ids, token_type_table)
     token_type_emb = tf.reshape(token_type_emb, [bs, seq_len, c])
     x += token_type_emb
 
-    full_pos_emb = tf.get_variable(name="position_embeddings", shape=[max_seq_len, c],
-                                   initializer=tf.truncated_normal_initializer(stddev=initializer_range))
+    full_pos_emb = tf.get_variable(name="position_embeddings", shape=[max_seq_len, c])
     pos_emb = tf.slice(full_pos_emb, [0, 0], [seq_len, -1])
     x += pos_emb
     return layers.layer_norm_and_dropout(x, dropout_prob)
@@ -104,7 +96,7 @@ class BertConfig:
     def __init__(self, vocab_size: int, hidden_size: int = 768, num_hidden_layers: int = 12,
                  num_attention_heads: int = 12, intermediate_size: int = 3072, hidden_dropout_prob: float = 0.1,
                  attention_probs_dropout_prob: float = 0.1, max_position_embeddings: int = 512,
-                 type_vocab_size: int = 16, initializer_range: float = 0.02):
+                 type_vocab_size: int = 16):
         self.vocab_size = vocab_size
         self.hidden_size = hidden_size
         self.num_hidden_layers = num_hidden_layers
@@ -114,7 +106,6 @@ class BertConfig:
         self.attention_probs_dropout_prob = attention_probs_dropout_prob
         self.max_position_embeddings = max_position_embeddings
         self.type_vocab_size = type_vocab_size
-        self.initializer_range = initializer_range
 
     @classmethod
     def from_dict(cls, d: Dict):
@@ -154,35 +145,27 @@ class BertModel(tf.keras.Model):
 
         with tf.variable_scope("bert"):
             with tf.variable_scope("embeddings"):
-                embedding_output, embedding_table = word_emb(input_ids, vocab_size=config.vocab_size,
-                                                             c=config.hidden_size,
-                                                             initializer_range=config.initializer_range,
-                                                             one_hot=self.one_hot_in_word_emb)
+                h = word_emb(input_ids, vocab_size=config.vocab_size, c=config.hidden_size,
+                             one_hot=self.one_hot_in_word_emb)
 
-                embedding_output = token_type_pos_emb(embedding_output, token_type_ids=token_type_ids,
-                                                      token_type_vocab_size=config.type_vocab_size,
-                                                      initializer_range=config.initializer_range,
-                                                      max_seq_len=config.max_position_embeddings,
-                                                      dropout_prob=config.hidden_dropout_prob)
+                h = token_type_pos_emb(h, token_type_ids=token_type_ids, token_type_vocab_size=config.type_vocab_size,
+                                       max_seq_len=config.max_position_embeddings,
+                                       dropout_prob=config.hidden_dropout_prob)
 
             with tf.variable_scope("encoder"):
                 attn_mask = create_attention_mask(input_ids, input_mask)  # [batch_size, seq_length, seq_length]
 
-                all_encoder_layers = transformer(embedding_output, attn_mask=attn_mask, c=config.hidden_size,
+                all_encoder_layers = transformer(h, attn_mask=attn_mask, c=config.hidden_size,
                                                  num_hidden_layers=config.num_hidden_layers,
                                                  n_heads=config.num_attention_heads, ff_c=config.intermediate_size,
-                                                 ff_act=F.gelu,
-                                                 hidden_dropout_prob=config.hidden_dropout_prob,
+                                                 ff_act=F.gelu, hidden_dropout_prob=config.hidden_dropout_prob,
                                                  attn_dropout_prob=config.attention_probs_dropout_prob,
-                                                 initializer_range=config.initializer_range,
                                                  return_all_layers=True)
             sequence_output = all_encoder_layers[-1]  # [batch_size, seq_length, hidden_size].
 
             with tf.variable_scope("pooler"):
                 first_token = tf.squeeze(sequence_output[:, 0:1, :], axis=1)
-                pooled_output = tf.layers.dense(first_token, config.hidden_size, activation=tf.tanh,
-                                                kernel_initializer=tf.truncated_normal_initializer(
-                                                    stddev=config.initializer_range))
+                pooled_output = tf.layers.dense(first_token, config.hidden_size, activation=tf.tanh)
 
         return pooled_output
 

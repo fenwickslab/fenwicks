@@ -190,20 +190,11 @@ class FastAiHead(Sequential):
         self.add(Classifier(n_classes, kernel_initializer=PYTORCH_PARAMS['kernel_initializer']))
 
 
-def check_model(build_nn: Callable, h: int, w: int) -> tf.Tensor:
-    model = build_nn()
-    shape = [1, h, w, 3]
-    test_input = tf.random.uniform(shape, minval=0, maxval=1)
-    test_output = model(test_input)
-    return test_output
-
-
 def attention(src: tf.Tensor, dest: tf.Tensor, mask: tf.Tensor = None, n_heads: int = 1, c: int = 512,
-              dropout_prob: float = 0.0, initializer_range: float = 0.02, return_2d: bool = False, bs: int = None,
-              src_len: int = None, dest_len: int = None) -> tf.Tensor:
+              dropout_prob: float = 0.0, return_2d: bool = False, bs: int = None, src_len: int = None,
+              dest_len: int = None) -> tf.Tensor:
     def qkv(x, name: str, seq_len):
-        x = tf.layers.dense(x, n_heads * c, name=name,
-                            kernel_initializer=tf.truncated_normal_initializer(stddev=initializer_range))
+        x = tf.layers.dense(x, n_heads * c, name=name)
         return tf.transpose(tf.reshape(x, [bs, seq_len, n_heads, c]), [0, 2, 1, 3])
 
     from_shape = core.get_shape_list(src)
@@ -235,7 +226,6 @@ def attention(src: tf.Tensor, dest: tf.Tensor, mask: tf.Tensor = None, n_heads: 
     return tf.reshape(context, ret_shape)
 
 
-# todo: tf 2.0
 def layer_norm(input_tensor, name=None):
     return tf.contrib.layers.layer_norm(
         inputs=input_tensor, begin_norm_axis=-1, begin_params_axis=-1, scope=name)

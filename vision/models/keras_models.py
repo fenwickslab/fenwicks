@@ -92,3 +92,11 @@ def get_model(model_name: str, bucket: str, model_dir: str = None, include_top: 
     params = dict(**models[model_name], model_dir=model_dir, include_top=include_top, pooling=pooling,
                   overwrite=overwrite)
     return get_keras_model(**params)
+
+
+def check_model(build_nn: Callable, h: int, w: int) -> tf.Tensor:
+    model = build_nn()
+    shape = [1, h, w, 3]
+    test_input = tf.random.uniform(shape, minval=0, maxval=1)
+    test_output = model(test_input)
+    return test_output

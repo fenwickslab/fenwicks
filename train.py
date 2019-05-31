@@ -96,6 +96,7 @@ def adam_optimizer(lr_func: Callable, wd: float = None, beta1=0.9, beta2=0.999, 
     :param clip_norm: gradient norm clipping. Default: no clipping.
     :return: Adam optimizer function.
     """
+
     def opt_func():
         return Adam(lr_func(), wd=wd, beta1=beta1, beta2=beta2, epsilon=epsilon, exclude_from_wd=exclude_from_wd,
                     clip_norm=clip_norm)
@@ -227,7 +228,7 @@ def get_clf_model_func(model_arch: Callable, opt_func: Callable, reduction: str 
     return model_func
 
 
-def ckpt_assignment_map(tvars: List, ckpt_fn: str) -> Dict:
+def ckpt_assignment_map(tvars: List[tf.Variable], ckpt_fn: str) -> Dict:
     """
     Compute the union of the current variables and checkpoint variables.
 
@@ -239,10 +240,7 @@ def ckpt_assignment_map(tvars: List, ckpt_fn: str) -> Dict:
 
     name_to_variable = collections.OrderedDict()
     for var in tvars:
-        name = var.name
-        m = re.match("^(.*):\\d+$", name)
-        if m is not None:
-            name = m.group(1)
+        name = core.get_variable_name(var)
         name_to_variable[name] = var
 
     init_vars = tf.train.list_variables(ckpt_fn)

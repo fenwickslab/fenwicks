@@ -1,3 +1,5 @@
+import re
+
 import tensorflow as tf
 import numpy as np
 import random
@@ -113,3 +115,11 @@ def convert_by_dict(d: Dict, items: List) -> List:
 
 def get_node_names() -> List[str]:
     return [n.name for n in tf.get_default_graph().as_graph_def().node]
+
+
+def get_variable_name(var: tf.Variable) -> str:
+    param_name = var.name
+    m = re.match("^(.*):\\d+$", param_name)
+    if m is not None:
+        param_name = m.group(1)
+    return param_name

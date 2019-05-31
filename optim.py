@@ -1,14 +1,11 @@
 from .imports import *
 
 
-def get_variable_name(param_name: str) -> str:
-    m = re.match("^(.*):\\d+$", param_name)
-    if m is not None:
-        param_name = m.group(1)
-    return param_name
-
-
 class SGD(tf.train.MomentumOptimizer):
+    """
+    Stochastic Gradient Descent optimizer with weight decay.
+    """
+
     def __init__(self, lr: tf.Tensor, mom: float, wd: float):
         super().__init__(lr, momentum=mom, use_nesterov=True)
         self.wd = wd
@@ -27,6 +24,10 @@ class SGD(tf.train.MomentumOptimizer):
 
 
 class Adam(tf.train.AdamOptimizer):
+    """
+    Adam optimizer with weight decay (i.e., AdamW) and gradient norm clipping.
+    """
+
     def __init__(self, lr: Union[float, tf.Tensor] = 0.001, wd: float = None, beta1: float = 0.9, beta2: float = 0.999,
                  epsilon: float = 1e-8, exclude_from_wd: List[str] = None, clip_norm: float = None):
         super().__init__(learning_rate=lr, beta1=beta1, beta2=beta2, epsilon=epsilon)
@@ -46,8 +47,8 @@ class Adam(tf.train.AdamOptimizer):
 
         return zip(gs, vs)
 
-    def _apply_dense(self, grad, var):
-        if not self._do_use_wd(get_variable_name(var.name)):
+    def _apply_dense(self, grad: tf.Tensor, var: tf.Variable) -> tf.Operation:
+        if not self._do_use_wd(core.get_variable_name(var)):
             return super()._apply_dense(grad, var)
 
         m = self.get_slot(var, "m")

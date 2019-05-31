@@ -82,11 +82,11 @@ def bilinear_sampler(img: tf.Tensor, x: tf.Tensor, y: tf.Tensor, do_reflect: boo
     return tf.add_n([wa * Ia, wb * Ib, wc * Ic, wd * Id])
 
 
-def affine_grid_generator(H: int, W: int, tfm_mat: tf.Tensor) -> tf.Tensor:
+def affine_grid_generator(h: int, w: int, tfm_mat: tf.Tensor) -> tf.Tensor:
     B = tf.shape(tfm_mat)[0]
 
-    x = tf.linspace(-1.0, 1.0, W)
-    y = tf.linspace(-1.0, 1.0, H)
+    x = tf.linspace(-1.0, 1.0, w)
+    y = tf.linspace(-1.0, 1.0, h)
     x_t, y_t = tf.meshgrid(x, y)
 
     x_t_flat = tf.reshape(x_t, [-1])
@@ -109,7 +109,7 @@ def affine_grid_generator(H: int, W: int, tfm_mat: tf.Tensor) -> tf.Tensor:
     # batch grid has shape (B, 2, H*W)
 
     # reshape to (B, H, W, 2)
-    batch_grids = tf.reshape(batch_grids, [B, 2, H, W])
+    batch_grids = tf.reshape(batch_grids, [B, 2, h, w])
 
     return batch_grids
 

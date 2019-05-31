@@ -121,7 +121,7 @@ class BertModel(tf.keras.Model):
             config.attention_probs_dropout_prob = 0.0
 
         input_ids = x['token_ids']
-        input_mask = x['masks']
+        input_mask = x['mask']
 
         input_shape = core.get_shape_list(input_ids)
         batch_size, seq_length = input_shape[0], input_shape[1]
@@ -219,8 +219,8 @@ def unreachable_ops(graph, outputs):
     return results
 
 
-def download_bert_vocab(bert_model: str = 'uncased_L-12_H-768_A-12') -> str:
-    bert_model_hub = f'https://tfhub.dev/google/bert_{bert_model}/1'
+def download_vocab(model_name: str = 'uncased_L-12_H-768_A-12') -> str:
+    bert_model_hub = f'https://tfhub.dev/google/bert_{model_name}/1'
     with tf.Graph().as_default():
         import tensorflow_hub as hub
         bert_module = hub.Module(bert_model_hub)
@@ -230,13 +230,13 @@ def download_bert_vocab(bert_model: str = 'uncased_L-12_H-768_A-12') -> str:
     return vocab_fn
 
 
-def get_bert_tokenizer(bert_model: str = 'uncased_L-12_H-768_A-12') -> tokenizer.BertTokenizer:
-    vocab_fn = download_bert_vocab(bert_model)
-    uncased = bert_model.startswith('uncased')
+def get_tokenizer(model_name: str = 'uncased_L-12_H-768_A-12') -> tokenizer.BertTokenizer:
+    vocab_fn = download_vocab(model_name)
+    uncased = model_name.startswith('uncased')
     return tokenizer.BertTokenizer(vocab_fn=vocab_fn, do_lower_case=uncased)
 
 
-def bert_cfg_from_json(cfg_fn: str) -> BertConfig:
+def cfg_from_json(cfg_fn: str) -> BertConfig:
     with gfile.GFile(cfg_fn, "r") as reader:
         text = reader.read()
     d = json.loads(text)
@@ -246,12 +246,11 @@ def bert_cfg_from_json(cfg_fn: str) -> BertConfig:
     return cfg
 
 
-def get_bert_model(bert_model: str = 'uncased_L-12_H-768_A-12') -> Tuple[BertConfig, str, tokenizer.BertTokenizer]:
-    bert_ckpt_dir = f'gs://cloud-tpu-checkpoints/bert/{bert_model}'
+def get_bert_model(model_name: str = 'uncased_L-12_H-768_A-12') -> Tuple[BertConfig, str, tokenizer.BertTokenizer]:
+    ckpt_dir = f'gs://cloud-tpu-checkpoints/bert/{model_name}'
+    cfg_fn = os.path.join(ckpt_dir, 'bert_config.json')
+    ckpt_fn = os.path.join(ckpt_dir, 'bert_model.ckpt')
 
-    cfg_fn = os.path.join(bert_ckpt_dir, 'bert_config.json')
-    ckpt_fn = os.path.join(bert_ckpt_dir, 'bert_model.ckpt')
-
-    cfg = bert_cfg_from_json(cfg_fn)
-    tokenizer = get_bert_tokenizer(bert_model)
+    cfg = cfg_from_json(cfg_fn)
+    tokenizer = get_tokenizer(model_name)
     return cfg, ckpt_fn, tokenizer

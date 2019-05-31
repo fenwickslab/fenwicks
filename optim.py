@@ -45,7 +45,7 @@ class Adam(tf.train.AdamOptimizer):
         if self.clip_norm is not None:
             gs, _ = tf.clip_by_global_norm(gs, clip_norm=self.clip_norm)
 
-        if not self.wd:
+        if self.wd is None:
             return zip(gs, vs)
 
         grads_and_vars = []

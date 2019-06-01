@@ -236,3 +236,11 @@ def from_json(data_cls_func: Callable, json_fn: str):
     for k, v in d.items():
         data.__dict__[k] = v
     return data
+
+
+def csv_head(fn: str, nrows: int = 10, sep: str = ',') -> pd.DataFrame:
+    return pd.read_csv(fn, sep=sep, nrows=nrows)
+
+
+def tsv_head(fn: str, nrows: int = 10) -> pd.DataFrame:
+    return csv_head(fn, nrows, sep='\t')

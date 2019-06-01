@@ -1,5 +1,6 @@
 import re
 
+import numpy
 import tensorflow as tf
 import numpy as np
 import random
@@ -123,3 +124,16 @@ def get_variable_name(var: tf.Variable) -> str:
     if m is not None:
         param_name = m.group(1)
     return param_name
+
+
+def numpy_pad_before(x: np.ndarray, target_len: int) -> np.ndarray:
+    """
+    Pad zeros before an array to a target length. Clip the input array if it's already too long.
+
+    :param x: input array.
+    :param target_len: target length.
+    :return: clipped / padded array.
+    """
+    x = x[:target_len]
+    x = np.concatenate([np.zeros([target_len - len(x)], dtype=np.int32), x])
+    return x

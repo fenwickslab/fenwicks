@@ -143,9 +143,8 @@ def get_tpu_estimator(steps_per_epoch: int, model_func, work_dir: str, ws_dir: s
     use_tpu = use_tpu and (TPU_ADDRESS is not None)
     cluster = tf.contrib.cluster_resolver.TPUClusterResolver(TPU_ADDRESS) if use_tpu else None
 
-    tpu_cfg = tf.contrib.tpu.TPUConfig(
-        iterations_per_loop=steps_per_epoch,
-        per_host_input_for_training=tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2)
+    tpu_cfg = tf.contrib.tpu.TPUConfig(iterations_per_loop=steps_per_epoch,
+                                       per_host_input_for_training=tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2)
 
     if use_time_in_work_dir:
         now = datetime.datetime.now()
@@ -206,7 +205,7 @@ def get_clf_model_func(model_arch: Callable, opt_func: Callable, reduction: str 
             with tf.control_dependencies(model.get_updates_for(features)):
                 train_op = opt.apply_gradients(grads_and_vars, global_step=step)
 
-        metric_func = lambda y_pred, labels: {'accuracy': tf.metrics.accuracy(y_pred, labels)}
+        metric_func = lambda y_pred, labels: {'accuracy': tf.metrics.accuracy(labels, y_pred)}
         tpu_metrics = (metric_func, [y_pred, labels])
 
         scaffold_func = None

@@ -6,8 +6,6 @@ import unicodedata
 from .. import core
 from . import text
 
-TextFeat = collections.namedtuple('TextFeat', ['input_ids', 'input_mask'])
-
 
 def load_vocab(vocab_fn: str) -> Dict:
     vocab = collections.OrderedDict()
@@ -193,10 +191,7 @@ class BertTokenizer:
         total_len = len(tokens_a) + len(tokens_b)
         while total_len > max_seq_len - 3:  # [CLS], [SEP], [SEP]
             total_len -= 1
-            if len(tokens_a) > len(tokens_b):
-                tokens_a.pop()
-            else:
-                tokens_b.pop()
+            _ = tokens_a.pop() if len(tokens_a) > len(tokens_b) else tokens_b.pop()
 
         tokens = ["[CLS]"] + tokens_a + ["[SEP]"] + tokens_b + ["[SEP]"]
         input_ids = self.tokens_to_ids(tokens)

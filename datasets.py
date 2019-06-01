@@ -30,7 +30,7 @@ class URLs:
     KAGGLE_BONE_AGE = f'{KAGGLE_DATASETS_DOWNLOAD}kmader/rsna-bone-age'
     KAGGLE_PNEUMONIA = f'{KAGGLE_DATASETS_DOWNLOAD}paultimothymooney/chest-xray-pneumonia'
 
-    GLUE = 'https://firebasestorage.googleapis.com/v0/b/mtl-sentence-representations.appspot.com/o/data/'
+    GLUE = 'https://firebasestorage.googleapis.com/v0/b/mtl-sentence-representations.appspot.com/o/data%2F'
     GLUE_COLA = f'{GLUE}CoLA.zip?alt=media&token=46d5e637-3411-4188-bc44-5809b5bfb5f4'
     GLUE_MRPC = f'{GLUE}mrpc_dev_ids.tsv?alt=media&token=ec5c0836-31d5-48f4-b431-7480817f1adc'
 

@@ -1,5 +1,6 @@
 from .imports import *
 
+import json
 import urllib.request
 
 from tqdm import tqdm_notebook
@@ -213,7 +214,6 @@ def get_project_dirs(root_dir: str, project: str) -> Tuple[str, str]:
     return data_dir, work_dir
 
 
-# todo: gcs_path is a dir
 def upload_to_gcs(local_path: str, gcs_path: str):
     """
     Upload a local file to Google Cloud Storage, if it doesn't already exist on GCS.
@@ -226,3 +226,13 @@ def upload_to_gcs(local_path: str, gcs_path: str):
         gfile.copy(local_path, gcs_path)
     else:
         tf.logging.info('Output file already exists. Skipping.')
+
+
+def from_json(data_cls_func: Callable, json_fn: str):
+    with gfile.GFile(json_fn, "r") as reader:
+        text = reader.read()
+    d = json.loads(text)
+    data = data_cls_func()
+    for k, v in d.items():
+        data.__dict__[k] = v
+    return data

@@ -6,9 +6,10 @@ import copy
 from .. import tokenizer
 
 from ... import layers
+from ... import io
 
 
-def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, num_hidden_layers=12, n_heads: int = 12,
+def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, n_hidden_layers=12, n_heads: int = 12,
                 ff_c: int = 3072, ff_act: Callable = F.gelu, hidden_dropout_prob: float = 0.1,
                 attn_dropout_prob: float = 0.1, return_all_layers: bool = False) -> Union[List[tf.Tensor], tf.Tensor]:
     input_shape = core.get_shape_list(x)  # [bs, seq_len, c]
@@ -18,7 +19,7 @@ def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, num_hid
     bs, seq_len = input_shape[0], input_shape[1]
 
     all_layer_outputs = []
-    for layer_idx in range(num_hidden_layers):
+    for layer_idx in range(n_hidden_layers):
         with tf.variable_scope(f"layer_{layer_idx}"):
             with tf.variable_scope("attention"):
                 with tf.variable_scope("self"):
@@ -124,7 +125,8 @@ class BertModel(tf.keras.Model):
 
         input_shape = core.get_shape_list(input_ids)
         batch_size, seq_length = input_shape[0], input_shape[1]
-        token_type_ids = x[2] if len(x) > 2 else tf.ones(shape=[batch_size, seq_length], dtype=tf.int32)
+        token_type_ids = x['token_type_ids'] if 'token_type_ids' in x else tf.ones(shape=[batch_size, seq_length],
+                                                                                   dtype=tf.int32)
 
         if token_type_ids is None:
             token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
@@ -142,9 +144,9 @@ class BertModel(tf.keras.Model):
                 attn_mask = create_attention_mask(input_ids, input_mask)  # [batch_size, seq_length, seq_length]
 
                 all_encoder_layers = transformer(h, attn_mask=attn_mask, c=config.hidden_size,
-                                                 num_hidden_layers=config.num_hidden_layers,
+                                                 n_hidden_layers=config.num_hidden_layers,
                                                  n_heads=config.num_attention_heads, ff_c=config.intermediate_size,
-                                                 ff_act=F.gelu, hidden_dropout_prob=config.hidden_dropout_prob,
+                                                 hidden_dropout_prob=config.hidden_dropout_prob,
                                                  attn_dropout_prob=config.attention_probs_dropout_prob,
                                                  return_all_layers=True)
             sequence_output = all_encoder_layers[-1]  # [batch_size, seq_length, hidden_size].
@@ -240,6 +242,6 @@ def get_bert_model(model_name: str = 'uncased_L-12_H-768_A-12') -> Tuple[BertCon
     cfg_fn = os.path.join(ckpt_dir, 'bert_config.json')
     ckpt_fn = os.path.join(ckpt_dir, 'bert_model.ckpt')
 
-    cfg = core.from_json(BertConfig, cfg_fn)
+    cfg = io.from_json(BertConfig, cfg_fn)
     tokenizer = get_tokenizer(model_name)
     return cfg, ckpt_fn, tokenizer

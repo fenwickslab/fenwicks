@@ -1,4 +1,3 @@
-import json
 import re
 
 import tensorflow as tf
@@ -124,13 +123,3 @@ def get_variable_name(var: tf.Variable) -> str:
     if m is not None:
         param_name = m.group(1)
     return param_name
-
-
-def from_json(data_cls_func: Callable, json_fn: str):
-    with tf.io.gfile.GFile(json_fn, "r") as reader:
-        text = reader.read()
-    d = json.loads(text)
-    data = data_cls_func()
-    for k, v in d.items():
-        data.__dict__[k] = v
-    return data

@@ -38,11 +38,11 @@ class URLs:
     MRPC_TEST = 'https://dl.fbaipublicfiles.com/senteval/senteval_data/msr_paraphrase_test.txt'
 
 
-def untar_data(url: str, dest: str = '.') -> str:
+def untar_data(url: str, dest: str = '.', fn: str = None) -> str:
     if not gfile.isdir(dest):
         gfile.makedirs(dest)
     url_path = urlparse(url).path
-    fn = os.path.basename(url_path)
+    fn = fn if fn else os.path.basename(url_path)
     data_dir = os.path.join(dest, 'datasets')
     if not gfile.exists(os.path.join(data_dir, fn)):
         tf.keras.utils.get_file(fn, origin=url, extract=True, cache_dir=dest)

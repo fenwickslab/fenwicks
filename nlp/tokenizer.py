@@ -174,14 +174,10 @@ class BertTokenizer:
     def process_sentence(self, txt: str, max_seq_len: int) -> Tuple[List[int], List[int]]:
         tokens_a = self.tokenize(txt)
 
-        if len(tokens_a) > max_seq_len - 2:
+        if len(tokens_a) > max_seq_len - 2:  # [CLS] and [SEP]
             tokens_a = tokens_a[0: max_seq_len - 2]
 
-        tokens = ["[CLS]"]
-        for token in tokens_a:
-            tokens.append(token)
-        tokens.append("[SEP]")
-
+        tokens = ["[CLS]"] + tokens_a + ["[SEP]"]
         input_ids = self.tokens_to_ids(tokens)
         input_mask = [1] * len(input_ids)
 
@@ -191,3 +187,29 @@ class BertTokenizer:
             input_mask.extend([0] * pad_len)
 
         return input_ids, input_mask
+
+    def process_sentence_pair(self, txt_a: str, txt_b: str, max_seq_len: int) -> Tuple[List[int], List[int], List[int]]:
+        tokens_a = self.tokenize(txt_a)
+        tokens_b = self.tokenize(txt_b)
+
+        while True:
+            total_len = len(tokens_a) + len(tokens_b)
+            if total_len <= max_seq_len - 3:  # [CLS], [SEP], [SEP]
+                break
+            if len(tokens_a) > len(tokens_b):
+                tokens_a.pop()
+            else:
+                tokens_b.pop()
+
+        tokens = ["[CLS]"] + tokens_a + ["[SEP]"] + tokens_b + ["[SEP]"]
+        input_ids = self.tokens_to_ids(tokens)
+        token_type_ids = [0] * (len(tokens_a) + 2) + [1] * (len(tokens_b) + 1)
+        input_mask = [1] * len(input_ids)
+
+        if len(input_ids) < max_seq_len:
+            pad_len = max_seq_len - len(input_ids)
+            input_ids.extend([0] * pad_len)
+            input_mask.extend([0] * pad_len)
+            token_type_ids.extend([0] * pad_len)
+
+        return input_ids, input_mask, token_type_ids

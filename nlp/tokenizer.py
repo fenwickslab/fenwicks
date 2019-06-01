@@ -1,8 +1,7 @@
+from ..imports import *
+
 import collections
 import unicodedata
-from typing import List, Dict, Tuple
-
-import tensorflow as tf
 
 from .. import core
 from . import text
@@ -183,8 +182,7 @@ class BertTokenizer:
 
         if len(input_ids) < max_seq_len:
             pad_len = max_seq_len - len(input_ids)
-            input_ids.extend([0] * pad_len)
-            input_mask.extend([0] * pad_len)
+            _ = list(map(lambda x: x.extend([0] * pad_len), [input_ids, input_mask]))
 
         return input_ids, input_mask
 
@@ -192,10 +190,9 @@ class BertTokenizer:
         tokens_a = self.tokenize(txt_a)
         tokens_b = self.tokenize(txt_b)
 
-        while True:
-            total_len = len(tokens_a) + len(tokens_b)
-            if total_len <= max_seq_len - 3:  # [CLS], [SEP], [SEP]
-                break
+        total_len = len(tokens_a) + len(tokens_b)
+        while total_len > max_seq_len - 3:  # [CLS], [SEP], [SEP]
+            total_len -= 1
             if len(tokens_a) > len(tokens_b):
                 tokens_a.pop()
             else:
@@ -203,13 +200,11 @@ class BertTokenizer:
 
         tokens = ["[CLS]"] + tokens_a + ["[SEP]"] + tokens_b + ["[SEP]"]
         input_ids = self.tokens_to_ids(tokens)
-        token_type_ids = [0] * (len(tokens_a) + 2) + [1] * (len(tokens_b) + 1)
         input_mask = [1] * len(input_ids)
+        token_type_ids = [0] * (len(tokens_a) + 2) + [1] * (len(tokens_b) + 1)
 
         if len(input_ids) < max_seq_len:
             pad_len = max_seq_len - len(input_ids)
-            input_ids.extend([0] * pad_len)
-            input_mask.extend([0] * pad_len)
-            token_type_ids.extend([0] * pad_len)
+            _ = list(map(lambda x: x.extend([0] * pad_len), [input_ids, input_mask, token_type_ids]))
 
         return input_ids, input_mask, token_type_ids

@@ -1,6 +1,4 @@
 import re
-
-import numpy
 import tensorflow as tf
 import numpy as np
 import random
@@ -107,6 +105,11 @@ def flatten_recursive(item) -> List:
 
 
 def inverse_dict(d: Dict) -> Dict:
+    """
+    Given a dictionary, build a new one with key and value inverted in each entry.
+    :param d: input dictionary.
+    :return: dictionary with key and value inverted.
+    """
     return {v: k for k, v in d.items()}
 
 
@@ -119,6 +122,11 @@ def get_node_names() -> List[str]:
 
 
 def get_variable_name(var: tf.Variable) -> str:
+    """
+    Get the name of a tensorflow variable.
+    :param var: tensorflow variable.
+    :return: name of the variable.
+    """
     param_name = var.name
     m = re.match("^(.*):\\d+$", param_name)
     if m is not None:
@@ -137,3 +145,15 @@ def numpy_pad_before(x: np.ndarray, target_len: int) -> np.ndarray:
     x = x[:target_len]
     x = np.concatenate([np.zeros([target_len - len(x)], dtype=np.int32), x])
     return x
+
+
+def set_random_seed(seed: int = 777):
+    """
+    Set random seed for numpy, python and tensorflow.
+
+    :param seed: random seed.
+    :return: None.
+    """
+    np.random.seed(seed)
+    random.seed(seed)
+    tf.set_random_seed(seed)

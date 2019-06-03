@@ -19,6 +19,8 @@ from .nlp import tokenizer
 from .nlp import text
 from .nlp.models import bert
 
+from .tabular import df
+
 from .visualization import plotly as plt
 from .visualization import anim
 

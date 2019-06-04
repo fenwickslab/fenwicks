@@ -10,6 +10,7 @@ requirements = ["numpy", "scipy", "scikit-learn",
                 "typing",
                 "beautifulsoup4",
                 "tqdm",
+                "lightgbm",
                 ]
 
 setup(

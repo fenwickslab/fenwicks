@@ -2,9 +2,12 @@ from ..imports import *
 
 import gc
 import multiprocessing as mp
+import lightgbm as lgb
+import matplotlib.pyplot as plt
 
 from scipy.stats import kurtosis, iqr, skew
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
 
 
 def b_gb(b: int) -> float:
@@ -175,3 +178,52 @@ def parallel_apply(groups, func: Callable, index_name: str = 'Index', num_worker
     features.index = indices
     features.index.name = index_name
     return features
+
+
+def lgb_zero_imp_feats(x: pd.DataFrame, y: np.ndarray, iterations: int = 2) -> Tuple[List, pd.DataFrame]:
+    feat_imps = np.zeros(x.shape[1])
+    model = lgb.LGBMClassifier(objective='binary', boosting_type='goss', n_estimators=10000, class_weight='balanced')
+
+    for i in range(iterations):
+        x_train, x_valid, y_train, y_valid = train_test_split(x, y, test_size=0.25, random_state=i)
+        model.fit(x_train, y_train, early_stopping_rounds=100, eval_set=[(x_valid, y_valid)], eval_metric='auc',
+                  verbose=200)
+        feat_imps += model.feature_importances_ / iterations
+
+    feat_imps = pd.DataFrame({'feature': list(x.columns), 'importance': feat_imps}).sort_values(
+        'importance', ascending=False)
+
+    zero_features = list(feat_imps[feat_imps['importance'] == 0.0]['feature'])
+    return zero_features, feat_imps
+
+
+def plot_feat_imps(df: pd.DataFrame, threshold: float = 0.9, n_feat_to_plot: int = 15) -> pd.DataFrame:
+    plt.rcParams['font.size'] = 18
+    df = df.sort_values('importance', ascending=False).reset_index()
+
+    df['importance_normalized'] = df['importance'] / df['importance'].sum()
+    df['cumulative_importance'] = np.cumsum(df['importance_normalized'])
+
+    plt.figure(figsize=(10, 6))
+    ax = plt.subplot()
+    ax.barh(list(reversed(list(df.index[:n_feat_to_plot]))), df['importance_normalized'].head(15), align='center',
+            edgecolor='k')
+
+    ax.set_yticks(list(reversed(list(df.index[:n_feat_to_plot]))))
+    ax.set_yticklabels(df['feature'].head(n_feat_to_plot))
+
+    plt.xlabel('Normalized Importance')
+    plt.title('Feature Importances')
+    plt.show()
+
+    plt.figure(figsize=(8, 6))
+    plt.plot(list(range(len(df))), df['cumulative_importance'], 'r-')
+    plt.xlabel('Number of Features')
+    plt.ylabel('Cumulative Importance')
+    plt.title('Cumulative Feature Importance')
+    plt.show()
+
+    importance_index = np.min(np.where(df['cumulative_importance'] > threshold))
+    tf.logging.INFO('%d features required for %0.2f of cumulative importance' % (importance_index + 1, threshold))
+
+    return df

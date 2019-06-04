@@ -6,7 +6,7 @@ with open('README.md') as readme_file:
 requirements = ["numpy", "scipy",
                 "librosa",
                 "pandas",
-                "matplotlib", "plotly",
+                "matplotlib", "plotly", 'seaborn',
                 "typing",
                 "beautifulsoup4",
                 "tqdm",

@@ -60,3 +60,9 @@ def flatten_columns(df: pd.DataFrame, key_col: str, prefix: str):
             for stat in df.columns.levels[1][:-1]:
                 columns.append('%s_%s_%s' % (prefix, var, stat))
     df.columns = columns
+
+
+def csv_to_pickle(data_dir: str, df_name: str):
+    df = pd.read_csv(os.path.join(data_dir, df_name + '.csv'))
+    df = reduce_mem(df, True)
+    df.to_pickle(os.path.join(data_dir, df_name, '.pkl'))

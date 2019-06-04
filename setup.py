@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
-requirements = ["numpy", "scipy",
+requirements = ["numpy", "scipy", "scikit-learn",
                 "librosa",
                 "pandas",
                 "matplotlib", "plotly", 'seaborn',

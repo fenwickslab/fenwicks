@@ -1,7 +1,10 @@
 from ..imports import *
 
 import gc
+import multiprocessing as mp
+
 from scipy.stats import kurtosis, iqr, skew
+from sklearn.linear_model import LinearRegression
 
 
 def b_gb(b: int) -> float:
@@ -155,32 +158,35 @@ def add_trend_feature(features, gr, feature_name, prefix):
     return features
 
 
-def add_features_in_group(features, gr_, feature_name, aggs, prefix):
+def add_agg_feats(features, gr_, feature_name: str, aggs: List[str], prefix):
     for agg in aggs:
+        new_feat_name = f'{prefix}{feature_name}_{agg}'
+        feat = gr_[feature_name]
+
         if agg == 'sum':
-            features['{}{}_sum'.format(prefix, feature_name)] = gr_[feature_name].sum()
+            features[new_feat_name] = feat.sum()
         elif agg == 'mean':
-            features['{}{}_mean'.format(prefix, feature_name)] = gr_[feature_name].mean()
+            features[new_feat_name] = feat.mean()
         elif agg == 'max':
-            features['{}{}_max'.format(prefix, feature_name)] = gr_[feature_name].max()
+            features[new_feat_name] = feat.max()
         elif agg == 'min':
-            features['{}{}_min'.format(prefix, feature_name)] = gr_[feature_name].min()
+            features[new_feat_name] = feat.min()
         elif agg == 'std':
-            features['{}{}_std'.format(prefix, feature_name)] = gr_[feature_name].std()
+            features[new_feat_name] = feat.std()
         elif agg == 'count':
-            features['{}{}_count'.format(prefix, feature_name)] = gr_[feature_name].count()
-        elif agg == 'skew':
-            features['{}{}_skew'.format(prefix, feature_name)] = skew(gr_[feature_name])
-        elif agg == 'kurt':
-            features['{}{}_kurt'.format(prefix, feature_name)] = kurtosis(gr_[feature_name])
-        elif agg == 'iqr':
-            features['{}{}_iqr'.format(prefix, feature_name)] = iqr(gr_[feature_name])
+            features[new_feat_name] = feat.count()
         elif agg == 'median':
-            features['{}{}_median'.format(prefix, feature_name)] = gr_[feature_name].median()
+            features[new_feat_name] = feat.median()
+        elif agg == 'skew':
+            features[new_feat_name] = skew(feat)
+        elif agg == 'kurt':
+            features[new_feat_name] = kurtosis(feat)
+        elif agg == 'iqr':
+            features[new_feat_name] = iqr(feat)
     return features
 
 
-def chunk_groups(groupby_object, chunk_size: int):
+def chunk_groups(groupby_object, chunk_size: int) -> Generator:
     n_groups = groupby_object.ngroups
     group_chunk, index_chunk = [], []
     for i, (index, df) in enumerate(groupby_object):
@@ -192,11 +198,8 @@ def chunk_groups(groupby_object, chunk_size: int):
             yield index_chunk_, group_chunk_
 
 
-def parallel_apply(groups, func, index_name: str = 'Index', num_workers: int = 0,
-                   chunk_size: int = 100000, num_threads: int = 1) -> pd.DataFrame:
-    if num_workers <= 0:
-        num_workers = num_threads
-    # n_chunks = np.ceil(1.0 * groups.ngroups / chunk_size)
+def parallel_apply(groups, func: Callable, index_name: str = 'Index', num_workers: int = 1,
+                   chunk_size: int = 100000) -> pd.DataFrame:
     indices, features = [], []
     for index_chunk, groups_chunk in chunk_groups(groups, chunk_size):
         with mp.pool.Pool(num_workers) as executor:

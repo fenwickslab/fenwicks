@@ -74,116 +74,80 @@ def csv_to_pickle(data_dir: str, df_name: str):
     df.to_pickle(os.path.join(data_dir, df_name, '.pkl'))
 
 
-def do_mean(df: pd.DataFrame, group_cols: List[str], counted: str, agg_name: str) -> pd.DataFrame:
-    gp: pd.DataFrame = df[group_cols + [counted]].groupby(group_cols)[counted].mean().reset_index().rename(
-        columns={counted: agg_name})
+def do_agg(feat, agg: str):
+    if agg == 'sum':
+        return feat.sum()
+    elif agg == 'mean':
+        return feat.mean()
+    elif agg == 'max':
+        return feat.max()
+    elif agg == 'min':
+        return feat.min()
+    elif agg == 'std':
+        return feat.std()
+    elif agg == 'count':
+        return feat.count()
+    elif agg == 'median':
+        return feat.median()
+    elif agg == 'skew':
+        return skew(feat)
+    elif agg == 'kurt':
+        return kurtosis(feat)
+    elif agg == 'iqr':
+        return iqr(feat)
+    return None
+
+
+def agg_and_merge(df: pd.DataFrame, group_cols: List[str], counted: str, agg_name: str, agg: str) -> pd.DataFrame:
+    gp = df[group_cols + [counted]].groupby(group_cols)[counted]
+    gp = do_agg(gp, agg)
+    gp = gp.reset_index().rename(columns={counted: agg_name})
     df = df.merge(gp, on=group_cols, how='left')
     del gp
     gc.collect()
     return df
 
 
-def do_median(df: pd.DataFrame, group_cols: List[str], counted: str, agg_name: str) -> pd.DataFrame:
-    gp: pd.DataFrame = df[group_cols + [counted]].groupby(group_cols)[counted].median().reset_index().rename(
-        columns={counted: agg_name})
-    df = df.merge(gp, on=group_cols, how='left')
-    del gp
-    gc.collect()
-    return df
+def get_cat_cols(df: pd.DataFrame) -> List[str]:
+    return [col for col in df.columns if df[col].dtype in ['object', 'category']]
 
 
-def do_std(df: pd.DataFrame, group_cols: List[str], counted: str, agg_name: str) -> pd.DataFrame:
-    gp: pd.DataFrame = df[group_cols + [counted]].groupby(group_cols)[counted].std().reset_index().rename(
-        columns={counted: agg_name})
-    df = df.merge(gp, on=group_cols, how='left')
-    del gp
-    gc.collect()
-    return df
-
-
-def do_sum(df: pd.DataFrame, group_cols: List[str], counted: str, agg_name: str) -> pd.DataFrame:
-    gp: pd.DataFrame = df[group_cols + [counted]].groupby(group_cols)[counted].sum().reset_index().rename(
-        columns={counted: agg_name})
-    df = df.merge(gp, on=group_cols, how='left')
-    del gp
-    gc.collect()
-    return df
-
-
-def label_encoder(df: pd.DataFrame, categorical_columns: List[str] = None, nan_as_category: bool = True) -> Tuple[
-    pd.DataFrame, List[str]]:
-    """Encode categorical values as integers (0,1,2,3...) with pandas.factorize. """
-    if not categorical_columns:
-        categorical_columns = [col for col in df.columns if df[col].dtype == 'object']
-    for col in categorical_columns:
+def label_encoder(df: pd.DataFrame, cat_cols: List[str] = None) -> Tuple[pd.DataFrame, List[str]]:
+    cat_cols = cat_cols or get_cat_cols(df)
+    for col in cat_cols:
         df[col], uniques = pd.factorize(df[col])
-    return df, categorical_columns
+    return df, cat_cols
 
 
-def one_hot_encoder(df: pd.DataFrame, categorical_columns: List[str] = None, nan_as_category: bool = True) -> Tuple[
+def one_hot_encoder(df: pd.DataFrame, cat_cols: List[str] = None, nan_as_cat: bool = True) -> Tuple[
     pd.DataFrame, List[str]]:
-    """Create a new column for each categorical value in categorical columns. """
     original_columns = list(df.columns)
-    if not categorical_columns:
-        categorical_columns = [col for col in df.columns if df[col].dtype == 'object']
-    df = pd.get_dummies(df, columns=categorical_columns, dummy_na=nan_as_category)
-    categorical_columns = [c for c in df.columns if c not in original_columns]
-    return df, categorical_columns
-
-
-def group(df_to_agg: pd.DataFrame, prefix: str, aggregations: Dict[str, List[str]],
-          aggregate_by: str = 'SK_ID_CURR') -> pd.DataFrame:
-    agg_df = df_to_agg.groupby(aggregate_by).agg(aggregations)
-    agg_df.columns = pd.Index(['{}{}_{}'.format(prefix, e[0], e[1].upper())
-                               for e in agg_df.columns.tolist()])
-    return agg_df.reset_index()
+    cat_cols = cat_cols or get_cat_cols(df)
+    df = pd.get_dummies(df, columns=cat_cols, dummy_na=nan_as_cat)
+    cat_cols = [c for c in df.columns if c not in original_columns]
+    return df, cat_cols
 
 
 def group_and_merge(df_to_agg: pd.DataFrame, df_to_merge: pd.DataFrame, prefix: str, aggregations: Dict[str, List[str]],
-                    aggregate_by: str = 'SK_ID_CURR'):
-    agg_df = group(df_to_agg, prefix, aggregations, aggregate_by=aggregate_by)
-    return df_to_merge.merge(agg_df, how='left', on=aggregate_by)
+                    aggregate_by: str):
+    agg_df = df_to_agg.groupby(aggregate_by).agg(aggregations)
+    agg_df.columns = pd.Index([f'{prefix}{e[0]}_{e[1].upper()}' for e in agg_df.columns.tolist()])
+    return df_to_merge.merge(agg_df.reset_index(), how='left', on=aggregate_by)
 
 
-def add_trend_feature(features, gr, feature_name, prefix):
+def add_trend_feature(df, gr, feature_name: str, prefix: str) -> pd.DataFrame:
     y = gr[feature_name].values
-    try:
-        x = np.arange(0, len(y)).reshape(-1, 1)
-        lr = LinearRegression()
-        lr.fit(x, y)
-        trend = lr.coef_[0]
-    except:
-        trend = np.nan
-    features['{}{}'.format(prefix, feature_name)] = trend
-    return features
+    x = np.arange(0, len(y)).reshape(-1, 1)
+    lr = LinearRegression()
+    lr.fit(x, y)
+    df[prefix + feature_name] = lr.coef_[0]
+    return df
 
 
-def add_agg_feats(features, gr_, feature_name: str, aggs: List[str], prefix):
+def add_agg_feats(df: pd.DataFrame, gr, feat_name: str, aggs: List[str], prefix) -> pd.DataFrame:
     for agg in aggs:
-        new_feat_name = f'{prefix}{feature_name}_{agg}'
-        feat = gr_[feature_name]
-
-        if agg == 'sum':
-            features[new_feat_name] = feat.sum()
-        elif agg == 'mean':
-            features[new_feat_name] = feat.mean()
-        elif agg == 'max':
-            features[new_feat_name] = feat.max()
-        elif agg == 'min':
-            features[new_feat_name] = feat.min()
-        elif agg == 'std':
-            features[new_feat_name] = feat.std()
-        elif agg == 'count':
-            features[new_feat_name] = feat.count()
-        elif agg == 'median':
-            features[new_feat_name] = feat.median()
-        elif agg == 'skew':
-            features[new_feat_name] = skew(feat)
-        elif agg == 'kurt':
-            features[new_feat_name] = kurtosis(feat)
-        elif agg == 'iqr':
-            features[new_feat_name] = iqr(feat)
-    return features
+        df[f'{prefix}{feat_name}_{agg}'] = do_agg(gr[feat_name], agg)
+    return df
 
 
 def chunk_groups(groupby_object, chunk_size: int) -> Generator:

@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import os
 import functools
+import itertools
 import re
 import math
 import random

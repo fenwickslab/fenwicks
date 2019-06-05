@@ -1,7 +1,6 @@
 from .imports import *
 
 import threading
-import itertools
 
 from tqdm import tqdm_notebook
 from sklearn.model_selection import train_test_split

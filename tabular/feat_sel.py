@@ -1,7 +1,5 @@
 from ..imports import *
 
-from sklearn.model_selection import train_test_split
-
 
 def missing_val_stats(df: pd.DataFrame) -> pd.DataFrame:
     mis_val = df.isnull().sum()

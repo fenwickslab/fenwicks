@@ -1,8 +1,6 @@
 from ..imports import *
 
-import gc
 import multiprocessing as mp
-import matplotlib.pyplot as plt
 
 from scipy.stats import kurtosis, iqr, skew
 from sklearn.linear_model import LinearRegression
@@ -178,33 +176,3 @@ def parallel_apply(groups, func: Callable, index_name: str = 'Index', num_worker
     return features
 
 
-def plot_feat_imps(df: pd.DataFrame, threshold: float = 0.9, n_feat_to_plot: int = 15) -> pd.DataFrame:
-    plt.rcParams['font.size'] = 18
-    df = df.sort_values('importance', ascending=False).reset_index()
-
-    df['importance_normalized'] = df['importance'] / df['importance'].sum()
-    df['cumulative_importance'] = np.cumsum(df['importance_normalized'])
-
-    plt.figure(figsize=(10, 6))
-    ax = plt.subplot()
-    ax.barh(list(reversed(list(df.index[:n_feat_to_plot]))), df['importance_normalized'].head(15), align='center',
-            edgecolor='k')
-
-    ax.set_yticks(list(reversed(list(df.index[:n_feat_to_plot]))))
-    ax.set_yticklabels(df['feature'].head(n_feat_to_plot))
-
-    plt.xlabel('Normalized Importance')
-    plt.title('Feature Importances')
-    plt.show()
-
-    plt.figure(figsize=(8, 6))
-    plt.plot(list(range(len(df))), df['cumulative_importance'], 'r-')
-    plt.xlabel('Number of Features')
-    plt.ylabel('Cumulative Importance')
-    plt.title('Cumulative Feature Importance')
-    plt.show()
-
-    importance_index = np.min(np.where(df['cumulative_importance'] > threshold))
-    tf.logging.INFO('%d features required for %0.2f of cumulative importance' % (importance_index + 1, threshold))
-
-    return df

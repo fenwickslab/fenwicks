@@ -20,6 +20,7 @@ from .nlp import text
 from .nlp.models import bert
 
 from .tabular import df
+from .tabular import feat_sel
 
 from .visualization import plotly as plt
 from .visualization import anim

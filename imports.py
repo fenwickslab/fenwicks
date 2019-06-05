@@ -6,6 +6,7 @@ import functools
 import re
 import math
 import random
+import gc
 
 from typing import List, Callable, Union, Dict, Tuple, Optional, Iterator, Generator
 

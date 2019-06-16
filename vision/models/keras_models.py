@@ -30,7 +30,8 @@ def keras_model_weights(model_class: Callable, model_dir: str, include_top: bool
         Tuple[str, List[str]]:
     if overwrite or (not tf.io.gfile.exists(model_dir)):
         create_clean_dir(model_dir)
-        model = model_class(include_top=include_top)
+        model = model_class(include_top=include_top, backend=tf.keras.backend, layers=tf.keras.layers,
+                            models=tf.keras.models, utils=tf.keras.utils)
         keras_ckpt(model, model_dir)
 
     ws_dir = os.path.join(model_dir, 'keras')
@@ -44,7 +45,9 @@ KerasModel = namedtuple('KerasModel', ['model_func', 'weight_dir', 'weight_vars'
 
 def get_keras_model(keras_model, img_size, normalizer, model_dir: str, include_top: bool = False, pooling: str = None,
                     overwrite: bool = False) -> KerasModel:
-    model_func = functools.partial(keras_model, include_top=include_top, weights=None, pooling=pooling)
+    model_func = functools.partial(keras_model, include_top=include_top, weights=None, pooling=pooling,
+                                   backend=tf.keras.backend, layers=tf.keras.layers, models=tf.keras.models,
+                                   utils=tf.keras.utils)
     weight_dir, weight_vars = keras_model_weights(keras_model, model_dir=model_dir, include_top=include_top,
                                                   overwrite=overwrite)
     keras_model = KerasModel(model_func, weight_dir, weight_vars, img_size, normalizer)

@@ -176,3 +176,6 @@ def parallel_apply(groups, func: Callable, index_name: str = 'Index', num_worker
     return features
 
 
+def fix_anomoly(df: pd.DataFrame, col, val):
+    df[f'{col}_ANOMOLY'] = df[col] == val
+    df[col].replace({val: np.nan}, inplace=True)

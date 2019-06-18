@@ -1,9 +1,7 @@
+from ..imports import *
+
 from ..io import create_clean_dir
 
-from google import colab
-import tensorflow as tf
-import os
-import json
 
 TPU_ADDRESS = f'grpc://{os.environ["COLAB_TPU_ADDR"]}' if "COLAB_TPU_ADDR" in os.environ else None
 
@@ -14,6 +12,8 @@ def setup_gcs(tpu_address: str = None):
     :param tpu_address: network address of the TPU, starting with 'grpc://'. Default: Colab's TPU address.
     :return: None
     """
+    from google import colab
+
     colab.auth.authenticate_user()
 
     tpu_address = tpu_address or TPU_ADDRESS
@@ -29,6 +29,8 @@ def upload_files():
     Upload one or more files from physical computer to Colab's virtual machine.
     :return: None.
     """
+    from google import colab
+
     colab.files.upload()
 
 
@@ -39,6 +41,8 @@ def download_file(fn: str):
     :param fn: file name on Colab
     :return: None.
     """
+    from google import colab
+
     colab.files.download(fn)
 
 
@@ -48,6 +52,8 @@ def mount_google_drive(gdrive_path: str = './gdrive'):
     :param gdrive_path: local path to mount Google Drive to.
     :return: None.
     """
+    from google import colab
+
     colab.drive.mount(gdrive_path)
 
 

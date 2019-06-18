@@ -3,14 +3,15 @@ from setuptools import setup, find_packages
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
-requirements = ["numpy", "scipy", "scikit-learn",
-                "librosa",
-                "pandas",
-                "matplotlib", "plotly", 'seaborn',
-                "typing",
-                "beautifulsoup4",
-                "tqdm",
-                "lightgbm", "catboost",
+requirements = ['numpy', 'scipy', 'scikit-learn',
+                'librosa',
+                'pandas',
+                'matplotlib', 'plotly', 'cufflinks', 'seaborn',
+                'typing',
+                'beautifulsoup4',
+                'tqdm',
+                'lightgbm', 'catboost',
+                'nltk',
                 ]
 
 setup(
@@ -27,11 +28,11 @@ setup(
     long_description_content_type='text/markdown',
     keywords='deep learning, machine learning',
 
-    license="GNU GPL",
+    license='GNU GPL',
 
     url='https://github.com/fenwickslab/fenwicks',
 
-    author="David Yang",
+    author='David Yang',
     author_email='yin@yang.net',
 
     classifiers=[

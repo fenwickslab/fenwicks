@@ -16,3 +16,4 @@ from . import core
 from . import functional as F
 
 gfile = tf.io.gfile
+tf.logging.set_verbosity(tf.logging.INFO)

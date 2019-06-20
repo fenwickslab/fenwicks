@@ -77,7 +77,7 @@ def show_transform(tfm: Union[Callable, List[Callable]], img_fn: str, n_frames: 
                    anim_fn: str = '/tmp/anim.gif') -> Union[Image, FuncAnimation]:
     images = []
 
-    img = tf.read_file(img_fn)
+    img = tf.io.read_file(img_fn)
     img = tf.io.decode_image(img, channels=3, dtype=tf.float32)
     img.set_shape([None, None, 3])
 

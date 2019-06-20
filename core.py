@@ -24,12 +24,12 @@ def parallel_transforms(x: tf.Tensor, trms: List[Callable]) -> List[tf.Tensor]:
 
 
 def random_matmul(mat1: tf.Tensor, mat2: tf.Tensor, p: float) -> tf.Tensor:
-    choice = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=tf.float32)
+    choice = tf.random.uniform(shape=[], minval=0., maxval=1., dtype=tf.float32)
     return tf.cond(choice < p, lambda: tf.matmul(mat1, mat2), lambda: mat1)
 
 
 def random_transform(x: tf.Tensor, tfm: Callable, p: float) -> tf.Tensor:
-    choice = tf.random_uniform(shape=[], minval=0., maxval=1., dtype=tf.float32)
+    choice = tf.random.uniform(shape=[], minval=0., maxval=1., dtype=tf.float32)
     return tf.cond(choice < p, lambda: tfm(x), lambda: x)
 
 

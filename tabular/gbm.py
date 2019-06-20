@@ -165,6 +165,6 @@ def plot_feat_imps(df_feat_imp: pd.DataFrame, threshold: float = 0.9, n_feat_to_
     plt.show()
 
     importance_index = np.min(np.where(df_feat_imp['cumulative_importance'] > threshold))
-    tf.logging.INFO('%d features required for %0.2f of cumulative importance' % (importance_index + 1, threshold))
+    logging.INFO('%d features required for %0.2f of cumulative importance' % (importance_index + 1, threshold))
 
     return df_feat_imp

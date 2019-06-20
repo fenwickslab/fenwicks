@@ -54,7 +54,7 @@ def numpy_tfrecord(output_fn: str, X, y=None, overwrite: bool = False):
                 example = numpy_tfexample(X_reshape[i]) if y is None else numpy_tfexample(X_reshape[i], y[i])
                 record_writer.write(example.SerializeToString())
     else:
-        tf.logging.info('Output file already exists. Skipping.')
+        logging.info('Output file already exists. Skipping.')
 
 
 # todo: number of threads.
@@ -102,7 +102,7 @@ def files_tfrecord(output_fn: str, paths: List[str], y: List[int] = None, overwr
                     example = numpy_tfexample(img) if y is None else numpy_tfexample(img, y[i])
                 record_writer.write(example.SerializeToString())
     else:
-        tf.logging.info('Output file already exists. Skipping.')
+        logging.info('Output file already exists. Skipping.')
 
 
 def data_dir_tfrecord(data_dir: str, output_fn: str, shuffle: bool = False, overwrite: bool = False,

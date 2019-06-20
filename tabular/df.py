@@ -45,8 +45,8 @@ def reduce_mem(df: pd.DataFrame, print_info: bool = False) -> pd.DataFrame:
 
     if print_info:
         new_memory = df.memory_usage().sum()
-        tf.logging.INFO(f'Original Memory Usage: {b_gb(original_memory)} GB.')
-        tf.logging.INFO(f'New Memory Usage: {b_gb(new_memory)} GB.')
+        logging.INFO(f'Original Memory Usage: {b_gb(original_memory)} GB.')
+        logging.INFO(f'New Memory Usage: {b_gb(new_memory)} GB.')
 
     return df
 

@@ -1,3 +1,4 @@
+from absl import logging
 import tensorflow as tf
 import numpy as np
 import pandas as pd
@@ -16,4 +17,4 @@ from . import core
 from . import functional as F
 
 gfile = tf.io.gfile
-tf.logging.set_verbosity(tf.logging.INFO)
+logging.set_verbosity(logging.INFO)

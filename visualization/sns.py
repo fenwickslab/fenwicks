@@ -17,9 +17,9 @@ def kde_binary_target(df: pd.DataFrame, var_name: str, target_name: str = 'TARGE
     plt.legend()
     plt.show()
 
-    tf.logging.INFO(f'correlation between {var_name} and the target is {corr:0.4f}')
-    tf.logging.INFO(f'Median value for positive target: {df.ix[df[target_name] == 1, var_name].median():0.4f}')
-    tf.logging.INFO(f'Median value for negative target: {df.ix[df[target_name] == 0, var_name].median():0.4f}')
+    logging.INFO(f'correlation between {var_name} and the target is {corr:0.4f}')
+    logging.INFO(f'Median value for positive target: {df.ix[df[target_name] == 1, var_name].median():0.4f}')
+    logging.INFO(f'Median value for negative target: {df.ix[df[target_name] == 0, var_name].median():0.4f}')
 
 
 def plot_collinear(corr_matrix, df_collinear: pd.DataFrame = None):

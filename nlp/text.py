@@ -7,6 +7,15 @@ from bs4 import BeautifulSoup
 __all__ = ['tsv_lines']
 
 
+def init_nltk():
+    nltk.download('punkt')
+    nltk.download('stopwords')
+
+
+def split_sentences(txt: str) -> List[str]:
+    return nltk.sent_tokenize(txt)
+
+
 def html_to_words(raw_text):
     txt = BeautifulSoup(raw_text, 'lxml').get_text()
     letters_only = re.sub("[^a-zA-Z]", " ", txt)

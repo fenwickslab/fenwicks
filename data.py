@@ -281,7 +281,7 @@ def tfexample_raw_parser(tfexample: tf.train.Example, has_label: bool = True):
     else:
         feat_dict = {'image': tf.FixedLenFeature([], tf.string)}
 
-    feat = tf.parse_single_example(tfexample, features=feat_dict)
+    feat = tf.io.parse_single_example(tfexample, features=feat_dict)
 
     if has_label:
         return feat['image'], feat['label']
@@ -303,7 +303,7 @@ def tfexample_numpy_image_parser(tfexample: tf.train.Example, h: int, w: int, c:
     """
     feat_dict = {'image': tf.FixedLenFeature([h * w * c], dtype),
                  'label': tf.FixedLenFeature([], tf.int64)}
-    feat = tf.parse_single_example(tfexample, features=feat_dict)
+    feat = tf.io.parse_single_example(tfexample, features=feat_dict)
     x, y = feat['image'], feat['label']
     x = tf.reshape(x, [h, w, c])
     return x, y

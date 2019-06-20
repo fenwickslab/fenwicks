@@ -26,7 +26,10 @@ def configure_plotly_browser_state():
 
 def setup():
     plotly.offline.init_notebook_mode(connected=True)
-    IPython.get_ipython().events.register('pre_run_cell', configure_plotly_browser_state)
+    try:
+        IPython.get_ipython().events.register('pre_run_cell', configure_plotly_browser_state)
+    except:
+        pass
     cf.set_config_file(offline=True)
 
 

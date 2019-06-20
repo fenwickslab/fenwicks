@@ -5,8 +5,7 @@ import copy
 
 from .. import tokenizer
 
-from ... import layers
-from ... import io
+from fenwicks import layers, io
 
 
 def transformer(x: tf.Tensor, attn_mask: tf.Tensor = None, c: int = 768, n_hidden_layers=12, n_heads: int = 12,

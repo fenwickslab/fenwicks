@@ -1,12 +1,11 @@
 from ..imports import *
+from .. import vision
 
 import matplotlib.pylab as plt
 
 from matplotlib import rc
 from matplotlib.animation import FuncAnimation
 from IPython.display import Image, HTML
-
-from .. import vision
 
 
 def setup():

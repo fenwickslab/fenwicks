@@ -3,7 +3,7 @@ from ..imports import *
 import collections
 import unicodedata
 
-from .. import core
+from fenwicks import core
 from . import text
 
 

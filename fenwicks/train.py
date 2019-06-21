@@ -1,8 +1,5 @@
 from .imports import *
 
-import datetime
-import collections
-
 from .utils.colab import TPU_ADDRESS
 from .optim import SGD, Adam
 

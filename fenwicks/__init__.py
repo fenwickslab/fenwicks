@@ -29,3 +29,5 @@ from .layers import Sequential
 
 from .mobile import android
 from .mobile import pytorch_keras
+
+__version__ = '0.1'

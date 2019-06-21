@@ -394,14 +394,14 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = Tru
     """
     if streaming:
         # fixme
-        dataset = tpu_datasets.StreamingFilesDataset(file_pattern, filetype='tfrecord', batch_transfer_size=batch_size)
+        dataset = tpu_datasets.StreamingFilesDataset(file_pattern, batch_transfer_size=batch_size)
     else:
         dataset = tf.data.Dataset.list_files(file_pattern)
-        fetcher = tf.data.experimental.parallel_interleave(tfrecord_fetch_dataset, cycle_length=n_cores, sloppy=True)
-        dataset = dataset.apply(fetcher)
-
-    mapper_batcher = tf.data.experimental.map_and_batch(parser, batch_size=batch_size, num_parallel_batches=n_cores,
-                                                        drop_remainder=True)
+        options = tf.data.Options()
+        options.experimental_deterministic = False
+        dataset = dataset.with_options(options)
+        dataset = dataset.interleave(tfrecord_fetch_dataset, cycle_length=n_cores,
+                                     num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
     if n_folds > 1:
         dataset = crossval_ds(dataset, n_folds, val_fold_idx, training)
@@ -410,7 +410,8 @@ def tfrecord_ds(file_pattern: str, parser, batch_size: int, training: bool = Tru
         dataset = dataset.shuffle(shuffle_buf_sz)
         dataset = dataset.repeat()
 
-    dataset = dataset.apply(mapper_batcher)
+    dataset = dataset.map(parser, num_parallel_calls=n_cores)
+    dataset = dataset.batch(batch_size, drop_remainder=True)
     dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
     return dataset
 

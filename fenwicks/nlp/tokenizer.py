@@ -10,7 +10,7 @@ from . import text
 def load_vocab(vocab_fn: str) -> Dict:
     vocab = collections.OrderedDict()
     index = 0
-    with tf.io.gfile.GFile(vocab_fn) as reader:
+    with gfile.GFile(vocab_fn) as reader:
         while True:
             token = text.to_unicode(reader.readline())
             if not token:

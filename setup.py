@@ -12,6 +12,7 @@ requirements = ['numpy', 'scipy', 'scikit-learn',
                 'tqdm',
                 'lightgbm', 'catboost',
                 'nltk',
+                'pytorch', 'torchvision',
                 ]
 
 setup(

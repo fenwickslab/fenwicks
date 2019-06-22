@@ -5,7 +5,7 @@ import imageio
 from PIL import Image
 from tqdm import tqdm_notebook
 
-from fenwicks import data
+from .. import data
 
 __all__ = ['compute_mean_std', 'array2img', 'check_rgb', 'gray2rgb']
 

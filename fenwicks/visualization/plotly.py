@@ -79,6 +79,12 @@ def plot_pie_df(pie_df: pd.DataFrame, w: int = 350):
     pie_df.iplot(kind='pie', labels='id', values='count', layout=layout, pull=.05, hole=0.2)
 
 
+def plot_df_bar(df: pd.DataFrame, col: str, w: int = 350):
+    series = df[col]
+    series.index = series.index.astype(str)
+    series.iplot(kind='bar', layout=go.Layout(width=w, height=350, margin=go.layout.Margin(l=0, r=50, b=80, t=0)))
+
+
 # todo: merge items beyond max_item into an 'others' class
 def plot_counts_pie_df(df: pd.DataFrame, col: str, max_items: int = 10, w: int = 350):
     s = df[col].value_counts().sort_values(ascending=False)[:max_items]

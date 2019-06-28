@@ -69,13 +69,13 @@ def plot_lr_func(lr_func: Callable, total_steps: int):
 def plot_df_counts(df: pd.DataFrame, col: str):
     series = df[col].value_counts().sort_values(ascending=False)
     layout = go.Layout(height=350, width=350, yaxis=go.layout.YAxis(title='Count'),
-                       margin=go.layout.Margin(l=40, r=20, b=40, t=0))
+                       margin=go.layout.Margin(l=50, r=20, b=40, t=0))
     series.iplot(kind='bar', layout=layout)
 
 
 def plot_df_histogram(df: pd.DataFrame, col: str):
     layout = go.Layout(height=350, width=350, yaxis=go.layout.YAxis(title='Count'),
-                       margin=go.layout.Margin(l=40, r=20, b=40, t=0))
+                       margin=go.layout.Margin(l=50, r=20, b=40, t=0))
     df[col].iplot(kind='histogram', layout=layout)
 
 
@@ -88,7 +88,9 @@ def plot_pie_df(pie_df: pd.DataFrame, w: int = 350):
 def plot_df_bar(df: pd.DataFrame, col: str, w: int = 350):
     series = df[col]
     series.index = series.index.astype(str)
-    series.iplot(kind='bar', layout=go.Layout(width=w, height=350, margin=go.layout.Margin(l=0, r=50, b=80, t=0)))
+    layout = go.Layout(width=w, height=350, margin=go.layout.Margin(l=0, r=50, b=80, t=0),
+                       yaxis=go.layout.YAxis(title=col))
+    series.iplot(kind='bar', layout=layout)
 
 
 # todo: merge items beyond max_item into an 'others' class

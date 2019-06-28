@@ -88,7 +88,7 @@ def plot_pie_df(pie_df: pd.DataFrame, w: int = 350):
 def plot_df_bar(df: pd.DataFrame, col: str, w: int = 350):
     series = df[col]
     series.index = series.index.astype(str)
-    layout = go.Layout(width=w, height=350, margin=go.layout.Margin(l=0, r=50, b=80, t=0),
+    layout = go.Layout(width=w, height=350, margin=go.layout.Margin(l=50, r=50, b=80, t=0),
                        yaxis=go.layout.YAxis(title=col))
     series.iplot(kind='bar', layout=layout)
 
@@ -135,7 +135,7 @@ def plot_heatmap(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, yti
              }
     layout = {"autosize": False,
               "height": h, "width": w,
-              "margin": go.layout.Margin(l=100, r=20, b=40, t=20),
+              "margin": go.layout.Margin(l=120, r=0, b=80, t=0),
               }
 
     if xtitle:
@@ -147,6 +147,11 @@ def plot_heatmap(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, yti
     data = [go.Heatmap(**trace)]
     fig = go.Figure(data=data, layout=layout)
     plotly.offline.iplot(fig)
+
+
+def plot_heatmap_df(df: pd.DataFrame):
+    df_corrs = df.corr()
+    plot_heatmap(df_corrs.index, df_corrs.index, df_corrs)
 
 
 def plot_confusion_mat(xs, ys, zs, h: int = 350, w: int = 550):

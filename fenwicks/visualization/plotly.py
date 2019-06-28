@@ -66,10 +66,10 @@ def plot_lr_func(lr_func: Callable, total_steps: int):
     plot_scatter(ys, ytitle='Learning rate', xtitle='Training step')
 
 
-def plot_df_counts(df: pd.DataFrame, col: str, max_items: int = 10):
-    series = df[col].value_counts().sort_values(ascending=False)[:max_items]
+def plot_df_counts(df: pd.DataFrame, col: str):
+    series = df[col].value_counts().sort_values(ascending=False)
     layout = go.Layout(height=350, width=350, yaxis=go.layout.YAxis(title='Count'),
-                       margin=go.layout.Margin(l=80, r=20, b=40, t=20))
+                       margin=go.layout.Margin(l=40, r=0, b=40, t=0))
     series.iplot(kind='bar', yTitle='Count', layout=layout)
 
 

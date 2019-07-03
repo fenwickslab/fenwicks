@@ -151,12 +151,16 @@ def plot_df_corr(df: pd.DataFrame):
     plot_heatmap(df_corrs.index, df_corrs.index, df_corrs)
 
 
-def plot_df_corr_annotated(df: pd.DataFrame):
+def plot_df_corr_annotated(df: pd.DataFrame, h: int = 500, w: int = 500):
     df_corrs = df.corr()
     z = np.array(df_corrs)
     z_text = np.around(z, decimals=2)
     x = list(df_corrs.index)
     fig = ff.create_annotated_heatmap(z, annotation_text=z_text, x=x, y=x, colorscale=heatmap_colorscale)
+    layout = fig.layout
+    layout.width = w
+    layout.height = h
+    layout.margin = go.layout.Margin(l=120, r=0, b=0, t=80)
     plotly.offline.iplot(fig)
 
 

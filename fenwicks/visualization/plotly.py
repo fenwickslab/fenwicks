@@ -47,11 +47,26 @@ def simulate_lr_func(lr_func: Callable, total_steps: int) -> np.array:
     return lr_values
 
 
+def set_size_margin(fig: go.Figure, h: int, w: int, l: int, r: int, b: int, t: int):
+    layout = fig.layout
+    layout.width = w
+    layout.height = h
+    layout.margin = go.layout.Margin(l=l, r=r, b=b, t=t)
+
+
+def set_axes_title(fig: go.Figure, xtitle: str, ytitle: str):
+    layout = fig.layout
+    if xtitle:
+        layout.xaxis = go.layout.XAxis(title=xtitle)
+    if ytitle:
+        layout.yaxis = go.layout.YAxis(title=ytitle)
+
+
 def plot_scatter(ys, h: int = 350, w: int = 350, ytitle: str = '', xtitle: str = ''):
     data = [(go.Scatter(y=ys))]
-    layout = go.Layout(autosize=False, width=w, height=h, yaxis=go.layout.YAxis(title=ytitle),
-                       xaxis=go.layout.XAxis(title=xtitle), margin=go.layout.Margin(l=80, r=20, b=40, t=20))
-    fig = go.Figure(data=data, layout=layout)
+    fig = go.Figure(data=data)
+    set_size_margin(fig, h, w, l=80, r=20, b=40, t=20)
+    set_axes_title(fig, xtitle, ytitle)
     plotly.offline.iplot(fig)
 
 
@@ -132,31 +147,21 @@ heatmap_colorscale = [[0, "rgb(255,245,240)"],
 
 
 def plot_heatmap(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, ytitle: str = None):
-    trace = {"x": xs, "y": ys, "z": zs, "autocolorscale": False, "colorscale": heatmap_colorscale}
-    layout = {"autosize": False, "height": h, "width": w, "margin": go.layout.Margin(l=120, r=0, b=80, t=0)}
-
-    if xtitle:
-        layout['xaxis'] = {'title': xtitle}
-
-    if ytitle:
-        layout['yaxis'] = {'title': ytitle}
-
-    data = [go.Heatmap(**trace)]
-    fig = go.Figure(data=data, layout=layout)
+    data = [go.Heatmap(x=xs, y=ys, z=zs, colorscale=heatmap_colorscale)]
+    fig = go.Figure(data=data)
+    set_size_margin(fig, h, w, l=120, r=0, b=80, t=0)
+    set_axes_title(fig, xtitle, ytitle)
     plotly.offline.iplot(fig)
 
 
-def plot_df_corr(df: pd.DataFrame, h: int = 500, w: int = 500):
+def plot_df_corr(df: pd.DataFrame, h: int = 350, w: int = 450):
     df_corrs = df.corr()
     z = np.array(df_corrs)
     z_text = np.around(z, decimals=2)
     x = list(df_corrs.index)
     fig = ff.create_annotated_heatmap(z, annotation_text=z_text, x=x, y=x, colorscale=heatmap_colorscale,
                                       showscale=True)
-    layout = fig.layout
-    layout.width = w
-    layout.height = h
-    layout.margin = go.layout.Margin(l=120, r=0, b=0, t=80)
+    set_size_margin(fig, h, w, l=120, r=0, b=0, t=80)
     plotly.offline.iplot(fig)
 
 

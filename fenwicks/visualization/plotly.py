@@ -1,6 +1,7 @@
 from ..imports import *
 
 import plotly.plotly
+import plotly.figure_factory as ff
 import plotly.graph_objs as go
 import cufflinks as cf
 import operator
@@ -119,24 +120,20 @@ def plot_counts_pie(y: List[int], labels: List[str] = None, max_items: int = -1,
     plot_pie_df(pie_df, w=w)
 
 
+heatmap_colorscale = [[0, "rgb(255,245,240)"],
+                      [0.2, "rgb(254,224,210)"],
+                      [0.4, "rgb(252,187,161)"],
+                      [0.5, "rgb(252,146,114)"],
+                      [0.6, "rgb(251,106,74)"],
+                      [0.7, "rgb(239,59,44)"],
+                      [0.8, "rgb(203,24,29)"],
+                      [0.9, "rgb(165,15,21)"],
+                      [1, "rgb(103,0,13)"]]
+
+
 def plot_heatmap(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, ytitle: str = None):
-    trace = {"x": xs, "y": ys, "z": zs,
-             "autocolorscale": False,
-             "colorscale": [
-                 [0, "rgb(255,245,240)"],
-                 [0.2, "rgb(254,224,210)"],
-                 [0.4, "rgb(252,187,161)"],
-                 [0.5, "rgb(252,146,114)"],
-                 [0.6, "rgb(251,106,74)"],
-                 [0.7, "rgb(239,59,44)"],
-                 [0.8, "rgb(203,24,29)"],
-                 [0.9, "rgb(165,15,21)"],
-                 [1, "rgb(103,0,13)"]],
-             }
-    layout = {"autosize": False,
-              "height": h, "width": w,
-              "margin": go.layout.Margin(l=120, r=0, b=80, t=0),
-              }
+    trace = {"x": xs, "y": ys, "z": zs, "autocolorscale": False, "colorscale": heatmap_colorscale}
+    layout = {"autosize": False, "height": h, "width": w, "margin": go.layout.Margin(l=120, r=0, b=80, t=0)}
 
     if xtitle:
         layout['xaxis'] = {'title': xtitle}
@@ -155,11 +152,11 @@ def plot_df_corr(df: pd.DataFrame):
 
 
 def plot_df_corr_annotated(df: pd.DataFrame):
-    import plotly.figure_factory as ff
     df_corrs = df.corr()
     z = np.array(df_corrs)
+    z_text = np.around(z, decimals=2)
     x = list(df_corrs.index)
-    fig = ff.create_annotated_heatmap(z, x=x, y=x)
+    fig = ff.create_annotated_heatmap(z, annotation_text=z_text, x=x, y=x, colorscale=heatmap_colorscale)
     plotly.offline.iplot(fig)
 
 

@@ -149,9 +149,18 @@ def plot_heatmap(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, yti
     plotly.offline.iplot(fig)
 
 
-def plot_heatmap_df(df: pd.DataFrame):
+def plot_df_corr(df: pd.DataFrame):
     df_corrs = df.corr()
     plot_heatmap(df_corrs.index, df_corrs.index, df_corrs)
+
+
+def plot_df_corr_annotated(df: pd.DataFrame):
+    import plotly.figure_factory as ff
+    df_corrs = df.corr()
+    z = np.array(df_corrs)
+    x = list(df_corrs.index)
+    fig = ff.create_annotated_heatmap(z, x=x, y=x)
+    plotly.offline.iplot(fig)
 
 
 def plot_confusion_mat(xs, ys, zs, h: int = 350, w: int = 550):

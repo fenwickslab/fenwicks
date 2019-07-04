@@ -98,7 +98,7 @@ def plot_df_histogram(df: pd.DataFrame, col: str):
 def plot_pie_df(df: pd.DataFrame, w: int = 350):
     layout = go.Layout()
     layout_size_margin(layout, h=350, w=w, l=50, r=0, b=0, t=0)
-    layout_axes_title(layout)
+    layout_axes_title(layout, xtitle='x', ytitle='y')  # to make cufflinks happy
     df.iplot(kind='pie', labels='id', values='count', layout=layout, pull=.05, hole=0.2)
 
 

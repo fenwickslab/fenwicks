@@ -89,7 +89,7 @@ def plot_df_counts(df: pd.DataFrame, col: str):
 
 
 def plot_df_histogram(df: pd.DataFrame, col: str):
-    layout = go.layout()
+    layout = go.Layout()
     layout_size_margin(layout, h=350, w=350, l=50, r=20, b=40, t=0)
     layout_axes_title(layout, ytitle='Count')
     df[col].iplot(kind='histogram', layout=layout)

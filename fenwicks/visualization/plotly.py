@@ -56,10 +56,8 @@ def layout_size_margin(layout: go.Layout, h: int, w: int, l: int, r: int, b: int
 
 
 def layout_axes_title(layout: go.Layout, xtitle: str = None, ytitle: str = None):
-    if xtitle:
-        layout.xaxis = go.layout.XAxis(title=xtitle)
-    if ytitle:
-        layout.yaxis = go.layout.YAxis(title=ytitle)
+    layout.xaxis = go.layout.XAxis(title=xtitle) if xtitle else None
+    layout.yaxis = go.layout.YAxis(title=ytitle) if ytitle else None
 
 
 def plot_scatter(ys, h: int = 350, w: int = 350, ytitle: str = None, xtitle: str = None):
@@ -100,6 +98,7 @@ def plot_df_histogram(df: pd.DataFrame, col: str):
 def plot_pie_df(df: pd.DataFrame, w: int = 350):
     layout = go.Layout()
     layout_size_margin(layout, h=350, w=w, l=50, r=0, b=0, t=0)
+    layout_axes_title(layout)
     df.iplot(kind='pie', labels='id', values='count', layout=layout, pull=.05, hole=0.2)
 
 

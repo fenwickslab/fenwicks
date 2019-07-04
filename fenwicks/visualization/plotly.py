@@ -171,15 +171,23 @@ def plot_confusion_mat(xs, ys, zs, h: int = 350, w: int = 550):
     plot_heatmap(xs, ys, zs, h, w, 'Predicted value', 'True Value')
 
 
-def plot_kde(s: pd.Series, h: int = 300, w: int = 350):
+def show(fig: go.Figure):
+    plotly.offline.iplot(fig)
+
+
+def plot_kde(s: pd.Series, h: int = 300, w: int = 350, show_fig=True) -> go.Figure:
     x = s.dropna()
     bw = bandwidths.bw_scott(x)
     x_plot = np.linspace(x.min(), x.max(), 1000)[:, np.newaxis]
     x = np.array(x)[:, np.newaxis]
     kde = KernelDensity(bandwidth=bw).fit(x)
     log_dens = kde.score_samples(x_plot)
+    trace = go.Scatter(x=x_plot[:, 0], y=np.exp(log_dens), fill='tozeroy', line=dict(color='#AAAAFF'))
 
-    data = [(go.Scatter(x=x_plot[:, 0], y=np.exp(log_dens), fill='tozeroy', line=dict(color='#AAAAFF')))]
-    fig = go.Figure(data=data)
-    layout_size_margin(fig.layout, h, w, l=20, r=0, b=20, t=0)
-    plotly.offline.iplot(fig)
+    if show_fig:
+        layout = go.Layout()
+        layout_size_margin(layout, h, w, l=20, r=0, b=20, t=0)
+        fig = go.Figure(data=[trace], layout=layout)
+        show(fig)
+
+    return trace

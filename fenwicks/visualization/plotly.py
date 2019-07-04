@@ -175,24 +175,18 @@ def show(fig: go.Figure):
     plotly.offline.iplot(fig)
 
 
-def trace_kde(s: pd.Series) -> go.Scatter:
+def trace_kde(s: pd.Series, trace_name: str = None) -> go.Scatter:
     x = s.dropna()
     bw = bandwidths.bw_scott(x)
     x_plot = np.linspace(x.min(), x.max(), 1000)[:, np.newaxis]
     x = np.array(x)[:, np.newaxis]
     kde = KernelDensity(bandwidth=bw).fit(x)
     log_dens = kde.score_samples(x_plot)
-    return go.Scatter(x=x_plot[:, 0], y=np.exp(log_dens), fill='tozeroy', line=dict(color='#AAAAFF'))
+    return go.Scatter(x=x_plot[:, 0], y=np.exp(log_dens), fill='tozeroy', line=dict(color='#AAAAFF'), name=trace_name)
 
 
-def plot_kde(s: pd.Series, h: int = 300, w: int = 350):
-    x = s.dropna()
-    bw = bandwidths.bw_scott(x)
-    x_plot = np.linspace(x.min(), x.max(), 1000)[:, np.newaxis]
-    x = np.array(x)[:, np.newaxis]
-    kde = KernelDensity(bandwidth=bw).fit(x)
-    log_dens = kde.score_samples(x_plot)
-    trace = go.Scatter(x=x_plot[:, 0], y=np.exp(log_dens), fill='tozeroy', line=dict(color='#AAAAFF'))
+def plot_kde(s: pd.Series, h: int = 300, w: int = 350, trace_name: str = None):
+    trace = trace_kde(s, trace_name)
 
     layout = go.Layout()
     layout_size_margin(layout, h, w, l=20, r=0, b=20, t=0)

@@ -80,17 +80,17 @@ def plot_lr_func(lr_func: Callable, total_steps: int):
     plot_scatter(ys, ytitle='Learning rate', xtitle='Training step')
 
 
-def plot_df_counts(df: pd.DataFrame, col: str):
-    series = df[col].value_counts().sort_values(ascending=False)
+def plot_series_counts(s: pd.Series):
+    series = s.value_counts().sort_values(ascending=False)
     layout = go.Layout()
-    layout_size_margin(layout, h=350, w=350, l=50, r=20, b=40, t=0)
+    layout_size_margin(layout, h=300, w=350, l=50, r=20, b=40, t=0)
     layout_axes_title(layout, ytitle='Count')
     series.iplot(kind='bar', layout=layout)
 
 
 def plot_series_histogram(s: pd.Series):
     layout = go.Layout()
-    layout_size_margin(layout, h=350, w=350, l=50, r=20, b=40, t=0)
+    layout_size_margin(layout, h=300, w=350, l=50, r=20, b=40, t=0)
     layout_axes_title(layout, ytitle='Count')
     s.iplot(kind='histogram', layout=layout)
 
@@ -106,7 +106,7 @@ def plot_df_bar(df: pd.DataFrame, col: str, w: int = 350):
     series = df[col]
     series.index = series.index.astype(str)
     layout = go.Layout()
-    layout_size_margin(layout, h=350, w=w, l=50, r=50, b=80, t=0)
+    layout_size_margin(layout, h=300, w=w, l=50, r=50, b=80, t=0)
     layout_axes_title(layout, ytitle=col)
     series.iplot(kind='bar', layout=layout)
 

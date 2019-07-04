@@ -49,26 +49,24 @@ def simulate_lr_func(lr_func: Callable, total_steps: int) -> np.array:
     return lr_values
 
 
-def set_size_margin(fig: go.Figure, h: int, w: int, l: int, r: int, b: int, t: int):
-    layout = fig.layout
+def layout_size_margin(layout: go.Layout, h: int, w: int, l: int, r: int, b: int, t: int):
     layout.width = w
     layout.height = h
     layout.margin = go.layout.Margin(l=l, r=r, b=b, t=t)
 
 
-def set_axes_title(fig: go.Figure, xtitle: str, ytitle: str):
-    layout = fig.layout
+def layout_axes_title(layout: go.Layout, xtitle: str = None, ytitle: str = None):
     if xtitle:
         layout.xaxis = go.layout.XAxis(title=xtitle)
     if ytitle:
         layout.yaxis = go.layout.YAxis(title=ytitle)
 
 
-def plot_scatter(ys, h: int = 350, w: int = 350, ytitle: str = '', xtitle: str = ''):
+def plot_scatter(ys, h: int = 350, w: int = 350, ytitle: str = None, xtitle: str = None):
     data = [(go.Scatter(y=ys))]
     fig = go.Figure(data=data)
-    set_size_margin(fig, h, w, l=80, r=20, b=40, t=20)
-    set_axes_title(fig, xtitle, ytitle)
+    layout_size_margin(fig.layout, h, w, l=80, r=20, b=40, t=20)
+    layout_axes_title(fig.layout, xtitle, ytitle)
     plotly.offline.iplot(fig)
 
 
@@ -86,28 +84,31 @@ def plot_lr_func(lr_func: Callable, total_steps: int):
 
 def plot_df_counts(df: pd.DataFrame, col: str):
     series = df[col].value_counts().sort_values(ascending=False)
-    layout = go.Layout(height=350, width=350, yaxis=go.layout.YAxis(title='Count'),
-                       margin=go.layout.Margin(l=50, r=20, b=40, t=0))
+    layout = go.Layout()
+    layout_size_margin(layout, h=350, w=350, l=50, r=20, b=40, t=0)
+    layout_axes_title(layout, ytitle='Count')
     series.iplot(kind='bar', layout=layout)
 
 
 def plot_df_histogram(df: pd.DataFrame, col: str):
-    layout = go.Layout(height=350, width=350, yaxis=go.layout.YAxis(title='Count'),
-                       margin=go.layout.Margin(l=50, r=20, b=40, t=0))
+    layout = go.layout()
+    layout_size_margin(layout, h=350, w=350, l=50, r=20, b=40, t=0)
+    layout_axes_title(layout, ytitle='Count')
     df[col].iplot(kind='histogram', layout=layout)
 
 
-def plot_pie_df(pie_df: pd.DataFrame, w: int = 350):
-    layout = go.Layout(height=350, width=w, margin=go.layout.Margin(l=50, r=0, b=0, t=0),
-                       yaxis=go.layout.YAxis(title='y'), xaxis=go.layout.XAxis(title='x'))
-    pie_df.iplot(kind='pie', labels='id', values='count', layout=layout, pull=.05, hole=0.2)
+def plot_pie_df(df: pd.DataFrame, w: int = 350):
+    layout = go.Layout()
+    layout_size_margin(layout, h=350, w=w, l=50, r=0, b=0, t=0)
+    df.iplot(kind='pie', labels='id', values='count', layout=layout, pull=.05, hole=0.2)
 
 
 def plot_df_bar(df: pd.DataFrame, col: str, w: int = 350):
     series = df[col]
     series.index = series.index.astype(str)
-    layout = go.Layout(width=w, height=350, margin=go.layout.Margin(l=50, r=50, b=80, t=0),
-                       yaxis=go.layout.YAxis(title=col))
+    layout = go.Layout()
+    layout_size_margin(layout, h=350, w=w, l=50, r=50, b=80, t=0)
+    layout_axes_title(layout, ytitle=col)
     series.iplot(kind='bar', layout=layout)
 
 
@@ -151,8 +152,8 @@ heatmap_colorscale = [[0, "rgb(255,245,240)"],
 def plot_heatmap(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, ytitle: str = None):
     data = [go.Heatmap(x=xs, y=ys, z=zs, colorscale=heatmap_colorscale)]
     fig = go.Figure(data=data)
-    set_size_margin(fig, h, w, l=120, r=0, b=80, t=0)
-    set_axes_title(fig, xtitle, ytitle)
+    layout_size_margin(fig.layout, h, w, l=120, r=0, b=80, t=0)
+    layout_axes_title(fig.layout, xtitle, ytitle)
     plotly.offline.iplot(fig)
 
 
@@ -163,7 +164,7 @@ def plot_df_corr(df: pd.DataFrame, h: int = 350, w: int = 450):
     x = list(df_corrs.index)
     fig = ff.create_annotated_heatmap(z, annotation_text=z_text, x=x, y=x, colorscale=heatmap_colorscale,
                                       showscale=True)
-    set_size_margin(fig, h, w, l=120, r=0, b=0, t=80)
+    layout_size_margin(fig.layout, h, w, l=120, r=0, b=0, t=80)
     plotly.offline.iplot(fig)
 
 
@@ -181,5 +182,5 @@ def plot_kde(s: pd.Series, h: int = 300, w: int = 350):
 
     data = [(go.Scatter(x=x_plot[:, 0], y=np.exp(log_dens), fill='tozeroy', line=dict(color='#AAAAFF')))]
     fig = go.Figure(data=data)
-    set_size_margin(fig, h, w, l=20, r=0, b=20, t=0)
+    layout_size_margin(fig.layout, h, w, l=20, r=0, b=20, t=0)
     plotly.offline.iplot(fig)

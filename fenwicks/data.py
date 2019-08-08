@@ -276,10 +276,10 @@ def tfexample_raw_parser(tfexample: tf.train.Example, has_label: bool = True):
     """
 
     if has_label:
-        feat_dict = {'image': tf.FixedLenFeature([], tf.string),
-                     'label': tf.FixedLenFeature([], tf.int64)}
+        feat_dict = {'image': tf.io.FixedLenFeature([], tf.string),
+                     'label': tf.io.FixedLenFeature([], tf.int64)}
     else:
-        feat_dict = {'image': tf.FixedLenFeature([], tf.string)}
+        feat_dict = {'image': tf.io.FixedLenFeature([], tf.string)}
 
     feat = tf.io.parse_single_example(tfexample, features=feat_dict)
 
@@ -301,8 +301,8 @@ def tfexample_numpy_image_parser(tfexample: tf.train.Example, h: int, w: int, c:
     :param dtype: Data type of the returned image.
     :return: Parsed image and label Tensors.
     """
-    feat_dict = {'image': tf.FixedLenFeature([h * w * c], dtype),
-                 'label': tf.FixedLenFeature([], tf.int64)}
+    feat_dict = {'image': tf.io.FixedLenFeature([h * w * c], dtype),
+                 'label': tf.io.FixedLenFeature([], tf.int64)}
     feat = tf.io.parse_single_example(tfexample, features=feat_dict)
     x, y = feat['image'], feat['label']
     x = tf.reshape(x, [h, w, c])

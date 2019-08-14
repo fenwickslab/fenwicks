@@ -15,8 +15,8 @@ def enum_files(data_dir: str, file_ext: str = 'jpg') -> List[str]:
     :param file_ext: Extensions of files to enumerate. Default: 'jpg'.
     :return: A list of file names. Note that these are base file names, not full paths.
     """
-    file_pattern: str = os.path.join(data_dir, f'*.{file_ext}')
-    matching_files: List[str] = gfile.glob(file_pattern)
+    file_pattern = os.path.join(data_dir, f'*.{file_ext}')
+    matching_files = gfile.glob(file_pattern)
     return matching_files
 
 
@@ -244,3 +244,9 @@ def csv_head(fn: str, nrows: int = 10, sep: str = ',') -> pd.DataFrame:
 
 def tsv_head(fn: str, nrows: int = 10) -> pd.DataFrame:
     return csv_head(fn, nrows, sep='\t')
+
+
+def remove_file_pattern(fn_pattern: str):
+    files = tf.io.gfile.glob(fn_pattern)
+    for fn in files:
+        gfile.remove(fn)

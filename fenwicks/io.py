@@ -247,6 +247,6 @@ def tsv_head(fn: str, nrows: int = 10) -> pd.DataFrame:
 
 
 def remove_file_pattern(fn_pattern: str):
-    files = tf.io.gfile.glob(fn_pattern)
+    files = gfile.glob(fn_pattern)
     for fn in files:
         gfile.remove(fn)

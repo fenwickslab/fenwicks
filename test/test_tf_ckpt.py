@@ -19,3 +19,8 @@ def test_ckpt_saver():
 
     fw.io.remove_file_pattern('my-model-1.*')
     tf.io.gfile.remove('checkpoint')
+
+
+def test_keras_ckpt_vgg16():
+    fw.keras_models.get_model('VGG16', root_dir='.')
+    tf.io.gfile.rmtree('./model')

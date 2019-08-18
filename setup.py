@@ -14,6 +14,7 @@ requirements = ['numpy', 'scipy', 'scikit-learn', 'statsmodels',
                 'nltk',
                 'pytorch', 'torchvision',
                 'IPython',
+                'tensorflow',
                 ]
 
 setup(

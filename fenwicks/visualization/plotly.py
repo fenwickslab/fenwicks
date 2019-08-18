@@ -41,7 +41,7 @@ def plot_scatter(ys, h: int = 350, w: int = 350, ytitle: str = None, xtitle: str
     return fig
 
 
-def plot_lr_func(lr_func: Callable, total_steps: int):
+def plot_lr_func(lr_func: Callable, total_steps: int) -> go.Figure:
     """
     Draw an interactive plot for learning rate vs. training step.
 
@@ -50,9 +50,10 @@ def plot_lr_func(lr_func: Callable, total_steps: int):
     :return: None.
     """
     ys = simulate_lr_func(lr_func, total_steps)
-    plot_scatter(ys, ytitle='Learning rate', xtitle='Training step')
+    return plot_scatter(ys, ytitle='Learning rate', xtitle='Training step')
 
 
+# fixme
 def plot_series_counts(s: pd.Series):
     series = s.value_counts().sort_values(ascending=False)
     layout = go.Layout()
@@ -61,6 +62,7 @@ def plot_series_counts(s: pd.Series):
     series.iplot(kind='bar', layout=layout)
 
 
+# fixme
 def plot_series_histogram(s: pd.Series):
     layout = go.Layout()
     layout_size_margin(layout, h=300, w=350, l=50, r=20, b=40, t=0)
@@ -68,6 +70,7 @@ def plot_series_histogram(s: pd.Series):
     s.iplot(kind='histogram', layout=layout)
 
 
+# fixme
 def plot_pie_df(df: pd.DataFrame, w: int = 350):
     layout = go.Layout()
     layout_size_margin(layout, h=350, w=w, l=50, r=0, b=0, t=0)
@@ -75,6 +78,7 @@ def plot_pie_df(df: pd.DataFrame, w: int = 350):
     df.iplot(kind='pie', labels='id', values='count', layout=layout, pull=.05, hole=0.2)
 
 
+# fixme
 def plot_df_bar(df: pd.DataFrame, col: str, w: int = 350):
     series = df[col]
     series.index = series.index.astype(str)
@@ -91,6 +95,7 @@ def plot_counts_pie_df(df: pd.DataFrame, col: str, max_items: int = 10, w: int =
     plot_pie_df(pie_df, w=w)
 
 
+# fixme
 # todo: merge items beyond max_item into an 'others' class
 def plot_counts_pie(y: List[int], labels: List[str] = None, max_items: int = -1, w: int = 350):
     if labels is None:

@@ -1,39 +1,12 @@
 from ..imports import *
 
-import plotly.plotly
 import plotly.figure_factory as ff
 import plotly.graph_objs as go
-import cufflinks as cf
 import operator
-import IPython
 
-from IPython.display import display
 from collections import Counter
 from sklearn.neighbors import KernelDensity
 from statsmodels.nonparametric import bandwidths
-
-
-def configure_plotly_browser_state():
-    display(IPython.core.display.HTML('''
-    <script src="/static/components/requirejs/require.js"></script>
-    <script>
-      requirejs.config({
-        paths: {
-          base: '/static/base',
-          plotly: 'https://cdn.plot.ly/plotly-1.47.1.min.js?noext',
-        },
-      });
-    </script>
-    '''))
-
-
-def setup():
-    plotly.offline.init_notebook_mode(connected=True)
-    try:
-        IPython.get_ipython().events.register('pre_run_cell', configure_plotly_browser_state)
-    except:
-        pass
-    cf.set_config_file(offline=True)
 
 
 def simulate_lr_func(lr_func: Callable, total_steps: int) -> np.array:
@@ -60,12 +33,12 @@ def layout_axes_title(layout: go.Layout, xtitle: str = None, ytitle: str = None)
     layout.yaxis = go.layout.YAxis(title=ytitle) if ytitle else None
 
 
-def plot_scatter(ys, h: int = 350, w: int = 350, ytitle: str = None, xtitle: str = None):
+def plot_scatter(ys, h: int = 350, w: int = 350, ytitle: str = None, xtitle: str = None) -> go.Figure:
     data = [(go.Scatter(y=ys))]
     fig = go.Figure(data=data)
     layout_size_margin(fig.layout, h, w, l=80, r=20, b=40, t=20)
     layout_axes_title(fig.layout, xtitle, ytitle)
-    plotly.offline.iplot(fig)
+    return fig
 
 
 def plot_lr_func(lr_func: Callable, total_steps: int):
@@ -148,15 +121,15 @@ heatmap_colorscale = [[0, "rgb(255,245,240)"],
                       [1, "rgb(103,0,13)"]]
 
 
-def plot_heatmap(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, ytitle: str = None):
+def plot_heatmap(xs, ys, zs, h: int = 350, w: int = 550, xtitle: str = None, ytitle: str = None) -> go.Figure:
     data = [go.Heatmap(x=xs, y=ys, z=zs, colorscale=heatmap_colorscale)]
     fig = go.Figure(data=data)
     layout_size_margin(fig.layout, h, w, l=120, r=0, b=80, t=0)
     layout_axes_title(fig.layout, xtitle, ytitle)
-    plotly.offline.iplot(fig)
+    return fig
 
 
-def plot_df_corr(df: pd.DataFrame, h: int = 350, w: int = 450):
+def plot_df_corr(df: pd.DataFrame, h: int = 350, w: int = 450) -> go.Figure:
     df_corrs = df.corr()
     z = np.array(df_corrs)
     z_text = np.around(z, decimals=2)
@@ -164,15 +137,11 @@ def plot_df_corr(df: pd.DataFrame, h: int = 350, w: int = 450):
     fig = ff.create_annotated_heatmap(z, annotation_text=z_text, x=x, y=x, colorscale=heatmap_colorscale,
                                       showscale=True)
     layout_size_margin(fig.layout, h, w, l=120, r=0, b=0, t=80)
-    plotly.offline.iplot(fig)
+    return fig
 
 
 def plot_confusion_mat(xs, ys, zs, h: int = 350, w: int = 550):
     plot_heatmap(xs, ys, zs, h, w, 'Predicted value', 'True Value')
-
-
-def show(fig: go.Figure):
-    plotly.offline.iplot(fig)
 
 
 def trace_kde(s: pd.Series, trace_name: str = None) -> go.Scatter:
@@ -185,10 +154,10 @@ def trace_kde(s: pd.Series, trace_name: str = None) -> go.Scatter:
     return go.Scatter(x=x_plot[:, 0], y=np.exp(log_dens), fill='tozeroy', line=dict(color='#AAAAFF'), name=trace_name)
 
 
-def plot_kde(s: pd.Series, h: int = 300, w: int = 350, trace_name: str = None):
+def plot_kde(s: pd.Series, h: int = 300, w: int = 350, trace_name: str = None) -> go.Figure:
     trace = trace_kde(s, trace_name)
 
     layout = go.Layout()
     layout_size_margin(layout, h, w, l=20, r=0, b=20, t=0)
     fig = go.Figure(data=[trace], layout=layout)
-    show(fig)
+    return fig

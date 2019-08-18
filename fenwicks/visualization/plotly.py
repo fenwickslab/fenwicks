@@ -71,7 +71,7 @@ def plot_series_histogram(s: pd.Series):
 
 
 def plot_pie_df(df: pd.DataFrame, w: int = 350) -> go.Figure:
-    fig = go.Figure(data=[go.Pie(labels=df.id, values=df.count, pull=.05, hole=0.2)])
+    fig = go.Figure(data=[go.Pie(labels=df['id'], values=df['count'], pull=.05, hole=0.2)])
     layout_size_margin(fig.layout, h=350, w=w, l=50, r=0, b=0, t=0)
     return fig
 

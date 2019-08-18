@@ -70,12 +70,10 @@ def plot_series_histogram(s: pd.Series):
     s.iplot(kind='histogram', layout=layout)
 
 
-# fixme
-def plot_pie_df(df: pd.DataFrame, w: int = 350):
-    layout = go.Layout()
-    layout_size_margin(layout, h=350, w=w, l=50, r=0, b=0, t=0)
-    layout_axes_title(layout, xtitle='x', ytitle='y')  # to make cufflinks happy
-    df.iplot(kind='pie', labels='id', values='count', layout=layout, pull=.05, hole=0.2)
+def plot_pie_df(df: pd.DataFrame, w: int = 350) -> go.Figure:
+    fig = go.Figure(data=[go.Pie(labels=df.id, values=df.count, pull=.05, hole=0.2)])
+    layout_size_margin(fig.layout, h=350, w=w, l=50, r=0, b=0, t=0)
+    return fig
 
 
 # fixme
@@ -95,9 +93,8 @@ def plot_counts_pie_df(df: pd.DataFrame, col: str, max_items: int = 10, w: int =
     plot_pie_df(pie_df, w=w)
 
 
-# fixme
 # todo: merge items beyond max_item into an 'others' class
-def plot_counts_pie(y: List[int], labels: List[str] = None, max_items: int = -1, w: int = 350):
+def plot_counts_pie(y: List[int], labels: List[str] = None, max_items: int = -1, w: int = 350) -> go.Figure:
     if labels is None:
         labels = np.unique(y)
 
@@ -112,7 +109,7 @@ def plot_counts_pie(y: List[int], labels: List[str] = None, max_items: int = -1,
 
     items = sorted(cnt.items(), key=operator.itemgetter(1), reverse=True)
     pie_df = pd.DataFrame(items[:max_items], columns=['id', 'count'])
-    plot_pie_df(pie_df, w=w)
+    return plot_pie_df(pie_df, w=w)
 
 
 heatmap_colorscale = [[0, "rgb(255,245,240)"],

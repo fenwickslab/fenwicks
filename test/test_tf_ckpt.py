@@ -78,7 +78,7 @@ def count_vars(var_to_shape_map: Dict):
     return n_weight, n_var
 
 
-def check_keras_model_num_vars(model_name: str, expected_n_weight: int = -1):
+def check_keras_model_num_vars(model_name: str, expected_n_weight: int = -1, expected_n_var: int = -1):
     fw.keras_models.get_model(model_name, root_dir='.')
 
     ckpt_fn = f'./model/{model_name}/keras/keras_model.ckpt'
@@ -88,41 +88,44 @@ def check_keras_model_num_vars(model_name: str, expected_n_weight: int = -1):
     if expected_n_weight > 0:
         assert n_weight == expected_n_weight
     else:
-        print('Total number of variables in checkpoint:', n_weight)
-
+        print('Total number of weightss:', n_weight)
+    if expected_n_var > 0:
+        assert n_var == expected_n_var
+    else:
+        print('Total number of variables:', n_var)
     tf.io.gfile.rmtree('./model')
 
 
 def test_keras_vgg16_num_vars():
-    check_keras_model_num_vars('VGG16', 14714688)
+    check_keras_model_num_vars('VGG16', 14714688, 27)
 
 
 def test_keras_vgg19_num_vars():
-    check_keras_model_num_vars('VGG19', 20024384)
+    check_keras_model_num_vars('VGG19', 20024384, 33)
 
 
 def test_keras_resnet50_num_vars():
-    check_keras_model_num_vars('ResNet50', 23587712)
+    check_keras_model_num_vars('ResNet50', 23587712, 319)
 
 
 def test_keras_resnet101_num_vars():
-    check_keras_model_num_vars('ResNet101', 42658176)
+    check_keras_model_num_vars('ResNet101', 42658176, 625)
 
 
 def test_keras_resnet152_num_vars():
-    check_keras_model_num_vars('ResNet152', 58370944)
+    check_keras_model_num_vars('ResNet152', 58370944, 931)
 
 
 def test_keras_resnet50v2_num_vars():
-    check_keras_model_num_vars('ResNet50V2', 23564800)
+    check_keras_model_num_vars('ResNet50V2', 23564800, 271)
 
 
 def test_keras_resnet101v2_num_vars():
-    check_keras_model_num_vars('ResNet101V2', 42626560)
+    check_keras_model_num_vars('ResNet101V2', 42626560, 543)
 
 
 def test_keras_resnet152v2_num_vars():
-    check_keras_model_num_vars('ResNet152V2', 58331648)
+    check_keras_model_num_vars('ResNet152V2', 58331648, 815)
 
 
 # fixme
@@ -131,34 +134,34 @@ def test_keras_resnext50_num_vars():
 
 
 def test_keras_inceptionv3_num_vars():
-    check_keras_model_num_vars('InceptionV3', 21802784)
+    check_keras_model_num_vars('InceptionV3', 21802784, 377)
 
 
 def test_keras_inceptionresnetv2_num_vars():
-    check_keras_model_num_vars('InceptionResNetV2', 54336736)
+    check_keras_model_num_vars('InceptionResNetV2', 54336736, 897)
 
 
 def test_keras_xception_num_vars():
-    check_keras_model_num_vars('Xception', 20861480)
+    check_keras_model_num_vars('Xception', 20861480, 235)
 
 
 # todo: mobilenet
 
 def test_keras_densenet121_num_vars():
-    check_keras_model_num_vars('DenseNet121', 7037504)
+    check_keras_model_num_vars('DenseNet121', 7037504, 605)
 
 
 def test_keras_densenet169_num_vars():
-    check_keras_model_num_vars('DenseNet169', 12642880)
+    check_keras_model_num_vars('DenseNet169', 12642880, 845)
 
 
 def test_keras_densenet201_num_vars():
-    check_keras_model_num_vars('DenseNet201', 18321984)
+    check_keras_model_num_vars('DenseNet201', 18321984, 1005)
 
 
 def test_keras_nasnetlarge_num_vars():
-    check_keras_model_num_vars('NASNetLarge', 84916818)
+    check_keras_model_num_vars('NASNetLarge', 84916818, 1545)
 
 
 def test_keras_nasnetmobile_num_vars():
-    check_keras_model_num_vars('NASNetMobile', 4269716)
+    check_keras_model_num_vars('NASNetMobile', 4269716, 1125)

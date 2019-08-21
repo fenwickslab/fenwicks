@@ -165,3 +165,26 @@ def test_keras_nasnetlarge_num_vars():
 
 def test_keras_nasnetmobile_num_vars():
     check_keras_model_num_vars('NASNetMobile', 4269716, 1125)
+
+
+def test_keras_vgg16_output():
+    from keras_applications import vgg16
+
+    fw.core.set_random_seed()
+    model = vgg16.VGG16(backend=tf.keras.backend, layers=tf.keras.layers, models=tf.keras.models, utils=tf.keras.utils)
+
+    x = tf.random.uniform([1, 224, 224, 3])
+    with tf.Session() as sess:
+        x = sess.run(x)
+
+    y1 = model.predict(x)
+
+
+def test_keras_vgg16_temp():
+    model = fw.keras_models.get_model('VGG16', root_dir='.').model_func
+
+    x = tf.random.uniform([1, 224, 224, 3])
+    y = model(x)
+
+    with tf.Session() as sess:
+        y2 = sess.run(y)

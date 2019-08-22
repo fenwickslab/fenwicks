@@ -181,25 +181,33 @@ def test_keras_vgg16_output():
 
 
 def test_keras_vgg16_temp():
-    fw.core.set_random_seed()
+    # fw.core.set_random_seed()
 
     model_name = 'VGG16'
-    model = fw.keras_models.get_model(model_name, root_dir='.').model_func()
+    model = fw.keras_models.get_model(model_name, root_dir='.', include_top=True).model_func()
 
-    x = tf.random.uniform([1, 224, 224, 3])
+    # x = tf.random.uniform([1, 224, 224, 3])
+    x = tf.zeros([1, 224, 224, 3])
+    with tf.Session() as sess:
+        x1 = sess.run(x)
+    y1 = model.predict(x1)
+
+    print(y1[0][:10])
+
     y = model(x)
 
     tvars = tf.trainable_variables()
-    print(tvars)
-    return
 
     ckpt_fn = f'./model/{model_name}/keras/keras_model.ckpt'
     assignment_map = fw.train.ckpt_assignment_map(tvars, ckpt_fn)
 
+    for k, v in assignment_map.items():
+        print(k, v)
+
     with tf.Session() as sess:
-        tf.train.init_from_checkpoint(ckpt_fn, {'block1_conv1/bias': 'block1_conv1/bias:0'})
+        tf.train.init_from_checkpoint(ckpt_fn, assignment_map)
         init_op = tf.initializers.global_variables()
         sess.run(init_op)
         y2 = sess.run(y)
 
-    print(y2)
+    print(y2[0][:10])

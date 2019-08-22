@@ -233,10 +233,10 @@ def ckpt_assignment_map(tvars: List[tf.Variable], ckpt_fn: str) -> Dict:
     :return: Assignment map.
     """
 
-    tvar_names = set()
+    tvar_names = {}
     for var in tvars:
         name = core.get_variable_name(var)
-        tvar_names.add(name)
+        tvar_names[name] = var
 
     init_vars = tf.train.list_variables(ckpt_fn)
 
@@ -245,6 +245,6 @@ def ckpt_assignment_map(tvars: List[tf.Variable], ckpt_fn: str) -> Dict:
         name = x[0]
         if name not in tvar_names:
             continue
-        assignment_map[name] = name
+        assignment_map[name] = tvar_names[name]
 
     return assignment_map

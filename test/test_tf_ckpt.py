@@ -51,9 +51,9 @@ def test_ckpt_read():
     global_step = 1
     ckpt_fn = f'my-model-{global_step}'
 
-    new_v = tf.get_variable("new_v", [1])
+    new_v = tf.get_variable("scope/v", [1])
     with tf.Session() as sess:
-        tf.train.init_from_checkpoint(ckpt_fn, {'v': 'new_v'})
+        tf.train.init_from_checkpoint(ckpt_fn, {'/': 'scope/'})
         init_op = tf.initializers.global_variables()
         sess.run(init_op)
         result = sess.run(new_v)
@@ -74,7 +74,7 @@ def count_vars(var_to_shape_map: Dict):
         if k != 'global_step':
             # print(k, ':', v, ',', np.prod(v))
             n_weight += np.prod(v)
-        n_var += 1
+            n_var += 1
     return n_weight, n_var
 
 
@@ -97,35 +97,35 @@ def check_keras_model_num_vars(model_name: str, expected_n_weight: int = -1, exp
 
 
 def test_keras_vgg16_num_vars():
-    check_keras_model_num_vars('VGG16', 14714688, 27)
+    check_keras_model_num_vars('VGG16', 14714688, 26)
 
 
 def test_keras_vgg19_num_vars():
-    check_keras_model_num_vars('VGG19', 20024384, 33)
+    check_keras_model_num_vars('VGG19', 20024384, 32)
 
 
 def test_keras_resnet50_num_vars():
-    check_keras_model_num_vars('ResNet50', 23587712, 319)
+    check_keras_model_num_vars('ResNet50', 23587712, 318)
 
 
 def test_keras_resnet101_num_vars():
-    check_keras_model_num_vars('ResNet101', 42658176, 625)
+    check_keras_model_num_vars('ResNet101', 42658176, 624)
 
 
 def test_keras_resnet152_num_vars():
-    check_keras_model_num_vars('ResNet152', 58370944, 931)
+    check_keras_model_num_vars('ResNet152', 58370944, 930)
 
 
 def test_keras_resnet50v2_num_vars():
-    check_keras_model_num_vars('ResNet50V2', 23564800, 271)
+    check_keras_model_num_vars('ResNet50V2', 23564800, 270)
 
 
 def test_keras_resnet101v2_num_vars():
-    check_keras_model_num_vars('ResNet101V2', 42626560, 543)
+    check_keras_model_num_vars('ResNet101V2', 42626560, 542)
 
 
 def test_keras_resnet152v2_num_vars():
-    check_keras_model_num_vars('ResNet152V2', 58331648, 815)
+    check_keras_model_num_vars('ResNet152V2', 58331648, 814)
 
 
 # fixme
@@ -134,37 +134,37 @@ def test_keras_resnext50_num_vars():
 
 
 def test_keras_inceptionv3_num_vars():
-    check_keras_model_num_vars('InceptionV3', 21802784, 377)
+    check_keras_model_num_vars('InceptionV3', 21802784, 376)
 
 
 def test_keras_inceptionresnetv2_num_vars():
-    check_keras_model_num_vars('InceptionResNetV2', 54336736, 897)
+    check_keras_model_num_vars('InceptionResNetV2', 54336736, 896)
 
 
 def test_keras_xception_num_vars():
-    check_keras_model_num_vars('Xception', 20861480, 235)
+    check_keras_model_num_vars('Xception', 20861480, 234)
 
 
 # todo: mobilenet
 
 def test_keras_densenet121_num_vars():
-    check_keras_model_num_vars('DenseNet121', 7037504, 605)
+    check_keras_model_num_vars('DenseNet121', 7037504, 604)
 
 
 def test_keras_densenet169_num_vars():
-    check_keras_model_num_vars('DenseNet169', 12642880, 845)
+    check_keras_model_num_vars('DenseNet169', 12642880, 844)
 
 
 def test_keras_densenet201_num_vars():
-    check_keras_model_num_vars('DenseNet201', 18321984, 1005)
+    check_keras_model_num_vars('DenseNet201', 18321984, 1004)
 
 
 def test_keras_nasnetlarge_num_vars():
-    check_keras_model_num_vars('NASNetLarge', 84916818, 1545)
+    check_keras_model_num_vars('NASNetLarge', 84916818, 1544)
 
 
 def test_keras_nasnetmobile_num_vars():
-    check_keras_model_num_vars('NASNetMobile', 4269716, 1125)
+    check_keras_model_num_vars('NASNetMobile', 4269716, 1124)
 
 
 def test_keras_vgg16_output():
@@ -181,10 +181,25 @@ def test_keras_vgg16_output():
 
 
 def test_keras_vgg16_temp():
-    model = fw.keras_models.get_model('VGG16', root_dir='.').model_func
+    fw.core.set_random_seed()
+
+    model_name = 'VGG16'
+    model = fw.keras_models.get_model(model_name, root_dir='.').model_func()
 
     x = tf.random.uniform([1, 224, 224, 3])
     y = model(x)
 
+    tvars = tf.trainable_variables()
+    print(tvars)
+    return
+
+    ckpt_fn = f'./model/{model_name}/keras/keras_model.ckpt'
+    assignment_map = fw.train.ckpt_assignment_map(tvars, ckpt_fn)
+
     with tf.Session() as sess:
+        tf.train.init_from_checkpoint(ckpt_fn, {'block1_conv1/bias': 'block1_conv1/bias:0'})
+        init_op = tf.initializers.global_variables()
+        sess.run(init_op)
         y2 = sess.run(y)
+
+    print(y2)

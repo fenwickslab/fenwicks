@@ -226,28 +226,25 @@ def get_clf_model_func(model_arch: Callable, opt_func: Callable, reduction: str 
 
 def ckpt_assignment_map(tvars: List[tf.Variable], ckpt_fn: str) -> Dict:
     """
-    Compute the union of the current variables and checkpoint variables.
+    Compute the intersection of the current variables and checkpoint variables.
 
     :param tvars: List of trainable variables.
     :param ckpt_fn: Path to checkpoint file.
-    :return: Assignment map and list of initialized variable names.
+    :return: Assignment map.
     """
-    initialized_variable_names = {}
 
-    name_to_variable = collections.OrderedDict()
+    tvar_names = set()
     for var in tvars:
         name = core.get_variable_name(var)
-        name_to_variable[name] = var
+        tvar_names.add(name)
 
     init_vars = tf.train.list_variables(ckpt_fn)
 
-    assignment_map = collections.OrderedDict()
+    assignment_map = {}
     for x in init_vars:
-        (name, var) = (x[0], x[1])
-        if name not in name_to_variable:
+        name = x[0]
+        if name not in tvar_names:
             continue
         assignment_map[name] = name
-        initialized_variable_names[name] = 1
-        initialized_variable_names[name + ":0"] = 1
 
     return assignment_map
